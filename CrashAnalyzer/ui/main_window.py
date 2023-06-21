@@ -8,8 +8,6 @@ from utils import catch_exceptions, LambdaValueContainer
 
 logger = logging.getLogger(__name__)
 
-#TODO: settings: QtWidgets.QColorDialog.getColor()
-
 class MainWindow(QtWidgets.QMainWindow):
     def __init__(self):
         super().__init__()
@@ -50,32 +48,7 @@ class MainWindow(QtWidgets.QMainWindow):
         # Open file Browser
         filename, check = QtWidgets.QFileDialog.getOpenFileName(self, "MCA | Choose a crashreport", "", "Monal Crashreport (*.txt.gz)(*.txt.gz);;All files (*)(*)")
         if check:
-            self.reset_ui()
-            
-            logger.info("Loading crash report at '%s'..." % filename)
-            # instantiate a new CrashReport and load our file
-            self.uiStatusbar_statusbar.showMessage("Loading crash report from '%s'..." % filename)
-            try:
-                self.report = CrashReport(filename)
-            except Exception as ex:
-                logger.warn("Exception loading crash report: %s" % str(ex))
-                self.reset_ui()
-                self.update_statusbar()
-                QtWidgets.QMessageBox.critical(self, "Error loading crash report", "%s: %s" % (str(type(ex).__name__), str(ex)))
-                return
-            self.filename = filename
-            logger.info("Crash report now loaded...")
-            
-            # populate our parts list and load the first item
-            first_text_index = None
-            for index in range(len(self.report)):
-                self.uiList_parts.addItem(QtWidgets.QListWidgetItem(self.report[index]["name"]))
-                if first_text_index == None and isinstance(self.report[index]["data"], str):
-                    first_text_index = index
-            if first_text_index != None:
-                self.switch_part(first_text_index, None)
-            
-            self.update_statusbar()
+            self.load_file(filename)
     
     @catch_exceptions(logger=logger)
     def export_part(self, _):
@@ -115,6 +88,36 @@ class MainWindow(QtWidgets.QMainWindow):
                 QtWidgets.QMessageBox.critical(self, "Error exporting part", "%s: %s" % (str(type(ex).__name__), str(ex)))
             self.update_statusbar()     # restore normal statusbar
     
+    @catch_exceptions(logger=logger)
+    def load_file(self, filename):
+        self.reset_ui()
+            
+        logger.info("Loading crash report at '%s'..." % filename)
+        # instantiate a new CrashReport and load our file
+        self.uiStatusbar_statusbar.showMessage("Loading crash report from '%s'..." % filename)
+        try:
+            self.report = CrashReport(filename)
+        except Exception as ex:
+            logger.warn("Exception loading crash report: %s" % str(ex))
+            self.reset_ui()
+            self.update_statusbar()
+            QtWidgets.QMessageBox.critical(self, "Error loading crash report", "%s: %s" % (str(type(ex).__name__), str(ex)))
+            return
+        self.filename = filename
+        logger.info("Crash report now loaded...")
+        
+        # populate our parts list and load the first item
+        first_text_index = None
+        for index in range(len(self.report)):
+            self.uiList_parts.addItem(QtWidgets.QListWidgetItem(self.report[index]["name"]))
+            if first_text_index == None and isinstance(self.report[index]["data"], str):
+                first_text_index = index
+        if first_text_index != None:
+            self.switch_part(first_text_index, None)
+        
+        self.update_statusbar()
+    
+    @catch_exceptions(logger=logger)
     def reset_ui(self):
         self.report = None
         self.filename = None
@@ -123,6 +126,7 @@ class MainWindow(QtWidgets.QMainWindow):
         self.uiTextEdit_data.clear()
         self.update_statusbar()
     
+    @catch_exceptions(logger=logger)
     def update_statusbar(self):
         if self.filename == None or self.report == None:
             self.uiStatusbar_statusbar.showMessage("No crash report loaded")

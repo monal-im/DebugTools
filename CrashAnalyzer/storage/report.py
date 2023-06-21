@@ -61,7 +61,7 @@ class CrashReport:
                             self.parts.append({
                                 "name": name,
                                 "type": parttype,
-                                "data": self._convertRawData(entry, parttype),
+                                "data": self._convert_raw_data(entry, parttype),
                             })
                         name = None
                     first = not first
@@ -95,7 +95,7 @@ class CrashReport:
         else:
             return "This part contains raw bytes (%s) and cannot be displayed!" % data["type"]
     
-    def _convertRawData(self, data, parttype="*.txt"):
+    def _convert_raw_data(self, data, parttype="*.txt"):
         if parttype in ("*.txt", "*.crash", "*.json"):
             return data
         if parttype in ("*.rawlog", "*.rawlog.gz"):

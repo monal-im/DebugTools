@@ -8,6 +8,7 @@ from ui import MainWindow
 
 # parse commandline
 parser = argparse.ArgumentParser(formatter_class=argparse.RawTextHelpFormatter, description="Monal Crash Analyzer")
+parser.add_argument("file", type=str, help="Directly load given file", nargs="?")
 parser.add_argument("--log", metavar='LOGLEVEL', help="Loglevel to log", default="INFO")
 args = parser.parse_args()
 
@@ -23,6 +24,8 @@ try:
     app = QtWidgets.QApplication(sys.argv)
     window = MainWindow()
     window.show()
+    if args.file != None:
+        window.load_file(args.file)
     app.exec_()
 except:
     logger.exception("Catched top level exception!")
