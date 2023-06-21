@@ -3,7 +3,7 @@ import os
 import logging
 from PyQt5 import QtWidgets, uic, QtGui, QtCore
 
-from storage import SettingsSingleton, CrashReport
+from storage import CrashReport
 from utils import catch_exceptions, LambdaValueContainer
 
 logger = logging.getLogger(__name__)
@@ -42,10 +42,7 @@ class MainWindow(QtWidgets.QMainWindow):
         else:
             self.current_index = self.uiList_parts.row(toItem)
         if self.current_index >= 0 and self.report != None and len(self.report) > 0:
-            if isinstance(self.report[self.current_index]["data"], str):
-                self.uiTextEdit_data.setPlainText(self.report[self.current_index]["data"])
-            else:
-                self.uiTextEdit_data.setPlainText("This part contains raw bytes (%s) and cannot be displayed!" % self.report[self.current_index]["type"])
+            self.uiTextEdit_data.setPlainText(self.report.display_format(self.current_index))
         self.update_statusbar()
     
     @catch_exceptions(logger=logger)
@@ -56,7 +53,8 @@ class MainWindow(QtWidgets.QMainWindow):
             self.reset_ui()
             
             logger.info("Loading crash report at '%s'..." % filename)
-            # instanciate a new CrashReport and load our file
+            # instantiate a new CrashReport and load our file
+            self.uiStatusbar_statusbar.showMessage("Loading crash report from '%s'..." % filename)
             try:
                 self.report = CrashReport(filename)
             except Exception as ex:
@@ -94,6 +92,7 @@ class MainWindow(QtWidgets.QMainWindow):
                                 )
         )
         if check:
+            self.uiStatusbar_statusbar.showMessage("Exporting '%s' to '%s'..." % (self.report[self.current_index]["name"], filename))
             try:
                 self.report.export_part(self.current_index, filename)
             except Exception as ex:
@@ -108,6 +107,7 @@ class MainWindow(QtWidgets.QMainWindow):
             return
         dirname = QtWidgets.QFileDialog.getExistingDirectory(self, "MCA | Choose directory to save report parts to")
         if dirname != None and dirname != "":
+            self.uiStatusbar_statusbar.showMessage("Exporting all parts to '%s'..." % dirname)
             try:
                 self.report.export_all(dirname)
             except Exception as ex:
@@ -126,7 +126,7 @@ class MainWindow(QtWidgets.QMainWindow):
     def update_statusbar(self):
         if self.filename == None or self.report == None:
             self.uiStatusbar_statusbar.showMessage("No crash report loaded")
-        elif self.current_index = -1:
+        elif self.current_index == -1:
             self.uiStatusbar_statusbar.showMessage(self.filename)
         else:
             self.uiStatusbar_statusbar.showMessage("%s from %s" % (self.report[self.current_index]["name"], self.filename))

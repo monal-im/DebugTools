@@ -1,8 +1,12 @@
+import io
 import re
 import gzip
 import base64
 import pathlib
 import logging
+
+from .rawlog import Rawlog
+from utils import randread
 
 logger = logging.getLogger(__name__)
 PART_SEPARATOR_REGEX = "-------- d049d576-9bf0-47dd-839f-dee6b07c1df9 -------- (.*) -------- d049d576-9bf0-47dd-839f-dee6b07c1df9 --------"
@@ -36,9 +40,9 @@ class CrashReport:
         # catch exceptions to clear half read data and then rethrow them to be handled by the caller
         try:
             if self._is_gzip_file(filename):
-                logger.debug("'%s' is gzip compressed" % filename)
+                logger.debug("Crash report is gzip compressed")
             else:
-                logger.debug("'%s' is uncompressed" % filename)
+                logger.debug("Crash report is uncompressed")
             with gzip.open(filename, "rb") if self._is_gzip_file(filename) else open(filename, "rb") as fp:
                 parts = re.split(PART_SEPARATOR_REGEX, fp.read().decode("utf-8"))
                 first = True
@@ -80,6 +84,17 @@ class CrashReport:
         for index in range(len(self.parts)):
             self.export_part(index, pathlib.Path(dirname) / ("report%s" % self.parts[index]["type"]))
     
+    def display_format(self, index):
+        if index not in range(len(self.parts)):
+            raise Exception("Invalid part index: %d" % index)
+        data = self.parts[index]
+        if isinstance(data["data"], str):
+            return data["data"]
+        if data["type"] in ("*.rawlog", "*.rawlog.gz"):
+            return str(Rawlog(data["data"]).export_bytes(False), encoding="UTF-8")
+        else:
+            return "This part contains raw bytes (%s) and cannot be displayed!" % data["type"]
+    
     def _convertRawData(self, data, parttype="*.txt"):
         if parttype in ("*.txt", "*.crash", "*.json"):
             return data
@@ -89,5 +104,6 @@ class CrashReport:
     
     # see https://stackoverflow.com/a/47080739
     def _is_gzip_file(self, filename):
-        with open(filename, 'rb') as test_f:
-            return test_f.read(2) == b'\x1f\x8b'
+        with open(filename, 'rb') as fp:
+            with randread(fp, 2, offset=0, whence=io.SEEK_SET) as data:
+                return data == b'\x1f\x8b'
