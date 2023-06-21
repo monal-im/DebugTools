@@ -99,7 +99,17 @@ class CrashReport:
         if parttype in ("*.txt", "*.crash", "*.json"):
             return data
         if parttype in ("*.rawlog", "*.rawlog.gz"):
-            return base64.b64decode(data)
+            try:
+                retval = bytes.fromhex(data)
+            except Exception as exb64:
+                try:
+                    retval = base64.b64decode(data)
+                except Exception as exhex:
+                    raise TypeError("Neither hex nor base64 encoding found for embedded rawlog data!\n\n%s: %s\n\n%s: %s" % (
+                        str(type(exhex).__name__), str(exhex),
+                        str(type(exb64).__name__), str(exb64)
+                    ))
+            return retval
         raise Exception("Unknown parttype: '%s'!" % str(parttype))
     
     # see https://stackoverflow.com/a/47080739
