@@ -1,0 +1,28 @@
+#!/usr/bin/env python3
+
+import sys
+import os
+import argparse
+from PyQt5 import QtWidgets
+from ui import MainWindow
+
+# parse commandline
+parser = argparse.ArgumentParser(formatter_class=argparse.RawTextHelpFormatter, description="Monal Crash Analyzer")
+parser.add_argument("--log", metavar='LOGLEVEL', help="Loglevel to log", default="INFO")
+args = parser.parse_args()
+
+import json, logging, logging.config
+with open(os.path.join(os.path.dirname(sys.argv[0]), "conf", "logger.json"), 'r') as logging_configuration_file:
+    logger_config = json.load(logging_configuration_file)
+logger_config["handlers"]["stderr"]["level"] = args.log
+logging.config.dictConfig(logger_config)
+logger = logging.getLogger(__name__)
+logger.info('Logger configured...')
+
+try:
+    app = QtWidgets.QApplication(sys.argv)
+    window = MainWindow()
+    window.show()
+    app.exec_()
+except:
+    logger.exception("Catched top level exception!")
