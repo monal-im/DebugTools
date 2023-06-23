@@ -76,6 +76,9 @@ class Rawlog:
                 if len(json_read_len) != prefix_length:
                     break
                 json_read_len = struct.unpack(PREFIX_FORMAT, json_read_len)[0]
+                if json_read_len == 0:
+                    logger.debug("Length prefix at %d is zero (possibly old format), ignoring this chunk...", readsize)
+                    continue
                 json_bytes = fp.read(json_read_len)
                 if len(json_bytes) != json_read_len:
                     raise Exception("Rawlog file corrupt!")
