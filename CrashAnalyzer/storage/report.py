@@ -82,7 +82,7 @@ class CrashReport:
     
     def export_all(self, dirname):
         for index in range(len(self.parts)):
-            self.export_part(index, pathlib.Path(dirname) / ("report%s" % self.parts[index]["type"]))
+            self.export_part(index, pathlib.Path(dirname) / ("report%s" % self.parts[index]["type"][1:]))
     
     def display_format(self, index):
         if index not in range(len(self.parts)):
