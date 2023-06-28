@@ -1,4 +1,5 @@
 import os
+import math
 import pathlib
 import json
 import struct
@@ -10,6 +11,7 @@ from utils import randread
 
 logger = logging.getLogger(__name__)
 PREFIX_FORMAT = "!L"        # constant defining the struct.{pack,unpack} format of our length prefix
+LENGTH_BITS_NEEDED = 20
 
 class Rawlog:
     def __init__(self, to_load=None, **kwargs):
@@ -69,27 +71,61 @@ class Rawlog:
             fp.seek(0, io.SEEK_SET)
         
         # now process our data
+        entry = None
         with gzip.GzipFile(fileobj=fp, mode="rb") if self._is_gzip_file(fp) else fp as fp:
             while True:
                 # Unwraps the rawlog file and strips down the values
-                json_read_len = fp.read(prefix_length)
-                if len(json_read_len) != prefix_length:
+                json_raw_read_len = fp.read(prefix_length)
+                if len(json_raw_read_len) != prefix_length:
                     break
-                json_read_len = struct.unpack(PREFIX_FORMAT, json_read_len)[0]
+                json_read_len = struct.unpack(PREFIX_FORMAT, json_raw_read_len)[0]
                 if json_read_len == 0:
                     logger.debug("Length prefix at %d is zero (possibly old format), ignoring this chunk...", readsize)
                     continue
-                json_bytes = fp.read(json_read_len)
-                if len(json_bytes) != json_read_len:
-                    raise Exception("Rawlog file corrupt!")
-                entry = json.loads(str(json_bytes, "UTF-8"))
-                readsize += json_read_len + prefix_length
                 
+                # only 20 bits of our length prefix should ever be needed
+                if json_read_len > (1<<LENGTH_BITS_NEEDED):
+                    logger.error("Potential corruption at %d [%d], trying to skip to next full entry..." % (readsize, fp.tell()))
+                    logger.debug("Last complete entry: %s" % entry)
+                    fp.seek(-prefix_length, io.SEEK_CUR)
+                    
+                    # seek through the file byte by byte and search for a (prefix_length*8)-LENGTH_BITS_NEEDED bit zero sequence beginning on a byte boundary
+                    search_length = math.ceil(((prefix_length*8)-LENGTH_BITS_NEEDED)/8)
+                    while True:
+                        potential_high_bytes = fp.read(search_length)
+                        logger.debug("Searching for next length prefix at %d: %s" % (fp.tell(), potential_high_bytes))
+                        if len(potential_high_bytes) != search_length:
+                            logger.error("Could not find next undamaged block, EOF reached!")
+                            break
+                        fp.seek(-(search_length-1), io.SEEK_CUR)        # move cursor by one byte relative to our old search position
+                        # only allow for the [LENGTH_BITS_NEEDED % 8] low bits to be used
+                        # (these are the [LENGTH_BITS_NEEDED % 8] high bits of our [LENGTH_BITS_NEEDED] bit number mentioned above)
+                        if struct.unpack("!H", potential_high_bytes)[0] <= (1<<(LENGTH_BITS_NEEDED % 8)):
+                            fp.seek(-1, io.SEEK_CUR)        # move cursor back to original search position (compensate the off by one of our seek above)
+                            logger.error("Found next undamaged block at %d, skipping %d bytes!" % (fp.tell(), fp.tell()-readsize))
+                            message = "Corruption at %d, skipping %d bytes!" % (readsize, fp.tell()-readsize)
+                            entry = {
+                                "__warning": True,
+                                "flag": 256,    # this is status logline (a fake loglevel only used by the logviewer itself)
+                                "formattedMessage": message,
+                                "message": message,
+                            }
+                            readsize = fp.tell()        # fix readsize value
+                            break
+                    #continue        # continue reading (eof will be automatically handled by our normal code, too)
+                else:
+                    json_bytes = fp.read(json_read_len)
+                    if len(json_bytes) != json_read_len:
+                        raise Exception("Rawlog file corrupt!")
+                    entry = json.loads(str(json_bytes, "UTF-8"))
+                    readsize += json_read_len + prefix_length
+                
+                entry["__logline_index"] = len(self.data)
                 if custom_load_callback != None:
-                    entry = custom_load_callback(entry)
-                if not entry:
+                    custom_entry = custom_load_callback(entry)
+                if not custom_entry:
                     continue
-                self.data.append(entry)
+                self.data.append(custom_entry)
                 
                 if progress_callback != None:
                     # the callback returns True if it wants to cancel the loading
