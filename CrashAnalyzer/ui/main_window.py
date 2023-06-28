@@ -46,7 +46,7 @@ class MainWindow(QtWidgets.QMainWindow):
     @catch_exceptions(logger=logger)
     def open_crashreport(self, _):
         # Open file Browser
-        filename, check = QtWidgets.QFileDialog.getOpenFileName(self, "MCA | Choose a crashreport", "", "Monal Crashreport (*.mcrash.gz)(*.mcrash.gz);;All files (*)(*)")
+        filename, check = QtWidgets.QFileDialog.getOpenFileName(self, "MCA | Choose a crashreport", "", "Monal Crashreport (*.mcrash.gz *.mcrash)(*.mcrash.gz *.mcrash);;All files (*)(*)")
         if check:
             self.load_file(filename)
     
