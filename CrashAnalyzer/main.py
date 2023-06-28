@@ -2,9 +2,14 @@
 
 import sys
 import os
+import signal
 import argparse
 from PyQt5 import QtWidgets
 from ui import MainWindow
+
+def sigint_handler(sig, frame):
+    logger.warning('Main thread got interrupted, shutting down...')
+    os._exit(1)
 
 # parse commandline
 parser = argparse.ArgumentParser(formatter_class=argparse.RawTextHelpFormatter, description="Monal Crash Analyzer")
@@ -20,6 +25,7 @@ logging.config.dictConfig(logger_config)
 logger = logging.getLogger(__name__)
 logger.info('Logger configured...')
 
+signal.signal(signal.SIGINT, sigint_handler)
 try:
     app = QtWidgets.QApplication(sys.argv)
     window = MainWindow()
