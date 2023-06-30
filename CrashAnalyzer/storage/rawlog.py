@@ -159,10 +159,14 @@ class Rawlog:
         for entry in self.data:
             if custom_store_callback != None:
                 entry = custom_store_callback(entry)
-            entry_num += 1
-            
+            entry_num += 1      # increment before checking for None
             if not entry:
                 continue
+            
+            # don't store this, too
+            entry = entry.copy()
+            del entry["__logline_index"]
+            
             json_bytes = bytearray(json.dumps(entry), "UTF-8")
             size = struct.pack(PREFIX_FORMAT, len(json_bytes))
             fp.write(size + json_bytes)
