@@ -72,6 +72,7 @@ class Rawlog:
         
         # now process our data
         entry = None
+        old_processid = None
         with gzip.GzipFile(fileobj=fp, mode="rb") if self._is_gzip_file(fp) else fp as fp:
             while True:
                 # Unwraps the rawlog file and strips down the values
@@ -104,28 +105,34 @@ class Rawlog:
                             fp.seek(-1, io.SEEK_CUR)        # move cursor back to original search position (compensate the off by one of our seek above)
                             logger.error("Found next undamaged block at %d, skipping %d bytes!" % (fp.tell(), fp.tell()-readsize))
                             message = "Corruption at %d, skipping %d bytes!" % (readsize, fp.tell()-readsize)
-                            entry = {
+                            self._append_entry({
                                 "__warning": True,
+                                "__virtual": True,
                                 "flag": 256,    # this is status logline (a fake loglevel only used by the logviewer itself)
                                 "formattedMessage": message,
                                 "message": message,
-                            }
+                            }, custom_load_callback)
                             readsize = fp.tell()        # fix readsize value
                             break
-                    #continue        # continue reading (eof will be automatically handled by our normal code, too)
-                else:
-                    json_bytes = fp.read(json_read_len)
-                    if len(json_bytes) != json_read_len:
-                        raise Exception("Rawlog file corrupt!")
-                    entry = json.loads(str(json_bytes, "UTF-8"))
-                    readsize += json_read_len + prefix_length
+                    continue        # continue reading (eof will be automatically handled by our normal code, too)
                 
-                entry["__logline_index"] = len(self.data)
-                if custom_load_callback != None:
-                    custom_entry = custom_load_callback(entry)
-                if not custom_entry:
-                    continue
-                self.data.append(custom_entry)
+                json_bytes = fp.read(json_read_len)
+                if len(json_bytes) != json_read_len:
+                    raise Exception("Rawlog file corrupt!")
+                entry = json.loads(str(json_bytes, "UTF-8"))
+                readsize += json_read_len + prefix_length
+                
+                if old_processid != None and entry["_processID"] != old_processid:
+                    message = "Processid changed from %s to %s..." % (old_processid, entry["_processID"])
+                    self._append_entry({
+                        "__virtual": True,
+                        "flag": 256,    # this is status logline (a fake loglevel only used by the logviewer itself)
+                        "formattedMessage": message,
+                        "message": message,
+                    }, custom_load_callback)
+                self._append_entry(entry, custom_load_callback)
+                if "_processID" in entry:
+                    old_processid = entry["_processID"]
                 
                 if progress_callback != None:
                     # the callback returns True if it wants to cancel the loading
@@ -160,7 +167,7 @@ class Rawlog:
             if custom_store_callback != None:
                 entry = custom_store_callback(entry)
             entry_num += 1      # increment before checking for None
-            if not entry:
+            if not entry or ("__virtual" in entry and entry["__virtual"]):
                 continue
             
             # don't store this, too
@@ -204,8 +211,7 @@ class Rawlog:
             if custom_store_callback != None:
                 entry = custom_store_callback(entry)
             entry_num += 1
-            
-            if not entry:
+            if not entry or ("__virtual" in entry and entry["__virtual"]):
                 continue
             fp.write(bytes("%s\n" % entry["formattedMessage"], "UTF-8"))
             
@@ -233,6 +239,14 @@ class Rawlog:
         logger.debug("Extracted completer list: %s" % str(completer_list))
         return completer_list
     
+    
+    def _append_entry(self, entry, custom_load_callback=None):
+        entry["__logline_index"] = len(self.data)
+        if custom_load_callback != None:
+            custom_entry = custom_load_callback(entry)
+        if not custom_entry:
+            return
+        self.data.append(custom_entry)
     
     # see https://stackoverflow.com/a/47080739
     def _is_gzip_file(self, fp):
