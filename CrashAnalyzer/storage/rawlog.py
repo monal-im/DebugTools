@@ -242,6 +242,8 @@ class Rawlog:
     
     def _append_entry(self, entry, custom_load_callback=None):
         entry["__logline_index"] = len(self.data)
+        if "__virtual" not in entry:
+            entry["__virtual"] = False
         if custom_load_callback != None:
             custom_entry = custom_load_callback(entry)
         if not custom_entry:
