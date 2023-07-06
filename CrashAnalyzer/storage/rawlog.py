@@ -84,12 +84,25 @@ class Rawlog:
                     logger.debug("Length prefix at %d is zero (possibly old format), ignoring this chunk...", readsize)
                     continue
                 
+                skip_corrupted_part = False
                 # only 20 bits of our length prefix should ever be needed
                 if json_read_len > (1<<LENGTH_BITS_NEEDED):
                     logger.error("Potential corruption at %d [%d], trying to skip to next full entry..." % (readsize, fp.tell()))
                     logger.debug("Last complete entry: %s" % entry)
                     fp.seek(-prefix_length, io.SEEK_CUR)
-                    
+                    skip_corrupted_part = True
+                else:
+                    #logger.debug("Loading %d json bytes at %d..." % (json_read_len, fp.tell()))
+                    json_bytes = fp.read(json_read_len)
+                    if len(json_bytes) != json_read_len:
+                        raise Exception("Rawlog file corrupt!")
+                    try:
+                        entry = json.loads(str(json_bytes, "UTF-8"))
+                    except:
+                        logger.debug("Corruption detected: failed to load json...", exc_info=True)
+                    readsize += json_read_len + prefix_length
+                
+                if skip_corrupted_part:
                     # seek through the file byte by byte and search for a (prefix_length*8)-LENGTH_BITS_NEEDED bit zero sequence beginning on a byte boundary
                     search_length = math.ceil(((prefix_length*8)-LENGTH_BITS_NEEDED)/8)
                     while True:
@@ -115,12 +128,6 @@ class Rawlog:
                             readsize = fp.tell()        # fix readsize value
                             break
                     continue        # continue reading (eof will be automatically handled by our normal code, too)
-                
-                json_bytes = fp.read(json_read_len)
-                if len(json_bytes) != json_read_len:
-                    raise Exception("Rawlog file corrupt!")
-                entry = json.loads(str(json_bytes, "UTF-8"))
-                readsize += json_read_len + prefix_length
                 
                 if old_processid != None and entry["_processID"] != old_processid:
                     message = "Processid changed from %s to %s..." % (old_processid, entry["_processID"])
