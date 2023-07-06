@@ -1,4 +1,3 @@
-import os
 import math
 import pathlib
 import json
@@ -251,6 +250,7 @@ class Rawlog:
         entry["__logline_index"] = len(self.data)
         if "__virtual" not in entry:
             entry["__virtual"] = False
+        custom_entry = entry        # needed if no load_callback is used
         if custom_load_callback != None:
             custom_entry = custom_load_callback(entry)
         if not custom_entry:
