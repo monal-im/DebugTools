@@ -1,0 +1,19 @@
+<?xml version="1.0"?>
+<!-- this file has to be installed into /usr/share/mime/packages to be able to overwrite the glob pattern specified by text/plain -->
+<!-- run /usr/bin/update-mime-database /usr/share/mime afterwards -->
+<mime-info xmlns='http://www.freedesktop.org/standards/shared-mime-info'>
+    <mime-type type="application/x-monal-crashreport">
+        <comment>Monal crashreport file</comment>
+        <sub-class-of type="application/gzip"/>
+        <!--<generic-icon name="folder-crash"/>
+        <icon name="folder-crash"/>-->
+        <!-- priority has to be bigger than 50 which is the implicit priority of the text/plain glob pattern -->
+        <magic priority="75">
+          <match value="-------- d049d576-9bf0-47dd-839f-dee6b07c1df9 --------" type="string" offset="0:512"/>
+        </magic>
+        <glob pattern="*.mcrash.gz"/>
+        <glob pattern="*.mcrash"/>
+        <!-- specify text/plain glob pattern to create a conflict to text/plain which triggers evaluation of our magic above to arbitrate -->
+        <glob pattern="*.txt"/>
+    </mime-type>
+</mime-info>
