@@ -58,12 +58,18 @@
          <property name="text">
           <string>Previous</string>
          </property>
+         <property name="shortcut">
+          <string>Shift+F3</string>
+         </property>
         </widget>
        </item>
        <item>
         <widget class="QPushButton" name="uiButton_next">
          <property name="text">
           <string>Next</string>
+         </property>
+         <property name="shortcut">
+          <string>F3</string>
          </property>
         </widget>
        </item>
