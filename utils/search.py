@@ -1,20 +1,20 @@
 import logging
-from .loglevels import LOGLEVELS
+from .queryhelpers import QueryStatus, matchQuery
 
 logger = logging.getLogger(__name__)
 
 class Search:
-    EOF_REACHED = 1
-    QUERY_ERROR = 2
-    QUERY_OK = 3
-    QUERY_EMPTY = 4
-
     def __init__(self, rawlog, query, startIndex):
         super().__init__()
-        self.rawlog = rawlog
         self.query = query
-        self.filteredList = self.getItemswithQuerys(query)
+        result = matchQuery(query, rawlog, self._additionalSearchFilter)
+        self.status, self.filteredList = result["status"], result["entries"]
         self.setStartIndex(startIndex)
+
+    def _additionalSearchFilter(self, resultIndex, rawlog):
+        if rawlog[resultIndex]["uiItem"].isHidden() == False:
+            return True
+        return False
 
     def setStartIndex(self, startIndex):
         self.resultIndex = 0
@@ -34,7 +34,7 @@ class Search:
             self.resultIndex = 0
 
         if self.resultIndex == self.resultStartIndex:
-            self.status = self.EOF_REACHED
+            self.status = QueryStatus.EOF_REACHED
 
         return self.getCurrentResult()
     
@@ -47,7 +47,7 @@ class Search:
             self.resultIndex = len(self.filteredList) - 1
 
         if self.resultIndex == self.resultStartIndex:
-            self.status = self.EOF_REACHED
+            self.status = QueryStatus.EOF_REACHED
 
         return self.getCurrentResult()
 
@@ -61,26 +61,3 @@ class Search:
         if len(self.filteredList) == 0:
             return None
         return self.filteredList[self.resultIndex]
-
-    def getItemswithQuerys(self, query):
-        entries = []
-        self.status = self.QUERY_OK
-        try:
-            for resultIndex in range(len(self.rawlog)):
-                if eval(query, {
-                    **LOGLEVELS,
-                    "true" : True,
-                    "false": False,
-                    "__index": resultIndex,
-                    "__rawlog": self.rawlog,
-                }, self.rawlog[resultIndex]['data']):
-                    entries.append(resultIndex)
-            
-            if len(entries) == 0:
-                self.status = self.QUERY_EMPTY
-            return entries
-        
-        except (SyntaxError, NameError) as e:
-            self.status = self.QUERY_ERROR
-            logger.warning("ERROR(%s): %s" % (query, str(e)))
-            return []

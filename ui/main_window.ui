@@ -16,10 +16,14 @@
   <widget class="QWidget" name="centralwidget">
    <layout class="QGridLayout" name="gridLayout">
     <item row="0" column="0">
-     <widget class="QComboBox" name="comboBox"/>
+     <widget class="QComboBox" name="uiCombobox_filterInput">
+      <property name="editable">
+       <bool>true</bool>
+      </property>
+     </widget>
     </item>
     <item row="0" column="1">
-     <widget class="QPushButton" name="pushButton">
+     <widget class="QPushButton" name="uiButton_filterClear">
       <property name="sizePolicy">
        <sizepolicy hsizetype="Maximum" vsizetype="Fixed">
         <horstretch>0</horstretch>

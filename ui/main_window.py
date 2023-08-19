@@ -6,7 +6,7 @@ from storage import Rawlog
 from PyQt5 import QtWidgets, uic, QtGui, QtCore, Qt
 from PyQt5.QtWidgets import QStyle
 import sys, os
-from utils import catch_exceptions, Search, LOGLEVELS
+from utils import catch_exceptions, Search, LOGLEVELS, QueryStatus, matchQuery
 import logging
 
 logger = logging.getLogger(__name__)
@@ -41,6 +41,9 @@ class Main_Ui(QtWidgets.QMainWindow):
 
         QtWidgets.QShortcut(QtGui.QKeySequence("ESC"), self).activated.connect(self.hideSearch)
         self.uiCombobox_searchInput.activated[str].connect(self.searchNext)
+
+        self.uiButton_filterClear.clicked.connect(self.clearFilter)
+        self.uiCombobox_filterInput.activated[str].connect(self.filter)
 
     def quit(self):
         sys.exit()
@@ -123,28 +126,15 @@ class Main_Ui(QtWidgets.QMainWindow):
         self.uiCombobox_searchInput.setFocus()  
 
     @catch_exceptions(logger=logger)
-    def setComboboxStatusColor(self):
-        status = self.search.getStatus()
-        if status == self.search.EOF_REACHED:
-            self.uiCombobox_searchInput.setStyleSheet('background-color: #0096FF') # blue
-        if status == self.search.QUERY_ERROR:
-            self.uiCombobox_searchInput.setStyleSheet('background-color: #FF2400') # red
-        if status == self.search.QUERY_OK:
-            self.uiCombobox_searchInput.setStyleSheet('background-color: #50C878') # green
-        if status == self.search.QUERY_EMPTY:
-            self.uiCombobox_searchInput.setStyleSheet('background-color: #FFD700') # yellow
-
-    def updateComboboxHistory(self, query):
-        if query.strip() == "":
-            return
-
-        if self.uiCombobox_searchInput.findText(query) == -1:
-            self.uiCombobox_searchInput.insertItem(0, query)
-            return
-        
-        self.uiCombobox_searchInput.removeItem(self.uiCombobox_searchInput.findText(query))
-        self.uiCombobox_searchInput.insertItem(0, query)
-        self.uiCombobox_searchInput.setCurrentText(query)
+    def setComboboxStatusColor(self, combobox, status):
+        if status == QueryStatus.EOF_REACHED:
+            combobox.setStyleSheet('background-color: #0096FF') # blue
+        if status == QueryStatus.QUERY_ERROR:
+            combobox.setStyleSheet('background-color: #FF2400') # red
+        if status == QueryStatus.QUERY_OK:
+            combobox.setStyleSheet('background-color: #50C878') # green
+        if status == QueryStatus.QUERY_EMPTY:
+            combobox.setStyleSheet('background-color: #FFD700') # yellow
 
     def searchNext(self):
         # use unbound function, self will be bound in _search() later on after the instance was created
@@ -155,14 +145,15 @@ class Main_Ui(QtWidgets.QMainWindow):
         self._search(Search.previous)
 
     def _search(self, func):
-        # bind self using our (newly created) self.search
-        result = self._prepareSearch()
+        result = self._prepareSearch()  # create search instance (to be bound below)
         if result == None:
-            result = func(self.search)
+            result = func(self.search)  # bind self using our (newly created) self.search
+
+        self.uistatusbar_state.showMessage("You are currently in line "+str(result))
         logger.info("SEARCH RESULT: %s" % str(result))
         if result != None:
             self.uiWidget_listView.setCurrentRow(result)
-        self.setComboboxStatusColor()
+        self.setComboboxStatusColor(self.uiCombobox_searchInput, self.search.getStatus())
 
     def _prepareSearch(self):
         query = self.uiCombobox_searchInput.currentText()
@@ -175,7 +166,7 @@ class Main_Ui(QtWidgets.QMainWindow):
             startIndex = self.uiWidget_listView.selectedIndexes()[0].row()
 
         self.search = Search(self.rawlog, query, startIndex)
-        self.updateComboboxHistory(query)
+        self.updateComboboxHistory(query, self.uiCombobox_searchInput)
         return self.search.getCurrentResult()
     
     @catch_exceptions(logger=logger)
@@ -187,7 +178,34 @@ class Main_Ui(QtWidgets.QMainWindow):
     def hideSearch(self):
         self.uiFrame_search.hide()
         self.search = None
-            
+
+    def clearFilter(self):
+        self.uiCombobox_filterInput.setCurrentText("")
+        self.uistatusbar_state.showMessage("Cleared")
+        self.uiCombobox_filterInput.setStyleSheet('') # grey
+        for index in range(len(self.rawlog)):
+            self.rawlog[index]["uiItem"].setHidden(False)
+
+    def filter(self):
+        query = self.uiCombobox_filterInput.currentText()
+
+        result = matchQuery(query, self.rawlog)
+        self.uistatusbar_state.showMessage("There are "+str(len(result["entries"]))+" results with your query!")
+        self.setComboboxStatusColor(self.uiCombobox_filterInput, result["status"])
+        self.updateComboboxHistory(query, self.uiCombobox_filterInput)
+
+        for rawlogPosition in range(len(self.rawlog)):
+            self.rawlog[rawlogPosition]["uiItem"].setHidden(rawlogPosition not in result["entries"])
+
+    def updateComboboxHistory(self, query, combobox):
+        if query.strip() == "":
+            return
+
+        if combobox.findText(query) != -1:
+            combobox.removeItem(combobox.findText(query))
+        combobox.insertItem(0, query)
+        combobox.setCurrentText(query)
+
     @catch_exceptions(logger=logger)
     def progressDialog(self, title, label):
         progressBar = QtWidgets.QProgressDialog(label, 'OK', 0, 100, self)
