@@ -3,10 +3,11 @@
 # file created at 25.06.2023
 
 from storage import Rawlog
-from PyQt5 import QtWidgets, uic, QtGui, QtCore, Qt
+from PyQt5 import QtWidgets, uic, QtGui, QtCore
 from PyQt5.QtWidgets import QStyle
 import sys, os
 from utils import catch_exceptions, Search, LOGLEVELS, QueryStatus, matchQuery
+from ui_utils import Completer
 import logging
 
 logger = logging.getLogger(__name__)
@@ -45,6 +46,17 @@ class Main_Ui(QtWidgets.QMainWindow):
         self.uiButton_filterClear.clicked.connect(self.clearFilter)
         self.uiCombobox_filterInput.activated[str].connect(self.filter)
 
+        #set enable false!!!
+
+    def setCompleter(self, combobox):
+        wordlist = self.rawlog.getCompleterList(lambda entry: entry["data"])
+        wordlist += ["True", "False", "true", "false", "__index", "__rawlog"] + list(LOGLEVELS.keys())
+
+        completer = Completer(wordlist, self)
+        completer.setCompletionMode(Completer.PopupCompletion)
+        completer.setCaseSensitivity(QtCore.Qt.CaseInsensitive)
+        combobox.setCompleter(completer)
+    
     def quit(self):
         sys.exit()
 
@@ -75,6 +87,9 @@ class Main_Ui(QtWidgets.QMainWindow):
                     self.QtWidgets.QMessageBox.warning(self, "File corruption detected", self.rawlog[index]["data"]["formattedMessage"])
 
             self.uistatusbar_state.showMessage(str("Done ✓ | file opened: " + file))
+
+            self.setCompleter(self.uiCombobox_filterInput)
+            self.setCompleter(self.uiCombobox_searchInput)
             
     def itemColorFactory(self, flag):
         if int(flag) == LOGLEVELS['ERROR']:  # ERROR
