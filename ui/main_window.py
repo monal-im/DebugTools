@@ -6,7 +6,7 @@ from storage import Rawlog
 from PyQt5 import QtWidgets, uic, QtGui, QtCore
 from PyQt5.QtWidgets import QStyle
 import sys, os
-from utils import catch_exceptions, Search, LOGLEVELS, QueryStatus, matchQuery
+from utils import catch_exceptions, Search, LOGLEVELS, QueryStatus, matchQuery, MagicLineEdit
 from ui_utils import Completer
 import logging
 
@@ -40,11 +40,17 @@ class Main_Ui(QtWidgets.QMainWindow):
         self.uiTable_characteristics.hide()
         self.uiFrame_search.hide()
 
+        self.uiTable_characteristics.doubleClicked.connect(self.insertItem)
+        MagicLineEdit(self.uiCombobox_searchInput)
+        MagicLineEdit(self.uiCombobox_filterInput)
+
         QtWidgets.QShortcut(QtGui.QKeySequence("ESC"), self).activated.connect(self.hideSearch)
         self.uiCombobox_searchInput.activated[str].connect(self.searchNext)
 
         self.uiButton_filterClear.clicked.connect(self.clearFilter)
         self.uiCombobox_filterInput.activated[str].connect(self.filter)
+
+        QtWidgets.QApplication.instance().focusChanged.connect(self.focusChangedEvent)
 
         #set enable false!!!
 
@@ -133,17 +139,26 @@ class Main_Ui(QtWidgets.QMainWindow):
         row = 1
         for index in splitter(selectedEntry):
             self.uiTable_characteristics.setItem(row,0, QtWidgets.QTableWidgetItem(index['path']))
-            self.uiTable_characteristics.setItem(row,1, QtWidgets.QTableWidgetItem(str(index['value'])))
+            self.uiTable_characteristics.setItem(row,1, QtWidgets.QTableWidgetItem(index['value']))
             row += 1
         
         self.uiTable_characteristics.show()
 
+    @catch_exceptions(logger=logger)
+    def focusChangedEvent(self, oldWidget, newWidget):
+        if type(oldWidget) == QtWidgets.QComboBox:
+            self.selectedCombobox = oldWidget
+
     def pythonize(self, value):
-        if type(value) == int or type(value) == float:
-            return value
-        if type(value) == bool:
+        if type(value) == int or type(value) == float or type(value) == bool:
             return str(value)
         return "'%s'" % str(value)
+    
+    @catch_exceptions(logger=logger)
+    def insertItem(self, *args):
+        self.selectedCombobox.setFocus()
+        self.selectedCombobox.lineEdit().insert(self.uiTable_characteristics.currentItem().text())
+            
 
     @catch_exceptions(logger=logger)
     def closeFile(self, *args):
