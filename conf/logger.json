@@ -1,0 +1,36 @@
+{
+	"version": 1,
+	"disable_existing_loggers": false,
+	
+	"formatters": {
+		"simple": {
+			"format": "%(asctime)s [%(levelname)-7s] %(name)s {%(threadName)s} %(filename)s:%(lineno)d: %(message)s",
+			"color": true
+		}
+	},
+	
+	"handlers": {
+		"stderr": {
+			"class": "logging.StreamHandler",
+			"level": "DEBUG",
+			"formatter": "simple"
+		},
+		"ignore": {
+			"class": "logging.NullHandler",
+			"level": "DEBUG"
+		}
+	},
+	
+	"loggers": {
+		"": {
+			"level": "DEBUG",
+			"handlers": ["stderr"]
+		},
+		"PyQt5":
+		{
+			"level": "DEBUG",
+			"handlers": ["ignore"],
+			"propagate": false
+		}
+	}
+}
