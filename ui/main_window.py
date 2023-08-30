@@ -109,20 +109,41 @@ class Main_Ui(QtWidgets.QMainWindow):
 
     @catch_exceptions(logger=logger)
     def inspectLine(self, *args):
-        self.uiTable_characteristics.setHorizontalHeaderLabels(["field", "value"])
+        self.uiTable_characteristics.setHorizontalHeaderLabels(["path", "value"])
         self.uiTable_characteristics.horizontalHeader().setSectionResizeMode(0, int(QtWidgets.QHeaderView.ResizeToContents))
         self.uiTable_characteristics.horizontalHeader().setSectionResizeMode(1, int(QtWidgets.QHeaderView.ResizeToContents))
         self.uiTable_characteristics.horizontalHeader().setDefaultAlignment(QtCore.Qt.AlignLeft  | QtCore.Qt.Alignment(QtCore.Qt.TextWordWrap))
         selectedEntry = self.rawlog[self.uiWidget_listView.selectedIndexes()[0].row()].get('data')
         self.uiTable_characteristics.setRowCount(len(selectedEntry)+1)
 
+        def splitter(dictionary, path=[]):
+            retval = []
+            for key, value in dictionary.items():
+                path.append(key)
+                if type(value) == dict:
+                    retval += splitter(value, path)
+                else:
+                    retval.append({
+                        "path": path[0] + "".join(map(lambda value: "[%s]" % self.pythonize(value), path[1:])),
+                        "value": self.pythonize(value)
+                    })
+                path.pop(-1)
+            return retval
+
         row = 1
-        for key, value in selectedEntry.items():
-            self.uiTable_characteristics.setItem(row,0, QtWidgets.QTableWidgetItem(key))
-            self.uiTable_characteristics.setItem(row,1, QtWidgets.QTableWidgetItem(str(value)))
+        for index in splitter(selectedEntry):
+            self.uiTable_characteristics.setItem(row,0, QtWidgets.QTableWidgetItem(index['path']))
+            self.uiTable_characteristics.setItem(row,1, QtWidgets.QTableWidgetItem(str(index['value'])))
             row += 1
         
         self.uiTable_characteristics.show()
+
+    def pythonize(self, value):
+        if type(value) == int or type(value) == float:
+            return value
+        if type(value) == bool:
+            return str(value)
+        return "'%s'" % str(value)
 
     @catch_exceptions(logger=logger)
     def closeFile(self, *args):
