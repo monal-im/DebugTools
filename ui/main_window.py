@@ -52,6 +52,13 @@ class Main_Ui(QtWidgets.QMainWindow):
 
         QtWidgets.QApplication.instance().focusChanged.connect(self.focusChangedEvent)
 
+        QtWidgets.QShortcut(QtGui.QKeySequence("Ctrl++"), self).activated.connect(self.setStack)
+        QtWidgets.QShortcut(QtGui.QKeySequence("Ctrl+-"), self).activated.connect(self.getStack)
+        self.stack = []
+        self.filterStack = {"active": False, "currentText": None}
+        self.searchStack = {"isOpen": False, "active": False, "currentText": None, "currentPosition": None}
+        self.detailStack = {"isOpen": False, "currentDetail": None}
+
         #set enable false!!!
 
     def setCompleter(self, combobox):
@@ -122,6 +129,8 @@ class Main_Ui(QtWidgets.QMainWindow):
         selectedEntry = self.rawlog[self.uiWidget_listView.selectedIndexes()[0].row()].get('data')
         self.uiTable_characteristics.setRowCount(len(selectedEntry)+1)
 
+        self.detailStack = {"isOpen": True, "currentDetail": self.uiWidget_listView.selectedIndexes()[0].row()}
+
         def splitter(dictionary, path=[]):
             retval = []
             for key, value in dictionary.items():
@@ -175,6 +184,7 @@ class Main_Ui(QtWidgets.QMainWindow):
     def openSearchwidget(self, *args):
         self.uiFrame_search.show()
         self.uiCombobox_searchInput.setFocus()  
+        self.searchStack = {"isOpen": True, "active": False, "currentText": None, "currentPosition": None}
 
     @catch_exceptions(logger=logger)
     def setComboboxStatusColor(self, combobox, status):
@@ -199,6 +209,8 @@ class Main_Ui(QtWidgets.QMainWindow):
         result = self._prepareSearch()  # create search instance (to be bound below)
         if result == None:
             result = func(self.search)  # bind self using our (newly created) self.search
+
+        self.searchStack = {"isOpen": True, "active": True, "currentText": self.uiCombobox_searchInput.currentText(), "currentPosition": result}
 
         self.uistatusbar_state.showMessage("You are currently in line "+str(result))
         logger.info("SEARCH RESULT: %s" % str(result))
@@ -229,16 +241,23 @@ class Main_Ui(QtWidgets.QMainWindow):
     def hideSearch(self):
         self.uiFrame_search.hide()
         self.search = None
+        self.searchStack = {"isOpen": False, "active": False, "currentText": None, "currentPosition": None}
+        
 
     def clearFilter(self):
         self.uiCombobox_filterInput.setCurrentText("")
         self.uistatusbar_state.showMessage("Cleared")
         self.uiCombobox_filterInput.setStyleSheet('') # grey
+
+        self.filterStack = {"active": False, "currentText": None}
+
         for index in range(len(self.rawlog)):
             self.rawlog[index]["uiItem"].setHidden(False)
 
     def filter(self):
         query = self.uiCombobox_filterInput.currentText()
+
+        self.filterStack = {"active": True, "currentText": self.uiCombobox_filterInput.currentText()}
 
         result = matchQuery(query, self.rawlog)
         self.uistatusbar_state.showMessage("There are "+str(len(result["entries"]))+" results with your query!")
@@ -278,3 +297,45 @@ class Main_Ui(QtWidgets.QMainWindow):
 
         progressBar.show()
         return (progressBar, update_progressbar)
+    
+    def setStack(self):
+        selectedLine = None
+        if self.uiWidget_listView.selectedIndexes():
+            selectedLine = self.uiWidget_listView.selectedIndexes()[0].row()
+
+        state = {
+                "selectedLine": selectedLine, 
+                "detail": {"isOpen": self.detailStack["isOpen"], "size": self.uiTable_characteristics.height(), "currentDetail": self.detailStack["currentDetail"]}, 
+                "search": {"isOpen": self.searchStack["isOpen"], "active": self.searchStack["active"], "currentText": self.searchStack["currentText"], "currentPosition": self.searchStack["currentPosition"]},
+                "filter": {"active": self.filterStack["active"], "currentText": self.filterStack["currentText"]}
+                }
+        self.stack.append(state)
+        self.uistatusbar_state.showMessage("State saved ✓")
+
+    def getStack(self):
+        if len(self.stack) < 1:
+            self.uistatusbar_state.showMessage("State was unable to load ✗")
+            return
+        
+        stack = self.stack.pop()
+        print(stack["detail"]["size"])
+
+        #unpacking details
+        if stack["detail"]["isOpen"]:
+            self.uiWidget_listView.setCurrentRow(stack["detail"]["currentDetail"])
+            self.inspectLine()
+            #self.uiTable_characteristics.setFixedHeight(stack["detail"]["size"])
+
+        #unpacking search
+        if stack["search"]["isOpen"]:
+            self.uiCombobox_searchInput.setCurrentText(stack["search"]["currentText"])
+            if stack["search"]["active"]:
+                self.uiWidget_listView.setCurrentRow(stack["search"]["currentPosition"])
+                self.searchNext()
+
+        #unpacking filter
+        self.uiCombobox_filterInput.setCurrentText(stack["filter"]["currentText"])
+        if stack["filter"]["active"]:
+            self.filter()
+
+        self.uistatusbar_state.showMessage("State loaded ✓")
