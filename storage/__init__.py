@@ -1,2 +1,2 @@
 from .rawlog import Rawlog
-from .datahandler import Datahanler
+from .settings import SettingsSingleton

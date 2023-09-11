@@ -2,7 +2,7 @@
 
 # file created at 25.06.2023
 
-from storage import Rawlog
+from storage import Rawlog, SettingsSingleton
 from PyQt5 import QtWidgets, uic, QtGui, QtCore
 from PyQt5.QtWidgets import QStyle
 import sys, os
@@ -55,9 +55,13 @@ class Main_Ui(QtWidgets.QMainWindow):
         QtWidgets.QShortcut(QtGui.QKeySequence("Ctrl++"), self).activated.connect(self.setStack)
         QtWidgets.QShortcut(QtGui.QKeySequence("Ctrl+-"), self).activated.connect(self.getStack)
         self.stack = []
-        self.filterStack = {"active": False, "currentText": None}
-        self.searchStack = {"isOpen": False, "active": False, "currentText": None, "currentPosition": None}
-        self.detailStack = {"isOpen": False, "currentDetail": None}
+
+        self.currentDetailIndex = None
+        self.currentFilterQuery = None
+
+
+        #----------------WIP----------------#
+        SettingsSingleton()
 
         #set enable false!!!
 
@@ -129,8 +133,6 @@ class Main_Ui(QtWidgets.QMainWindow):
         selectedEntry = self.rawlog[self.uiWidget_listView.selectedIndexes()[0].row()].get('data')
         self.uiTable_characteristics.setRowCount(len(selectedEntry)+1)
 
-        self.detailStack = {"isOpen": True, "currentDetail": self.uiWidget_listView.selectedIndexes()[0].row()}
-
         def splitter(dictionary, path=[]):
             retval = []
             for key, value in dictionary.items():
@@ -152,6 +154,7 @@ class Main_Ui(QtWidgets.QMainWindow):
             row += 1
         
         self.uiTable_characteristics.show()
+        self.currentDetailIndex = self.uiWidget_listView.selectedIndexes()[0].row()
 
     @catch_exceptions(logger=logger)
     def focusChangedEvent(self, oldWidget, newWidget):
@@ -184,7 +187,6 @@ class Main_Ui(QtWidgets.QMainWindow):
     def openSearchwidget(self, *args):
         self.uiFrame_search.show()
         self.uiCombobox_searchInput.setFocus()  
-        self.searchStack = {"isOpen": True, "active": False, "currentText": None, "currentPosition": None}
 
     @catch_exceptions(logger=logger)
     def setComboboxStatusColor(self, combobox, status):
@@ -209,8 +211,6 @@ class Main_Ui(QtWidgets.QMainWindow):
         result = self._prepareSearch()  # create search instance (to be bound below)
         if result == None:
             result = func(self.search)  # bind self using our (newly created) self.search
-
-        self.searchStack = {"isOpen": True, "active": True, "currentText": self.uiCombobox_searchInput.currentText(), "currentPosition": result}
 
         self.uistatusbar_state.showMessage("You are currently in line "+str(result))
         logger.info("SEARCH RESULT: %s" % str(result))
@@ -241,23 +241,19 @@ class Main_Ui(QtWidgets.QMainWindow):
     def hideSearch(self):
         self.uiFrame_search.hide()
         self.search = None
-        self.searchStack = {"isOpen": False, "active": False, "currentText": None, "currentPosition": None}
-        
 
     def clearFilter(self):
         self.uiCombobox_filterInput.setCurrentText("")
         self.uistatusbar_state.showMessage("Cleared")
         self.uiCombobox_filterInput.setStyleSheet('') # grey
 
-        self.filterStack = {"active": False, "currentText": None}
-
         for index in range(len(self.rawlog)):
             self.rawlog[index]["uiItem"].setHidden(False)
+        
+        self.currentFilterQuery = None
 
     def filter(self):
         query = self.uiCombobox_filterInput.currentText()
-
-        self.filterStack = {"active": True, "currentText": self.uiCombobox_filterInput.currentText()}
 
         result = matchQuery(query, self.rawlog)
         self.uistatusbar_state.showMessage("There are "+str(len(result["entries"]))+" results with your query!")
@@ -266,6 +262,9 @@ class Main_Ui(QtWidgets.QMainWindow):
 
         for rawlogPosition in range(len(self.rawlog)):
             self.rawlog[rawlogPosition]["uiItem"].setHidden(rawlogPosition not in result["entries"])
+
+        self.Settings.setcomboboxHistory(self.uiCombobox_filterInput)
+        self.currentFilterQuery = query
 
     def updateComboboxHistory(self, query, combobox):
         if query.strip() == "":
@@ -304,11 +303,22 @@ class Main_Ui(QtWidgets.QMainWindow):
             selectedLine = self.uiWidget_listView.selectedIndexes()[0].row()
 
         state = {
-                "selectedLine": selectedLine, 
-                "detail": {"isOpen": self.detailStack["isOpen"], "size": self.uiTable_characteristics.height(), "currentDetail": self.detailStack["currentDetail"]}, 
-                "search": {"isOpen": self.searchStack["isOpen"], "active": self.searchStack["active"], "currentText": self.searchStack["currentText"], "currentPosition": self.searchStack["currentPosition"]},
-                "filter": {"active": self.filterStack["active"], "currentText": self.filterStack["currentText"]}
-                }
+            "selectedLine": selectedLine, 
+            "detail": {
+                "isOpen": not self.uiTable_characteristics.isHidden(), 
+                "size": self.uiTable_characteristics.height(), 
+                "currentDetailIndex": self.currentDetailIndex
+            }, 
+            "search": {
+                "isOpen": not self.uiFrame_search.isHidden(), 
+                "instance": self.search, 
+                "currentText": self.uiCombobox_searchInput.currentText(), 
+            },
+            "filter": {
+                "currentFilterQuery": self.currentFilterQuery, 
+                "currentText": self.uiCombobox_filterInput.currentText()
+            }
+        }
         self.stack.append(state)
         self.uistatusbar_state.showMessage("State saved ✓")
 
@@ -322,9 +332,11 @@ class Main_Ui(QtWidgets.QMainWindow):
 
         #unpacking details
         if stack["detail"]["isOpen"]:
-            self.uiWidget_listView.setCurrentRow(stack["detail"]["currentDetail"])
+            self.uiWidget_listView.setCurrentRow(stack["detail"]["currentDetailIndex"])
             self.inspectLine()
-            #self.uiTable_characteristics.setFixedHeight(stack["detail"]["size"])
+            self.uiTable_characteristics.setFixedHeight(stack["detail"]["size"])
+            if stack["detail"]["size"] == 0:
+                self.uiTable_characteristics.setFixedHeight(800)
 
         #unpacking search
         if stack["search"]["isOpen"]:
