@@ -1,7 +1,17 @@
 {
     "color": 
     {
-        "logline-error":[[255, 0, 0], [0, 0, 0]]
+        "logline-error":    [[255, 0, 0], [0, 0, 0]],
+        "logline-warning":  [[0, 255, 255],  [0, 0, 0]],
+        "logline-info":     [[0, 0, 255]],
+        "logline-debug":    [[0, 255, 0]],
+        "logline-verbose":  [[128, 128, 128]],
+        "logline-status":   [[0, 0, 0], [255, 0, 0]],
+
+        "combobox-eof_reached": [[0, 150, 255]],
+        "combobox-query_error": [[255, 36, 0]],
+        "combobox-query_ok":    [[80, 200, 120]],
+        "combobox-query_empty": [[255, 215, 0]]
     },
     "combobox":{},
     "dimensions":{},

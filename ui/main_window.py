@@ -23,6 +23,7 @@ class Main_Ui(QtWidgets.QMainWindow):
 
         self.rawlog = Rawlog()
         self.search = None
+        self.settings = SettingsSingleton()
 
         self.uiButton_previous.setIcon(self.style().standardIcon(getattr(QStyle, "SP_ArrowBack")))
         self.uiButton_previous.clicked.connect(self.searchPrevious)
@@ -58,10 +59,6 @@ class Main_Ui(QtWidgets.QMainWindow):
 
         self.currentDetailIndex = None
         self.currentFilterQuery = None
-
-
-        #----------------WIP----------------#
-        SettingsSingleton()
 
         #set enable false!!!
 
@@ -109,20 +106,21 @@ class Main_Ui(QtWidgets.QMainWindow):
             self.setCompleter(self.uiCombobox_searchInput)
             
     def itemColorFactory(self, flag):
+        color = self.settings.getQColorTuple
         if int(flag) == LOGLEVELS['ERROR']:  # ERROR
-            return (QtGui.QColor(255, 0, 0),  QtGui.QColor(0, 0, 0))
+            return (color("logline-error")[0], color("logline-error")[1])
         elif int(flag) == LOGLEVELS['WARNING']:  # WARNING
-            return (QtGui.QColor(0, 255, 255),  QtGui.QColor(0, 0, 0))
+            return (color("logline-warning")[0], color("logline-warning")[1])
         elif int(flag) == LOGLEVELS['INFO']:  # INFO
-            return (QtGui.QColor(0, 0, 255), None)
+            return (color("logline-info")[0], None)
         elif int(flag) == LOGLEVELS['DEBUG']:  # DEBUG
-            return (QtGui.QColor(0, 255, 0), None)
+            return (color("logline-debug")[0], None)
         elif int(flag) == LOGLEVELS['VERBOSE']:  # VERBOSE
-            return (QtGui.QColor(128, 128, 128), None)
+            return (color("logline-verbose")[0], None)
         elif int(flag) == LOGLEVELS['STATUS']: # STATUS
-            return (QtGui.QColor(0, 0, 0), QtGui.QColor(255, 0, 0))
+            return (color("logline-status")[0], color("logline-status")[1])
         else:
-            return (QtGui.QColor(0, 0, 0), QtGui.QColor(255, 122, 0))
+            return (color("logline-status")[0], color("logline-status")[1])
 
     @catch_exceptions(logger=logger)
     def inspectLine(self, *args):
@@ -190,14 +188,16 @@ class Main_Ui(QtWidgets.QMainWindow):
 
     @catch_exceptions(logger=logger)
     def setComboboxStatusColor(self, combobox, status):
+        color = self.settings.getCssTuple
+        print(color("combobox-eof_reached"))
         if status == QueryStatus.EOF_REACHED:
-            combobox.setStyleSheet('background-color: #0096FF') # blue
+            combobox.setStyleSheet("background-color: %s" % color("combobox-eof_reached")[0])
         if status == QueryStatus.QUERY_ERROR:
-            combobox.setStyleSheet('background-color: #FF2400') # red
+            combobox.setStyleSheet("background-color: %s" % color("combobox-query_error")[0])
         if status == QueryStatus.QUERY_OK:
-            combobox.setStyleSheet('background-color: #50C878') # green
+            combobox.setStyleSheet("background-color: %s" % color("combobox-query_ok")[0])
         if status == QueryStatus.QUERY_EMPTY:
-            combobox.setStyleSheet('background-color: #FFD700') # yellow
+            combobox.setStyleSheet("background-color: %s" % color("combobox-query_empty")[0])
 
     def searchNext(self):
         # use unbound function, self will be bound in _search() later on after the instance was created
@@ -263,7 +263,7 @@ class Main_Ui(QtWidgets.QMainWindow):
         for rawlogPosition in range(len(self.rawlog)):
             self.rawlog[rawlogPosition]["uiItem"].setHidden(rawlogPosition not in result["entries"])
 
-        self.Settings.setcomboboxHistory(self.uiCombobox_filterInput)
+        self.settings.setComboboxHistory(self.uiCombobox_filterInput)
         self.currentFilterQuery = query
 
     def updateComboboxHistory(self, query, combobox):
