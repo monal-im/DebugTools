@@ -47,9 +47,11 @@ class Main_Ui(QtWidgets.QMainWindow):
 
         QtWidgets.QShortcut(QtGui.QKeySequence("ESC"), self).activated.connect(self.hideSearch)
         self.uiCombobox_searchInput.activated[str].connect(self.searchNext)
+        self.settings.getComboboxHistory(self.uiCombobox_searchInput)
 
         self.uiButton_filterClear.clicked.connect(self.clearFilter)
         self.uiCombobox_filterInput.activated[str].connect(self.filter)
+        self.settings.getComboboxHistory(self.uiCombobox_filterInput)
 
         QtWidgets.QApplication.instance().focusChanged.connect(self.focusChangedEvent)
 
@@ -61,6 +63,10 @@ class Main_Ui(QtWidgets.QMainWindow):
         self.currentFilterQuery = None
 
         #set enable false!!!
+
+    def resizeEvent(self, e: QtGui.QResizeEvent):
+            super().resizeEvent(e)
+            self.settings.setDimension(self)
 
     def setCompleter(self, combobox):
         wordlist = self.rawlog.getCompleterList(lambda entry: entry["data"])

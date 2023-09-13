@@ -14,7 +14,10 @@
         "combobox-query_empty": [[255, 215, 0]]
     },
     "combobox":{},
-    "dimensions":{},
+    "dimensions":
+    {
+        "main-window": []
+    },
     "state":{},
     "misc":{}
 }
