@@ -18,7 +18,6 @@ class Main_Ui(QtWidgets.QMainWindow):
         super().__init__()
 
         uic.loadUi(os.path.join(os.path.dirname(sys.argv[0]), "ui/main_window.ui"), self)
-        self.setWindowTitle("Monal Log Viewer")
         self.setWindowIcon(QtGui.QIcon(os.path.join(os.path.dirname(sys.argv[0]), "monal_log_viewer.png")))
         self.resize(1400, 840)
 
