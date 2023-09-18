@@ -61,3 +61,9 @@ class Search:
         if len(self.filteredList) == 0:
             return None
         return self.filteredList[self.resultIndex]
+    
+    def __len__(self):
+        return len(self.filteredList)
+
+    def getPosition(self):
+        return self.resultIndex + 1
