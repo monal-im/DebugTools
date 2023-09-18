@@ -25,7 +25,7 @@ class Main_Ui(QtWidgets.QMainWindow):
         self.rawlog = Rawlog()
         self.search = None
         self.settings = SettingsSingleton()
-        self.statusbar = Statusbar()
+        self.statusbar = Statusbar(self.uistatusbar_state)
 
         self.uiButton_previous.setIcon(self.style().standardIcon(getattr(QStyle, "SP_ArrowBack")))
         self.uiButton_previous.clicked.connect(self.searchPrevious)
@@ -65,16 +65,6 @@ class Main_Ui(QtWidgets.QMainWindow):
 
         self.currentDetailIndex = None
         self.currentFilterQuery = None
-
-        def handler():
-            self.statusbar.advancedStatusbar(self.uistatusbar_state)
-            if not True:
-                timer.stop()
-                timer.deleteLater()
-        timer = QtCore.QTimer()
-        timer.timeout.connect(handler)
-        timer.start(2000)
-
 
         #set enable false!!!
     
@@ -271,7 +261,7 @@ class Main_Ui(QtWidgets.QMainWindow):
         query = self.uiCombobox_filterInput.currentText()
 
         result = matchQuery(query, self.rawlog)
-        self.statusbar.showStaticStatusbarText("There are "+str(len(result["entries"]))+" results with your query!")
+        self.statusbar.showDynamicStatusbarText("There are "+str(len(result["entries"]))+" results with "+query+" as query query!")
         self.setComboboxStatusColor(self.uiCombobox_filterInput, result["status"])
         self.updateComboboxHistory(query, self.uiCombobox_filterInput)
 
