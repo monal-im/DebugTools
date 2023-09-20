@@ -1,6 +1,5 @@
 {
-    "color": 
-    {
+    "color": {
         "logline-error":    {"len": 2, "data": [[255, 0, 0], [0, 0, 0]]},
         "logline-warning":  {"len": 2, "data": [[0, 255, 255],  [0, 0, 0]]},
         "logline-info":     {"len": 2, "data": [[0, 0, 255], null]},
@@ -13,11 +12,12 @@
         "combobox-query_ok":    {"len": 2, "data": [[80, 200, 120], null]},
         "combobox-query_empty": {"len": 2, "data": [[255, 215, 0], null]}
     },
-    "combobox":{},
-    "dimensions":
-    {
+    "combobox": {},
+    "dimensions": {
         "main-window": []
     },
-    "state":{},
-    "misc":{}
+    "state": {},
+    "misc": {
+        "staticLineWrap": 140
+    }
 }

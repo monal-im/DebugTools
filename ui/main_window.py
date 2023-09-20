@@ -6,6 +6,7 @@ from PyQt5 import QtWidgets, uic, QtGui, QtCore
 from PyQt5.QtWidgets import QStyle
 import sys, os
 import logging
+import textwrap
 
 from storage import Rawlog, SettingsSingleton
 from ui_utils import Completer, MagicLineEdit, Statusbar
@@ -94,7 +95,8 @@ class Main_Ui(QtWidgets.QMainWindow):
 
             def loader(entry):
                 fg, bg = self.itemColorFactory(entry["flag"])
-                item_with_color = QtWidgets.QListWidgetItem(entry["formattedMessage"])
+                item_with_color = '\n'.join(textwrap.wrap(entry["formattedMessage"], 140))
+                item_with_color = QtWidgets.QListWidgetItem(item_with_color)
                 item_with_color.setForeground(fg)
                 if bg != None:
                     item_with_color.setBackground(bg)
