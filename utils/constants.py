@@ -6,3 +6,5 @@ LOGLEVELS = {
     "VERBOSE": 16,
     "STATUS": 256,
 }
+
+PLATFORM_ARGS = ("monal_log_viewer", "monal-im")

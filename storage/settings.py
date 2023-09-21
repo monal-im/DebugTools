@@ -1,5 +1,6 @@
-import json, sys, os, logging
+import json, logging
 from PyQt5 import QtGui
+from utils import paths
 
 logger = logging.getLogger(__name__)
 
@@ -14,8 +15,8 @@ class SettingsSingleton():
         return cls._instance
     
     def __init__(self):
-        self.path = os.path.join(os.path.dirname(sys.argv[0]), "storage/settings.json")
-        self.defaultPath = os.path.join(os.path.dirname(sys.argv[0]), "conf/default.json")
+        self.path = paths.get_conf_filepath("settings.json")
+        self.defaultPath = paths.get_default_conf_filepath("settings.json")
         self.load()
 
     def load(self):
@@ -23,13 +24,14 @@ class SettingsSingleton():
             with open(self.path, 'rb') as fp:
                 self.data = json.load(fp)
         except:
-            logger.info("storage/settings.json does not exist! Using default theme.")
+            logger.info("settings.json does not exist! Using default theme.")
 
-            with open(self.defaultPath, 'rb') as  fp:
+            with open(self.defaultPath, 'rb') as fp:
                 defaultDictionary = json.load(fp)
-            with open(self.path, 'w') as fp:
+            with open(self.path, 'w+') as fp:
                 json.dump(defaultDictionary, fp)
-                self.date = defaultDictionary
+
+                self.data = defaultDictionary
 
     def store(self):
         with open(self.path, 'w') as fp:

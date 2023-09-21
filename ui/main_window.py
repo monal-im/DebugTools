@@ -5,21 +5,22 @@
 from PyQt5 import QtWidgets, uic, QtGui, QtCore
 from PyQt5.QtWidgets import QStyle
 import sys, os
-import logging
 import textwrap
 
 from storage import Rawlog, SettingsSingleton
 from ui_utils import Completer, MagicLineEdit, Statusbar
-from utils import catch_exceptions, Search, LOGLEVELS, QueryStatus, matchQuery
+from utils import catch_exceptions, Search, QueryStatus, matchQuery, paths
+from utils.constants import LOGLEVELS
 
+import logging
 logger = logging.getLogger(__name__)
 
-class Main_Ui(QtWidgets.QMainWindow):
+class MainWindow(QtWidgets.QMainWindow):
     def __init__(self):
         super().__init__()
 
-        uic.loadUi(os.path.join(os.path.dirname(sys.argv[0]), "ui/main_window.ui"), self)
-        self.setWindowIcon(QtGui.QIcon(os.path.join(os.path.dirname(sys.argv[0]), "monal_log_viewer.png")))
+        uic.loadUi(paths.get_ui_filepath("main_window.ui"), self)
+        self.setWindowIcon(QtGui.QIcon(paths.get_art_filepath("monal_log_viewer.png")))
         self.resize(1400, 840)
 
         self.rawlog = Rawlog()

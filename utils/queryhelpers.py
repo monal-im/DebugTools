@@ -1,6 +1,6 @@
 import logging
 from enum import Enum
-from .loglevels import LOGLEVELS
+from .constants import LOGLEVELS
 
 logger = logging.getLogger(__name__)
 
