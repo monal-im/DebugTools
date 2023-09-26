@@ -11,6 +11,7 @@ from storage import Rawlog, SettingsSingleton
 from ui_utils import Completer, MagicLineEdit, Statusbar
 from utils import catch_exceptions, Search, QueryStatus, matchQuery, paths
 from utils.constants import LOGLEVELS
+from .prerecrences_dialog import PreferencesDialog
 
 import logging
 logger = logging.getLogger(__name__)
@@ -21,11 +22,10 @@ class MainWindow(QtWidgets.QMainWindow):
 
         uic.loadUi(paths.get_ui_filepath("main_window.ui"), self)
         self.setWindowIcon(QtGui.QIcon(paths.get_art_filepath("monal_log_viewer.png")))
-        self.resize(1400, 840)
+        SettingsSingleton().loadDimensions(self)
 
         self.rawlog = Rawlog()
         self.search = None
-        self.settings = SettingsSingleton()
         self.statusbar = Statusbar(self.uistatusbar_state)
 
         self.uiButton_previous.setIcon(self.style().standardIcon(getattr(QStyle, "SP_ArrowBack")))
@@ -51,13 +51,13 @@ class MainWindow(QtWidgets.QMainWindow):
         QtWidgets.QShortcut(QtGui.QKeySequence("ESC"), self).activated.connect(self.hideSearch)
         self.uiCombobox_searchInput.clear()
         self.uiCombobox_searchInput.activated[str].connect(self.searchNext)
-        self.uiCombobox_searchInput.addItems(self.settings.getComboboxHistory(self.uiCombobox_searchInput))
+        self.uiCombobox_searchInput.addItems(SettingsSingleton().getComboboxHistory(self.uiCombobox_searchInput))
         self.uiCombobox_searchInput.lineEdit().setText("")
 
         self.uiCombobox_filterInput.clear()
         self.uiButton_filterClear.clicked.connect(self.clearFilter)
         self.uiCombobox_filterInput.activated[str].connect(self.filter)
-        self.uiCombobox_filterInput.addItems(self.settings.getComboboxHistory(self.uiCombobox_filterInput))
+        self.uiCombobox_filterInput.addItems(SettingsSingleton().getComboboxHistory(self.uiCombobox_filterInput))
         self.uiCombobox_filterInput.lineEdit().setText("")
 
         QtWidgets.QApplication.instance().focusChanged.connect(self.focusChangedEvent)
@@ -75,8 +75,10 @@ class MainWindow(QtWidgets.QMainWindow):
         sys.exit()
 
     def resizeEvent(self, e: QtGui.QResizeEvent):
-            super().resizeEvent(e)
-            self.settings.setDimension(self)
+        super().resizeEvent(e)
+        SettingsSingleton().storeDimension(self)
+
+    #splitterMoved SettingsSingleton().storeState(self.uiTable_characteristics)
 
     def setCompleter(self, combobox):
         wordlist = self.rawlog.getCompleterList(lambda entry: entry["data"])
@@ -96,7 +98,16 @@ class MainWindow(QtWidgets.QMainWindow):
 
             def loader(entry):
                 fg, bg = self.itemColorFactory(entry["flag"])
-                item_with_color = '\n'.join(textwrap.wrap(entry["formattedMessage"], 140))
+
+                item_with_color = "\n".join([textwrap.fill(line, SettingsSingleton()["staticLineWrap"],
+                    expand_tabs=False,
+                    replace_whitespace=False,
+                    drop_whitespace=False,
+                    break_long_words=True,
+                    break_on_hyphens=True,
+                    max_lines=None
+                ) if len(line) > SettingsSingleton()["staticLineWrap"] else line for line in entry["formattedMessage"].strip().splitlines(keepends=False)])
+
                 item_with_color = QtWidgets.QListWidgetItem(item_with_color)
                 item_with_color.setForeground(fg)
                 if bg != None:
@@ -131,7 +142,7 @@ class MainWindow(QtWidgets.QMainWindow):
             LOGLEVELS['VERBOSE']: "logline-verbose",
             LOGLEVELS['STATUS']: "logline-status"
         }
-        return tuple(self.settings.getQColorTuple(table[flag]))
+        return tuple(SettingsSingleton().getQColorTuple(table[flag]))
     
     @catch_exceptions(logger=logger)
     def inspectLine(self, *args):
@@ -189,7 +200,8 @@ class MainWindow(QtWidgets.QMainWindow):
 
     @catch_exceptions(logger=logger)
     def preferences(self, *args):
-        pass
+        self.preferencesDialog = PreferencesDialog()
+        self.preferencesDialog.show()
 
     @catch_exceptions(logger=logger)
     def openSearchwidget(self, *args):
@@ -199,10 +211,10 @@ class MainWindow(QtWidgets.QMainWindow):
     @catch_exceptions(logger=logger)
     def setComboboxStatusColor(self, combobox, status):
         table = {
-            QueryStatus.EOF_REACHED: "background-color: %s" % self.settings.getCssColor("combobox-eof_reached"),
-            QueryStatus.QUERY_ERROR: "background-color: %s" % self.settings.getCssColor("combobox-query_error"),
-            QueryStatus.QUERY_OK: "background-color: %s" % self.settings.getCssColor("combobox-query_ok"),
-            QueryStatus.QUERY_EMPTY: "background-color: %s" % self.settings.getCssColor("combobox-query_empty")
+            QueryStatus.EOF_REACHED: "background-color: %s" % SettingsSingleton().getCssColor("combobox-eof_reached"),
+            QueryStatus.QUERY_ERROR: "background-color: %s" % SettingsSingleton().getCssColor("combobox-query_error"),
+            QueryStatus.QUERY_OK: "background-color: %s" % SettingsSingleton().getCssColor("combobox-query_ok"),
+            QueryStatus.QUERY_EMPTY: "background-color: %s" % SettingsSingleton().getCssColor("combobox-query_empty")
         }
         combobox.setStyleSheet(table[status])
 
@@ -238,11 +250,9 @@ class MainWindow(QtWidgets.QMainWindow):
 
         self.search = Search(self.rawlog, query, startIndex)
         self.updateComboboxHistory(query, self.uiCombobox_searchInput)
-        self.settings.setComboboxHistory(self.uiCombobox_searchInput, [self.uiCombobox_searchInput.itemText(i) for i in range(self.uiCombobox_filterInput.count())])
-        self.settings.store()
+        SettingsSingleton().setComboboxHistory(self.uiCombobox_searchInput, [self.uiCombobox_searchInput.itemText(i) for i in range(self.uiCombobox_filterInput.count())])
 
         return self.search.getCurrentResult()
-    
     
     @catch_exceptions(logger=logger)
     def loglineSelectionChanged(self, *args):
@@ -275,8 +285,7 @@ class MainWindow(QtWidgets.QMainWindow):
         for rawlogPosition in range(len(self.rawlog)):
             self.rawlog[rawlogPosition]["uiItem"].setHidden(rawlogPosition not in result["entries"])
 
-        self.settings.setComboboxHistory(self.uiCombobox_filterInput, [self.uiCombobox_filterInput.itemText(i) for i in range(self.uiCombobox_filterInput.count())])
-        self.settings.store()
+        SettingsSingleton().setComboboxHistory(self.uiCombobox_filterInput, [self.uiCombobox_filterInput.itemText(i) for i in range(self.uiCombobox_filterInput.count())])
         self.currentFilterQuery = query
 
         self._updateStatusbar()
@@ -343,7 +352,6 @@ class MainWindow(QtWidgets.QMainWindow):
             return
         
         stack = self.stack.pop()
-        print(stack["detail"]["size"])
 
         #unpacking details
         if stack["detail"]["isOpen"]:

@@ -1,7 +1,6 @@
 import sys, os
 import argparse
 from PyQt5 import QtWidgets
-from utils.constants import PLATFORM_ARGS
 
 from utils import paths
 from ui import MainWindow

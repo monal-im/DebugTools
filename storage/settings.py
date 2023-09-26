@@ -1,5 +1,5 @@
 import json, logging
-from PyQt5 import QtGui
+from PyQt5 import QtGui, QtCore
 from utils import paths
 
 logger = logging.getLogger(__name__)
@@ -17,46 +17,60 @@ class SettingsSingleton():
     def __init__(self):
         self.path = paths.get_conf_filepath("settings.json")
         self.defaultPath = paths.get_default_conf_filepath("settings.json")
-        self.load()
+        self._load()
 
-    def load(self):
-        try:
-            with open(self.path, 'rb') as fp:
-                self.data = json.load(fp)
-        except:
-            logger.info("settings.json does not exist! Using default theme.")
-
-            with open(self.defaultPath, 'rb') as fp:
-                defaultDictionary = json.load(fp)
-            with open(self.path, 'w+') as fp:
-                json.dump(defaultDictionary, fp)
-
-                self.data = defaultDictionary
-
-    def store(self):
-        with open(self.path, 'w') as fp:
-            json.dump(self.data, fp)
-
+    def __getitem__(self, key):
+        if not key in self.data["misc"]:
+            return None
+        return self.data["misc"][key]
+    
+    def __setitem__(self, key, value):
+        self.data["misc"][key] = value
+        self._store()    # automatically save on change
+    
+    def __delitem__(self, key):
+        if not key in self.data["misc"]:
+            return
+        del self.data["misc"][key]
+        self._store()    # automatically save on change
+    
+    def __len__(self):
+        return len(self.data["misc"])
+    
+    def keys(self):
+        return self.data["misc"].keys()
+    
+    def values(self):
+        return self.data["misc"].values()
+    
+    def items(self):
+        return self.data["misc"].items()
+    
     def getComboboxHistory(self, combobox):
             name = self._widgetName(combobox)
             if name in self.data["combobox"]:
                 return self.data["combobox"][name]
             return []
 
-    def getDimensions(self, widget):
-        widget.setGeometry(
-            x = self.data["dimensions"][self._widgetName(widget)]["width"],
-            y = self.data["dimensions"][self._widgetName(widget)]["height"]
-        )
+    def loadDimensions(self, widget):
+        if self._widgetName(widget) in self.data["dimensions"]:
+            widget.restoreGeometry(QtCore.QByteArray.fromBase64(bytes(self.data["dimensions"][self._widgetName(widget)], "UTF-8")))
 
-    def setDimension(self, widget):
-        self.data["dimensions"][self._widgetName(widget)] = {
-            "height": widget.height(), 
-            "width": widget.width()
-        }
+    def storeDimension(self, widget):
+        self.data["dimensions"][self._widgetName(widget)] = str(widget.saveGeometry().toBase64(), "UTF-8")
+        self._store()
+
+    def loadState(self, widget):
+        if self._widgetName(widget) in self.data["dimensions"]:
+            widget.restoreState(QtCore.QByteArray.fromBase64(bytes(self.data["dimensions"][self._widgetName(widget)], "UTF-8")))
+
+    def storeState(self, widget):
+        self.data["dimensions"][self._widgetName(widget)] = str(widget.saveState().toBase64(), "UTF-8")
+        self._store()
 
     def setComboboxHistory(self, combobox, history):
         self.data["combobox"][self._widgetName(combobox)] = history
+        self._store()
 
     def getTupleColorLen(self, name):
         return self.data["color"][name]["len"]
@@ -92,22 +106,28 @@ class SettingsSingleton():
     
     def setQColorTuple(self, name, colors):
         for color in range(len(colors)):
-            colors[color] = QtGui.QColor.red(colors[color]), QtGui.QColor.green(colors[color]), QtGui.QColor.blue(colors[color])
+            if color == None:
+                colors[color] = None
+            else:
+                colors[color] = QtGui.QColor.red(colors[color]), QtGui.QColor.green(colors[color]), QtGui.QColor.blue(colors[color])
         self.setColorTuple(name, colors)
 
     def setCssTuple(self, name, colors):
         for color in range(len(colors)):
-            colors[color] = list(int(colors[color].lstrip('#')[i:i+2], 16) for i in (0, 2, 4))
+            if colors[color] == None:
+                colors[color] = None
+            else:
+                colors[color] = list(int(colors[color].lstrip('#')[i:i+2], 16) for i in (0, 2, 4))
         self.setColorTuple(name, colors)
 
     def setColorTuple(self, name, colors):
         self.data["color"][name]["data"] = []
         for color in range(self.data["color"][name]["len"]):
             try:
-                self.data["color"][name]["data"].append(colors(color))
+                self.data["color"][name]["data"].append(colors[color])
             except:
                 self.data["color"][name]["data"].append(None)
-        self.store()
+        self._store()
 
     def _widgetName(self, widget):
         names = []
@@ -118,3 +138,19 @@ class SettingsSingleton():
         name = ".".join(names[::-1])
         logger.error("full name: " + name)
         return name
+    
+    def _load(self):
+        try:
+            with open(self.path, 'rb') as fp:
+                self.data = json.load(fp)
+        except:
+            logger.info("settings.json does not exist! Using default theme.")
+
+            with open(self.defaultPath, 'rb') as fp:
+                self.data = json.load(fp)
+            with open(self.path, 'w+') as fp:
+                json.dump(self.data, fp)
+
+    def _store(self):
+        with open(self.path, 'w') as fp:
+            json.dump(self.data, fp)
