@@ -220,6 +220,7 @@
      <string>File</string>
     </property>
     <addaction name="uiAction_open"/>
+    <addaction name="uiAction_export"/>
     <addaction name="separator"/>
     <addaction name="uiAction_close"/>
     <addaction name="uiAction_quit"/>
@@ -267,6 +268,14 @@
    </property>
    <property name="shortcut">
     <string>Ctrl+F</string>
+   </property>
+  </action>
+  <action name="uiAction_export">
+   <property name="text">
+    <string>Export</string>
+   </property>
+   <property name="shortcut">
+    <string>Ctrl+E</string>
    </property>
   </action>
  </widget>

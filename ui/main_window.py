@@ -38,6 +38,7 @@ class MainWindow(QtWidgets.QMainWindow):
         self.uiAction_quit.triggered.connect(self.quit)
         self.uiAction_preferences.triggered.connect(self.preferences)
         self.uiAction_search.triggered.connect(self.openSearchwidget)
+        self.uiAction_export.triggered.connect(self.export)
 
         self.uiWidget_listView.doubleClicked.connect(self.inspectLine)
         self.uiWidget_listView.itemSelectionChanged.connect(self.loglineSelectionChanged)
@@ -78,7 +79,16 @@ class MainWindow(QtWidgets.QMainWindow):
         super().resizeEvent(e)
         SettingsSingleton().storeDimension(self)
 
-    #splitterMoved SettingsSingleton().storeState(self.uiTable_characteristics)
+    def export(self):
+        if self.rawlog:
+            file, check = QtWidgets.QFileDialog.getSaveFileName(None, "MLV | Export file",
+                                                            "", "Textfile (*.txt)")
+            if check:
+                status = self.rawlog.export_fp(open(file, "wb"), False, custom_store_callback = lambda entry: entry["data"] if not entry["uiItem"].isHidden() else None)
+                if status:
+                    self.statusbar.showDynamicText(str("Done ✓ | Export was successful"))
+                else:
+                    self.statusbar.showDynamicText(str("Error ✗ | Export was unsuccessful"))
 
     def setCompleter(self, combobox):
         wordlist = self.rawlog.getCompleterList(lambda entry: entry["data"])
