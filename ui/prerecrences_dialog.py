@@ -14,6 +14,7 @@ class PreferencesDialog(QtWidgets.QDialog):
         self.setWindowIcon(QtGui.QIcon(paths.get_art_filepath("monal_log_viewer.png")))
 
         self._createUiTab_color()
+        self._createUiTab_misc()
 
     def _createUiTab_color(self):
         self.uiTab_colorWidgetList = []
@@ -25,12 +26,12 @@ class PreferencesDialog(QtWidgets.QDialog):
             colorSection.addWidget(label)
 
             for position in range(len(SettingsSingleton().data["color"][color].keys())):
-                colorSection.addWidget(self._createButton(colorIndex, position))
+                colorSection.addWidget(self._createColorButton(colorIndex, position))
 
-            self.uiGridLayout_colorTable.addLayout(colorSection)
+            self.uiGridLayout_colorTab.addLayout(colorSection)
             self.uiTab_colorWidgetList.append(colorSection)
 
-    def _createButton(self, column, row):
+    def _createColorButton(self, column, row):
         button = QtWidgets.QPushButton(self.uiTab_color)
         entry = SettingsSingleton().data["color"][list(SettingsSingleton().data["color"].keys())[column]]["data"][row]
         if entry != None:
@@ -63,7 +64,7 @@ class PreferencesDialog(QtWidgets.QDialog):
         layout = self.uiTab_colorWidgetList[column]
         itemToChange = layout.takeAt(row+1)
         layout.removeItem(itemToChange)
-        layout.insertWidget(row+1, self._createButton(column,row))
+        layout.insertWidget(row+1, self._createColorButton(column,row))
 
     # see https://stackoverflow.com/a/3943023
     def get_luminance(self, r, g, b):
@@ -78,3 +79,40 @@ class PreferencesDialog(QtWidgets.QDialog):
         if 0.2126 * colors[0] + 0.7152 * colors[1] + 0.0722 * colors[2] > 0.179:
             return [0, 0, 0]
         return [255, 255, 255]
+    
+    def _createUiTab_misc(self):
+        self.uiTab_miscWidgetList = []
+        for entry in SettingsSingleton().data["misc"]:
+            miscSection = QtWidgets.QHBoxLayout()
+            label = QtWidgets.QLabel()
+            label.setText(entry)
+            miscSection.addWidget(label)
+            miscSection.addWidget(self._createMiscItems(SettingsSingleton().data["misc"][entry], entry))
+
+            self.uiGridLayout_miscTab.addLayout(miscSection)
+            self.uiTab_colorWidgetList.append(miscSection)
+                
+    def _createMiscItems(self, item, entry):
+        if type(item) == int:
+            widget = QtWidgets.QSpinBox()
+            widget.setMaximum(170)
+            widget.setValue(item)
+
+        if type(item) == str:
+            widget = QtWidgets.QLineEdit()
+            widget.insert(item)
+
+        if type(item) == bool:
+            widget = QtWidgets.QCheckBox()
+            widget.setChecked(item)
+
+        widget.valueChanged.connect(functools.partial(self.miscWidgetClicked, widget, entry))
+        return widget
+
+    def miscWidgetClicked(self, widget, name):
+        if str(type(widget)) == "<class 'PyQt5.QtWidgets.QSpinBox'>":
+            SettingsSingleton().storeMisc(widget.value(), name)
+        if str(type(widget)) == "<class 'PyQt5.QtWidgets.QLineEdit'>":
+            SettingsSingleton().storeMisc(widget.text(), name)
+        if str(type(widget)) == "<class 'PyQt5.QtWidgets.QCheckBox'>":
+            SettingsSingleton().storeMisc(widget.isChecked(), name)

@@ -24,10 +24,6 @@ class SettingsSingleton():
             return None
         return self.data["misc"][key]
     
-    def __setitem__(self, key, value):
-        self.data["misc"][key] = value
-        self._store()    # automatically save on change
-    
     def __delitem__(self, key):
         if not key in self.data["misc"]:
             return
@@ -45,6 +41,10 @@ class SettingsSingleton():
     
     def items(self):
         return self.data["misc"].items()
+    
+    def storeMisc(self, value, name):
+        self.data["misc"][name] = value
+        self._store()
     
     def getComboboxHistory(self, combobox):
             name = self._widgetName(combobox)
