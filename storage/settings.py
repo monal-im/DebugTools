@@ -42,9 +42,28 @@ class SettingsSingleton():
     def items(self):
         return self.data["misc"].items()
     
-    def storeMisc(self, value, name):
-        self.data["misc"][name] = value
+    def storePreferences(self, values):
+        for color in values["color"]:
+            self.data["color"][list(color.keys())[0]]["data"].clear()
+            for index in range(len(color)):
+                self.data["color"][list(color.keys())[0]]["data"] = list(color.values())[index]
+
+        for name in values["history"]:
+            listWidget = list(name.keys())[0]
+            self.data["combobox"][listWidget] = [name[listWidget].item(index).text() for index in range(name[listWidget].count())]
+
+        for widget in values["misc"]:
+            self.data["misc"][list(widget.keys())[0]] = self.getMiscWidgetText(widget[list(widget.keys())[0]])
+
         self._store()
+
+    def getMiscWidgetText(self, widget):
+        if str(type(widget)) == "<class 'PyQt5.QtWidgets.QSpinBox'>":
+            return widget.value()
+        if str(type(widget)) == "<class 'PyQt5.QtWidgets.QLineEdit'>":
+            return widget.text()
+        if str(type(widget)) == "<class 'PyQt5.QtWidgets.QCheckBox'>":
+            return widget.isChecked()
     
     def getComboboxHistory(self, combobox):
             name = self._widgetName(combobox)

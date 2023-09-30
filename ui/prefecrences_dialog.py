@@ -1,11 +1,19 @@
 from PyQt5 import QtWidgets, uic, QtGui, QtCore
 from storage import SettingsSingleton
 import functools
+import sys, os
 
 from utils import paths
 
 import logging
 logger = logging.getLogger(__name__)
+
+class DeletableQListWidget(QtWidgets.QListWidget):
+    def keyPressEvent(self, event):
+        if event.key() == QtCore.Qt.Key_Delete:
+            self.takeItem(self.selectedIndexes()[0].row())
+        else:
+            super().keyPressEvent(event)
 
 class PreferencesDialog(QtWidgets.QDialog):
     def __init__(self):
@@ -13,8 +21,15 @@ class PreferencesDialog(QtWidgets.QDialog):
         uic.loadUi(paths.get_ui_filepath("preferences_dialog.ui"), self)
         self.setWindowIcon(QtGui.QIcon(paths.get_art_filepath("monal_log_viewer.png")))
 
+        self.values = {"color": [], "history": [], "misc": []}
+
         self._createUiTab_color()
+        self._createHistory()
         self._createUiTab_misc()
+
+        self.buttonBox.button(QtWidgets.QDialogButtonBox.RestoreDefaults).clicked.connect(self._restoreDefaults)
+        self.buttonBox.button(QtWidgets.QDialogButtonBox.Ok).clicked.connect(functools.partial(SettingsSingleton().storePreferences, self.values))
+        self.buttonBox.button(QtWidgets.QDialogButtonBox.Discard).clicked.connect(self.close)
 
     def _createUiTab_color(self):
         self.uiTab_colorWidgetList = []
@@ -24,16 +39,22 @@ class PreferencesDialog(QtWidgets.QDialog):
             label = QtWidgets.QLabel(self)
             label.setText(color)
             colorSection.addWidget(label)
+            print(SettingsSingleton().data["color"][color])
+            self.values["color"].append({color: SettingsSingleton().data["color"][color]["data"]})
 
             for position in range(len(SettingsSingleton().data["color"][color].keys())):
-                colorSection.addWidget(self._createColorButton(colorIndex, position))
+                colorSection.addWidget(self._createColorButton(colorIndex, position, "create"))
 
             self.uiGridLayout_colorTab.addLayout(colorSection)
             self.uiTab_colorWidgetList.append(colorSection)
 
-    def _createColorButton(self, column, row):
+    def _createColorButton(self, column, row, color=None):
         button = QtWidgets.QPushButton(self.uiTab_color)
-        entry = SettingsSingleton().data["color"][list(SettingsSingleton().data["color"].keys())[column]]["data"][row]
+        if color == "create":
+            entry = SettingsSingleton().data["color"][list(SettingsSingleton().data["color"].keys())[column]]["data"][row]
+        else:
+            entry = color
+        
         if entry != None:
             backgroundColor = "rgb("+ str(entry).replace("[", "").replace("]", "") + ")"
             r, g, b = entry
@@ -54,17 +75,24 @@ class PreferencesDialog(QtWidgets.QDialog):
             self._setColor(column, row, color.name())
 
     def _deleteColor(self, column, row):
-        self._setColor(column, row, None)
+        self._setColor(column, row)
 
     def _setColor(self, column, row, color=None):
         name = list(SettingsSingleton().data["color"].keys())[column]
         colorRange = SettingsSingleton().getCssColorTuple(name)
         colorRange[row] = color
-        SettingsSingleton().setCssTuple(name, colorRange)
+        self.values["color"][column][list(self.values["color"][column].keys())[0]][row] = self.returnRGBColor(color)
         layout = self.uiTab_colorWidgetList[column]
         itemToChange = layout.takeAt(row+1)
         layout.removeItem(itemToChange)
-        layout.insertWidget(row+1, self._createColorButton(column,row))
+        layout.insertWidget(row+1, self._createColorButton(column,row, self.returnRGBColor(color)))
+
+    def returnRGBColor(self, color):
+        if color == None:
+            color = None
+        else:
+            color = list(int(color.lstrip('#')[i:i+2], 16) for i in (0, 2, 4))
+        return color
 
     # see https://stackoverflow.com/a/3943023
     def get_luminance(self, r, g, b):
@@ -81,16 +109,15 @@ class PreferencesDialog(QtWidgets.QDialog):
         return [255, 255, 255]
     
     def _createUiTab_misc(self):
-        self.uiTab_miscWidgetList = []
         for entry in SettingsSingleton().data["misc"]:
             miscSection = QtWidgets.QHBoxLayout()
             label = QtWidgets.QLabel()
             label.setText(entry)
             miscSection.addWidget(label)
-            miscSection.addWidget(self._createMiscItems(SettingsSingleton().data["misc"][entry], entry))
-
+            widget = self._createMiscItems(SettingsSingleton().data["misc"][entry], entry)
+            self.values["misc"].append({entry: widget}) 
+            miscSection.addWidget(widget)
             self.uiGridLayout_miscTab.addLayout(miscSection)
-            self.uiTab_colorWidgetList.append(miscSection)
                 
     def _createMiscItems(self, item, entry):
         if type(item) == int:
@@ -106,13 +133,42 @@ class PreferencesDialog(QtWidgets.QDialog):
             widget = QtWidgets.QCheckBox()
             widget.setChecked(item)
 
-        widget.valueChanged.connect(functools.partial(self.miscWidgetClicked, widget, entry))
         return widget
 
-    def miscWidgetClicked(self, widget, name):
-        if str(type(widget)) == "<class 'PyQt5.QtWidgets.QSpinBox'>":
-            SettingsSingleton().storeMisc(widget.value(), name)
-        if str(type(widget)) == "<class 'PyQt5.QtWidgets.QLineEdit'>":
-            SettingsSingleton().storeMisc(widget.text(), name)
-        if str(type(widget)) == "<class 'PyQt5.QtWidgets.QCheckBox'>":
-            SettingsSingleton().storeMisc(widget.isChecked(), name)
+    def _createHistory(self):
+        for combobox in SettingsSingleton().data["combobox"]:
+            historySection = QtWidgets.QVBoxLayout()
+            label = QtWidgets.QLabel()
+            label.setText(combobox)
+            deletableQListWidget = DeletableQListWidget()
+            deletableQListWidget.setDragDropMode(QtWidgets.QAbstractItemView.InternalMove)
+            for item in SettingsSingleton().data["combobox"][combobox]:
+                listWidgetItem = QtWidgets.QListWidgetItem(item)
+                deletableQListWidget.addItem(listWidgetItem)
+
+            addSection = QtWidgets.QHBoxLayout()
+            lineEdit = QtWidgets.QLineEdit()
+            button = QtWidgets.QPushButton()
+            button.clicked.connect(functools.partial(self._addComboboxItem, deletableQListWidget, lineEdit))
+            button.setText("Add")
+            addSection.addWidget(button)
+            addSection.addWidget(lineEdit)
+            self.values["history"].append({combobox: deletableQListWidget}) 
+            historySection.addWidget(label)
+            historySection.addWidget(deletableQListWidget)
+            historySection.addLayout(addSection)
+            self.uiVLayout_historyTab.addLayout(historySection)
+
+    def _addComboboxItem(self, listWidget, lineEdit):
+        if lineEdit.text() != None:
+            listWidget.addItem(QtWidgets.QListWidgetItem(lineEdit.text()))
+
+    def _restoreDefaults(self):
+        msgBox = QtWidgets.QMessageBox(self)
+        msgBox.setIcon(QtWidgets.QMessageBox.Information) 
+        msgBox.setText("Make shure that nothing important is going on, due to the shutdown of this program!")
+        def deleteSettings():
+            os.remove(paths.get_conf_filepath("settings.json"))
+            sys.exit()
+        msgBox.accepted.connect(deleteSettings)
+        msgBox.show()

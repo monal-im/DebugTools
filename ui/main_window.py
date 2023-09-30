@@ -11,7 +11,7 @@ from storage import Rawlog, SettingsSingleton
 from ui_utils import Completer, MagicLineEdit, Statusbar
 from utils import catch_exceptions, Search, QueryStatus, matchQuery, paths
 from utils.constants import LOGLEVELS
-from .prerecrences_dialog import PreferencesDialog
+from .prefecrences_dialog import PreferencesDialog
 
 import logging
 logger = logging.getLogger(__name__)
@@ -101,7 +101,7 @@ class MainWindow(QtWidgets.QMainWindow):
 
     @catch_exceptions(logger=logger)
     def openLogFile(self, *args):
-        file, check = QtWidgets.QFileDialog.getOpenFileName(None, "MLV | Open Logfile",
+        file, check = QtWidgets.QFileDialog.getOpenFileName(None, "Monal Log Viewer | Open Logfile",
                                                             "", "Raw Log (*.rawlog)")
         if check:
             self.statusbar.setText("Loading File: '%s'..." % os.path.basename(file))
