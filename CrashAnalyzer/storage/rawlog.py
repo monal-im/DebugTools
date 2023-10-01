@@ -4,9 +4,15 @@ import json
 import struct
 import gzip
 import io
+from queue import Queue
 import logging
 
-from utils import randread
+from utils import LOGLEVELS, randread
+try:
+    from .udp_server import UdpServer
+    hasLogserver = True
+except ImportError:
+    hasLogserver = False
 
 logger = logging.getLogger(__name__)
 PREFIX_FORMAT = "!L"        # constant defining the struct.{pack,unpack} format of our length prefix
@@ -37,6 +43,30 @@ class Rawlog:
     def clear(self):
         self.data = []
         self.needs_custom_callbacks = False
+    
+    def stream_rawlog(self, key, /, host="::", port=5555, custom_load_callback=None):
+        if not hasLogserver:
+            raise Exception("UDP logserver not importable!")
+        
+        logger.debug("Listening for streamed rawlog data on %s: %s" % (str(host), str(port)))
+        self.clear()
+        
+        # force custom save/export callbacks later on if data is now loaded with a custom load callback
+        if custom_load_callback != None:
+            self.needs_custom_callbacks = True
+        
+        queue = Queue(128)
+        server = UdpServer(queue, key, host=host, port=port)
+        
+        def poll(stop=False):
+            if stop:
+                server.stop()
+                return False
+            retval = not queue.empty()
+            while not queue.empty():
+                self._append_entry(queue.get(), custom_load_callback)
+            return retval
+        return poll
     
     def load_bytes(self, data, /, **kwargs):
         logger.debug("Loading rawlog data from bytearray...")
@@ -120,8 +150,7 @@ class Rawlog:
                             self._append_entry({
                                 "__warning": True,
                                 "__virtual": True,
-                                "flag": 256,    # this is status logline (a fake loglevel only used by the logviewer itself)
-                                "formattedMessage": message,
+                                "flag": LOGLEVELS["STATUS"],    # this is status logline (a fake loglevel only used by the logviewer itself)
                                 "message": message,
                             }, custom_load_callback)
                             readsize = fp.tell()        # fix readsize value
@@ -132,8 +161,7 @@ class Rawlog:
                     message = "Processid changed from %s to %s..." % (old_processid, entry["_processID"])
                     self._append_entry({
                         "__virtual": True,
-                        "flag": 256,    # this is status logline (a fake loglevel only used by the logviewer itself)
-                        "formattedMessage": message,
+                        "flag": LOGLEVELS["STATUS"],    # this is status logline (a fake loglevel only used by the logviewer itself)
                         "message": message,
                     }, custom_load_callback)
                 self._append_entry(entry, custom_load_callback)
@@ -205,7 +233,7 @@ class Rawlog:
             return fp.getvalue()    # return bytearray on success
         return None                 # return None on abort
     
-    def export_fp(self, fp, compressed, *, progress_callback=None, custom_store_callback=None):
+    def export_fp(self, fp, compressed, *, formatter, progress_callback=None, custom_store_callback=None):
         if self.needs_custom_callbacks and custom_store_callback == None:
             raise Exception("You need to specify a custom_store_callback because you loaded this file/data using a custom_load_callback!")
         logger.debug("Exporting %s textlog data to fp: %s" % ("compressed " if compressed else "uncompressed", str(fp)))
@@ -219,7 +247,7 @@ class Rawlog:
             entry_num += 1
             if not entry or ("__virtual" in entry and entry["__virtual"]):
                 continue
-            fp.write(bytes("%s\n" % entry["formattedMessage"], "UTF-8"))
+            fp.write(bytes("%s\n" % formatter(entry), "UTF-8"))
             
             if progress_callback != None:
                 if progress_callback(entry_num, len(self.data)) == True:

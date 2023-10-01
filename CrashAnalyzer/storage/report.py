@@ -91,7 +91,7 @@ class CrashReport:
         if isinstance(data["data"], str):
             return data["data"]
         if data["type"] in ("*.rawlog", "*.rawlog.gz"):
-            return str(Rawlog(data["data"]).export_bytes(False), encoding="UTF-8")
+            return str(Rawlog(data["data"]).export_bytes(False, formatter=lambda entry: "%s %s" % (entry["timestamp"], entry["message"])), encoding="UTF-8")
         else:
             return "This part contains raw bytes (%s) and cannot be displayed!" % data["type"]
     
