@@ -17,7 +17,7 @@
    <item>
     <widget class="QTabWidget" name="tabWidget">
      <property name="currentIndex">
-      <number>1</number>
+      <number>3</number>
      </property>
      <widget class="QWidget" name="uiTab_color">
       <attribute name="title">
@@ -50,6 +50,16 @@
           <layout class="QVBoxLayout" name="uiGridLayout_miscTab"/>
          </item>
         </layout>
+       </item>
+      </layout>
+     </widget>
+     <widget class="QWidget" name="uiTab_displayText">
+      <attribute name="title">
+       <string>Display text</string>
+      </attribute>
+      <layout class="QVBoxLayout" name="verticalLayout_4">
+       <item>
+        <layout class="QVBoxLayout" name="uiVLayout_displayTextTab"/>
        </item>
       </layout>
      </widget>

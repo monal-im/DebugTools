@@ -19,5 +19,9 @@
     "state": {},
     "misc": {
         "staticLineWrap": 140
+    },
+    "displayText":
+    {
+        "openFile": "retval = '%s %s' % (timestamp, message)"
     }
 }

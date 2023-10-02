@@ -55,6 +55,10 @@ class SettingsSingleton():
         for widget in values["misc"]:
             self.data["misc"][list(widget.keys())[0]] = self.getMiscWidgetText(widget[list(widget.keys())[0]])
 
+        for name in values["displayText"]:
+            textBox = name[list(name.keys())[0]]
+            if textBox.toPlainText() != "":
+                self.data["displayText"][list(name.keys())[0]] = textBox.toPlainText()
         self._store()
 
     def getMiscWidgetText(self, widget):

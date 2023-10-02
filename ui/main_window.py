@@ -116,7 +116,7 @@ class MainWindow(QtWidgets.QMainWindow):
                     break_long_words=True,
                     break_on_hyphens=True,
                     max_lines=None
-                ) if len(line) > SettingsSingleton()["staticLineWrap"] else line for line in entry["formattedMessage"].strip().splitlines(keepends=False)])
+                ) if len(line) > SettingsSingleton()["staticLineWrap"] else line for line in self.getLogMessage(entry).strip().splitlines(keepends=False)])
 
                 item_with_color = QtWidgets.QListWidgetItem(item_with_color)
                 item_with_color.setForeground(fg)
@@ -133,7 +133,7 @@ class MainWindow(QtWidgets.QMainWindow):
             for index in range(itemListsize):
                 self.uiWidget_listView.addItem(self.rawlog[index]["uiItem"])
                 if "__warning" in self.rawlog[index]["data"] and self.rawlog[index]["data"]["__warning"] == True:
-                    self.QtWidgets.QMessageBox.warning(self, "File corruption detected", self.rawlog[index]["data"]["formattedMessage"])
+                    self.QtWidgets.QMessageBox.warning(self, "File corruption detected", self.getLogMessage(self.rawlog[index]["data"]))
 
             self.file = file
             self.statusbar.showDynamicText(str("Done ✓ | file opened: " + os.path.basename(file)))
@@ -154,6 +154,33 @@ class MainWindow(QtWidgets.QMainWindow):
         }
         return tuple(SettingsSingleton().getQColorTuple(table[flag]))
     
+    def getLogMessage(self, entry):
+        loc = {}
+        exec(SettingsSingleton().data["displayText"]["openFile"], {
+                "entry": entry, 
+                "_counter": entry["_counter"],
+                "_processID": entry["_processID"],
+                "context": entry["context"],
+                "file": entry["file"],
+                "fileName": entry["fileName"],
+                "flag": entry["flag"],
+                "function": entry["function"],
+                "level": entry["level"],
+                "line": entry["line"],
+                "options": entry["options"],
+                "message": entry["message"],
+                "qos": entry["qos"],
+                "queueLabel": entry["queueLabel"],
+                "tag['processType']": entry["tag"]["processType"],
+                "tag['queueThreadLabel']": entry["tag"]["queueThreadLabel"],
+                "tag['representedObject']": entry["tag"]["representedObject"],
+                "threadID": entry["threadID"],
+                "threadName": entry["threadName"],
+                "timestamp": entry["timestamp"]
+            }, loc)
+        
+        return str(loc['retval'])
+
     @catch_exceptions(logger=logger)
     def inspectLine(self, *args):
         self.uiTable_characteristics.setHorizontalHeaderLabels(["path", "value"])

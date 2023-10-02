@@ -21,11 +21,12 @@ class PreferencesDialog(QtWidgets.QDialog):
         uic.loadUi(paths.get_ui_filepath("preferences_dialog.ui"), self)
         self.setWindowIcon(QtGui.QIcon(paths.get_art_filepath("monal_log_viewer.png")))
 
-        self.values = {"color": [], "history": [], "misc": []}
+        self.values = {"color": [], "history": [], "misc": [], "displayText": []}
 
         self._createUiTab_color()
         self._createHistory()
         self._createUiTab_misc()
+        self._createDisplayText()
 
         self.buttonBox.button(QtWidgets.QDialogButtonBox.RestoreDefaults).clicked.connect(self._restoreDefaults)
         self.buttonBox.button(QtWidgets.QDialogButtonBox.Ok).clicked.connect(functools.partial(SettingsSingleton().storePreferences, self.values))
@@ -39,7 +40,6 @@ class PreferencesDialog(QtWidgets.QDialog):
             label = QtWidgets.QLabel(self)
             label.setText(color)
             colorSection.addWidget(label)
-            print(SettingsSingleton().data["color"][color])
             self.values["color"].append({color: SettingsSingleton().data["color"][color]["data"]})
 
             for position in range(len(SettingsSingleton().data["color"][color].keys())):
@@ -172,3 +172,16 @@ class PreferencesDialog(QtWidgets.QDialog):
             sys.exit()
         msgBox.accepted.connect(deleteSettings)
         msgBox.show()
+
+    def _createDisplayText(self):
+        for entry in SettingsSingleton().data["displayText"]:
+            qVLayout = QtWidgets.QVBoxLayout()
+            label = QtWidgets.QLabel()
+            label.setText(entry)
+            textBox = QtWidgets.QPlainTextEdit()
+            textBox.insertPlainText(SettingsSingleton().data["displayText"][entry])
+            textBox.show()
+            qVLayout.addWidget(label)
+            qVLayout.addWidget(textBox)
+            self.uiVLayout_displayTextTab.addLayout(qVLayout)
+            self.values["displayText"].append({entry: textBox})
