@@ -13,9 +13,7 @@
         "combobox-query_empty": {"len": 2, "data": [[255, 215, 0], null]}
     },
     "combobox": {},
-    "dimensions": {
-        "main-window": []
-    },
+    "dimensions": {},
     "state": {},
     "misc": {
         "staticLineWrap": 140

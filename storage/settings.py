@@ -83,6 +83,14 @@ class SettingsSingleton():
         self.data["dimensions"][self._widgetName(widget)] = str(widget.saveGeometry().toBase64(), "UTF-8")
         self._store()
 
+    def storeSplitterDimension(self, widget):
+        self.data["dimensions"][self._widgetName(widget)] = str(widget.saveState().toBase64(), "UTF-8")
+        self._store()
+
+    def loadSplitterDimensions(self, widget):
+        if self._widgetName(widget) in self.data["dimensions"]:
+            widget.restoreState(QtCore.QByteArray.fromBase64(bytes(self.data["dimensions"][self._widgetName(widget)], "UTF-8")))
+
     def loadState(self, widget):
         if self._widgetName(widget) in self.data["dimensions"]:
             widget.restoreState(QtCore.QByteArray.fromBase64(bytes(self.data["dimensions"][self._widgetName(widget)], "UTF-8")))

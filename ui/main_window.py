@@ -73,6 +73,11 @@ class MainWindow(QtWidgets.QMainWindow):
         #set enable false!!!
     
     def quit(self):
+        SettingsSingleton().storeSplitterDimension(self.uiSplitter_inspectLine)
+        sys.exit()
+
+    def closeEvent(self, event):
+        SettingsSingleton().storeSplitterDimension(self.uiSplitter_inspectLine)
         sys.exit()
 
     def resizeEvent(self, e: QtGui.QResizeEvent):
@@ -211,6 +216,7 @@ class MainWindow(QtWidgets.QMainWindow):
             row += 1
         
         self.uiTable_characteristics.show()
+        SettingsSingleton().loadSplitterDimensions(self.uiSplitter_inspectLine)
         self.currentDetailIndex = self.uiWidget_listView.selectedIndexes()[0].row()
 
     @catch_exceptions(logger=logger)
