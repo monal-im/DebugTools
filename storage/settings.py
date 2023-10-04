@@ -29,15 +29,17 @@ class SettingsSingleton():
                 defaultDictionary = json.load(fp)
             with open(self.path, 'w') as fp:
                 json.dump(defaultDictionary, fp)
-            
-            self.load() #to create self.data!?!?!
+                self.date = defaultDictionary
 
     def store(self):
         with open(self.path, 'w') as fp:
             json.dump(self.data, fp)
 
     def getComboboxHistory(self, combobox):
-            combobox.addItems(self.data["combobox"][combobox])
+            name = self._widgetName(combobox)
+            if name in self.data["combobox"]:
+                return self.data["combobox"][name]
+            return []
 
     def getDimensions(self, widget):
         widget.setGeometry(
@@ -51,24 +53,38 @@ class SettingsSingleton():
             "width": widget.width()
         }
 
-    def setComboboxHistory(self, combobox):
-        self.data["combobox"][self._widgetName(combobox)] = [combobox.itemText(i) for i in range(combobox.count())]
+    def setComboboxHistory(self, combobox, history):
+        self.data["combobox"][self._widgetName(combobox)] = history
+
+    def getTupleColorLen(self, name):
+        return self.data["color"][name]["len"]
+
+    def getQColor(self, name):
+        return self.getQColorTuple(name)[0]
+    
+    def getCssColor(self, name):
+        return self.getCssColorTuple(name)[0]
+        
+    def getColor(self, name):
+        return self.getColorTuple(name)[0]
 
     def getQColorTuple(self, name):
         colorList = list(self.getColorTuple(name))
         for color in range(len(colorList)):
-            colorList[color] = QtGui.QColor(  *colorList[color] )
+            if colorList[color] != None:
+                colorList[color] = QtGui.QColor(  *colorList[color] )
         return colorList
     
-    def getCssTuple(self, name):
+    def getCssColorTuple(self, name):
         colorList = list(self.getColorTuple(name))
         for color in range(len(colorList)):
-            colorList[color] = "#{:02x}{:02x}{:02x}".format( *colorList[color] )
+            if colorList[color] != None:
+                colorList[color] = "#{:02x}{:02x}{:02x}".format( *colorList[color] )
         return colorList
         
     def getColorTuple(self, name):
         colorList = []
-        for color in self.data["color"][name]:
+        for color in self.data["color"][name]["data"]:
             colorList.append(color)
         return colorList
     
@@ -83,9 +99,12 @@ class SettingsSingleton():
         self.setColorTuple(name, colors)
 
     def setColorTuple(self, name, colors):
-        self.data["color"][name] = []
-        for color in colors:
-            self.data["color"][name].append(color)
+        self.data["color"][name]["data"] = []
+        for color in range(self.data["color"][name]["len"]):
+            try:
+                self.data["color"][name]["data"].append(colors(color))
+            except:
+                self.data["color"][name]["data"].append(None)
         self.store()
 
     def _widgetName(self, widget):

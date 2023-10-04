@@ -2,13 +2,15 @@
 
 # file created at 25.06.2023
 
-from storage import Rawlog, SettingsSingleton
 from PyQt5 import QtWidgets, uic, QtGui, QtCore
+import time, threading
 from PyQt5.QtWidgets import QStyle
 import sys, os
-from utils import catch_exceptions, Search, LOGLEVELS, QueryStatus, matchQuery, MagicLineEdit
-from ui_utils import Completer
 import logging
+
+from storage import Rawlog, SettingsSingleton
+from ui_utils import Completer
+from utils import catch_exceptions, Search, LOGLEVELS, QueryStatus, matchQuery, MagicLineEdit
 
 logger = logging.getLogger(__name__)
 
@@ -47,11 +49,11 @@ class Main_Ui(QtWidgets.QMainWindow):
 
         QtWidgets.QShortcut(QtGui.QKeySequence("ESC"), self).activated.connect(self.hideSearch)
         self.uiCombobox_searchInput.activated[str].connect(self.searchNext)
-        self.settings.getComboboxHistory(self.uiCombobox_searchInput)
+        self.uiCombobox_searchInput.addItems(self.settings.getComboboxHistory(self.uiCombobox_searchInput))
 
         self.uiButton_filterClear.clicked.connect(self.clearFilter)
         self.uiCombobox_filterInput.activated[str].connect(self.filter)
-        self.settings.getComboboxHistory(self.uiCombobox_filterInput)
+        self.uiCombobox_filterInput.addItems(self.settings.getComboboxHistory(self.uiCombobox_filterInput))
 
         QtWidgets.QApplication.instance().focusChanged.connect(self.focusChangedEvent)
 
@@ -61,6 +63,9 @@ class Main_Ui(QtWidgets.QMainWindow):
 
         self.currentDetailIndex = None
         self.currentFilterQuery = None
+
+        self.statusbarText = {"static": [], "dynamic": []}
+        self.advancedStatusbar()
 
         #set enable false!!!
 
@@ -85,7 +90,7 @@ class Main_Ui(QtWidgets.QMainWindow):
         file, check = QtWidgets.QFileDialog.getOpenFileName(None, "MLV | Open Logfile",
                                                             "", "Raw Log (*.rawlog)")
         if check:
-            self.uistatusbar_state.showMessage("Extracting File...")
+            self.dynamic("Extracting File...")
 
             def loader(entry):
                 fg, bg = self.itemColorFactory(entry["flag"])
@@ -106,28 +111,22 @@ class Main_Ui(QtWidgets.QMainWindow):
                 if "__warning" in self.rawlog[index]["data"] and self.rawlog[index]["data"]["__warning"] == True:
                     self.QtWidgets.QMessageBox.warning(self, "File corruption detected", self.rawlog[index]["data"]["formattedMessage"])
 
-            self.uistatusbar_state.showMessage(str("Done ✓ | file opened: " + file))
+            self.static(str("Done ✓ | file opened: " + file))
 
             self.setCompleter(self.uiCombobox_filterInput)
             self.setCompleter(self.uiCombobox_searchInput)
             
     def itemColorFactory(self, flag):
-        color = self.settings.getQColorTuple
-        if int(flag) == LOGLEVELS['ERROR']:  # ERROR
-            return (color("logline-error")[0], color("logline-error")[1])
-        elif int(flag) == LOGLEVELS['WARNING']:  # WARNING
-            return (color("logline-warning")[0], color("logline-warning")[1])
-        elif int(flag) == LOGLEVELS['INFO']:  # INFO
-            return (color("logline-info")[0], None)
-        elif int(flag) == LOGLEVELS['DEBUG']:  # DEBUG
-            return (color("logline-debug")[0], None)
-        elif int(flag) == LOGLEVELS['VERBOSE']:  # VERBOSE
-            return (color("logline-verbose")[0], None)
-        elif int(flag) == LOGLEVELS['STATUS']: # STATUS
-            return (color("logline-status")[0], color("logline-status")[1])
-        else:
-            return (color("logline-status")[0], color("logline-status")[1])
-
+        table = {
+            LOGLEVELS['ERROR']: "logline-error", 
+            LOGLEVELS['WARNING']: "logline-warning",
+            LOGLEVELS['INFO']: "logline-info",
+            LOGLEVELS['DEBUG']: "logline-debug",
+            LOGLEVELS['VERBOSE']: "logline-verbose",
+            LOGLEVELS['STATUS']: "logline-status"
+        }
+        return tuple(self.settings.getQColorTuple(table[flag]))
+    
     @catch_exceptions(logger=logger)
     def inspectLine(self, *args):
         self.uiTable_characteristics.setHorizontalHeaderLabels(["path", "value"])
@@ -175,7 +174,6 @@ class Main_Ui(QtWidgets.QMainWindow):
         self.selectedCombobox.setFocus()
         self.selectedCombobox.lineEdit().insert(self.uiTable_characteristics.currentItem().text())
             
-
     @catch_exceptions(logger=logger)
     def closeFile(self, *args):
         self.uiWidget_listView.clear()
@@ -194,16 +192,13 @@ class Main_Ui(QtWidgets.QMainWindow):
 
     @catch_exceptions(logger=logger)
     def setComboboxStatusColor(self, combobox, status):
-        color = self.settings.getCssTuple
-        print(color("combobox-eof_reached"))
-        if status == QueryStatus.EOF_REACHED:
-            combobox.setStyleSheet("background-color: %s" % color("combobox-eof_reached")[0])
-        if status == QueryStatus.QUERY_ERROR:
-            combobox.setStyleSheet("background-color: %s" % color("combobox-query_error")[0])
-        if status == QueryStatus.QUERY_OK:
-            combobox.setStyleSheet("background-color: %s" % color("combobox-query_ok")[0])
-        if status == QueryStatus.QUERY_EMPTY:
-            combobox.setStyleSheet("background-color: %s" % color("combobox-query_empty")[0])
+        table = {
+            QueryStatus.EOF_REACHED: "background-color: %s" % self.settings.getCssColor("combobox-eof_reached"),
+            QueryStatus.QUERY_ERROR: "background-color: %s" % self.settings.getCssColor("combobox-query_error"),
+            QueryStatus.QUERY_OK: "background-color: %s" % self.settings.getCssColor("combobox-query_ok"),
+            QueryStatus.QUERY_EMPTY: "background-color: %s" % self.settings.getCssColor("combobox-query_empty")
+        }
+        combobox.setStyleSheet(table[status])
 
     def searchNext(self):
         # use unbound function, self will be bound in _search() later on after the instance was created
@@ -218,7 +213,7 @@ class Main_Ui(QtWidgets.QMainWindow):
         if result == None:
             result = func(self.search)  # bind self using our (newly created) self.search
 
-        self.uistatusbar_state.showMessage("You are currently in line "+str(result))
+        self.dynamic("You are currently in line "+str(result))
         logger.info("SEARCH RESULT: %s" % str(result))
         if result != None:
             self.uiWidget_listView.setCurrentRow(result)
@@ -236,6 +231,8 @@ class Main_Ui(QtWidgets.QMainWindow):
 
         self.search = Search(self.rawlog, query, startIndex)
         self.updateComboboxHistory(query, self.uiCombobox_searchInput)
+        self.settings.setComboboxHistory(self.uiCombobox_searchInput, [self.uiCombobox_searchInput.itemText(i) for i in range(self.uiCombobox_filterInput.count())])
+        self.settings.store()
         return self.search.getCurrentResult()
     
     @catch_exceptions(logger=logger)
@@ -247,21 +244,25 @@ class Main_Ui(QtWidgets.QMainWindow):
     def hideSearch(self):
         self.uiFrame_search.hide()
         self.search = None
+        
+        self.clearDynamicStatusbar()
 
     def clearFilter(self):
         self.uiCombobox_filterInput.setCurrentText("")
-        self.uistatusbar_state.showMessage("Cleared")
+        self.dynamic("Cleared")
         self.uiCombobox_filterInput.setStyleSheet('') # grey
 
         for index in range(len(self.rawlog)):
             self.rawlog[index]["uiItem"].setHidden(False)
         
         self.currentFilterQuery = None
+        self.clearDynamicStatusbar()
 
     def filter(self):
         query = self.uiCombobox_filterInput.currentText()
 
         result = matchQuery(query, self.rawlog)
+        self.static("There are "+str(len(result["entries"]))+" results with your query!")
         self.uistatusbar_state.showMessage("There are "+str(len(result["entries"]))+" results with your query!")
         self.setComboboxStatusColor(self.uiCombobox_filterInput, result["status"])
         self.updateComboboxHistory(query, self.uiCombobox_filterInput)
@@ -269,7 +270,8 @@ class Main_Ui(QtWidgets.QMainWindow):
         for rawlogPosition in range(len(self.rawlog)):
             self.rawlog[rawlogPosition]["uiItem"].setHidden(rawlogPosition not in result["entries"])
 
-        self.settings.setComboboxHistory(self.uiCombobox_filterInput)
+        self.settings.setComboboxHistory(self.uiCombobox_filterInput, [self.uiCombobox_filterInput.itemText(i) for i in range(self.uiCombobox_filterInput.count())])
+        self.settings.store()
         self.currentFilterQuery = query
 
     def updateComboboxHistory(self, query, combobox):
@@ -326,11 +328,11 @@ class Main_Ui(QtWidgets.QMainWindow):
             }
         }
         self.stack.append(state)
-        self.uistatusbar_state.showMessage("State saved ✓")
+        self.dynamic("State saved ✓")
 
     def getStack(self):
         if len(self.stack) < 1:
-            self.uistatusbar_state.showMessage("State was unable to load ✗")
+            self.dynamic("State was unable to load ✗")
             return
         
         stack = self.stack.pop()
@@ -356,4 +358,31 @@ class Main_Ui(QtWidgets.QMainWindow):
         if stack["filter"]["active"]:
             self.filter()
 
-        self.uistatusbar_state.showMessage("State loaded ✓")
+        self.dynamic("State loaded ✓")
+
+    def advancedStatusbar(self):
+        WAIT_SECONDS = 3
+        static = self.statusbarText["static"]
+        dynamic = self.statusbarText["dynamic"]
+
+        if dynamic != []:
+            text = dynamic.pop()
+            self.uistatusbar_state.showMessage(text)
+        elif static != []:
+            text = static.pop()
+            self.uistatusbar_state.showMessage(text)
+            static.insert(0, text)
+        else:
+            self.uistatusbar_state.showMessage("Theres currently no Status!")
+
+        threading.Timer(WAIT_SECONDS, self.advancedStatusbar).start()
+
+
+    def static(self, text):
+        self.statusbarText["static"].append(text)
+    def dynamic(self, text):
+        self.statusbarText["dynamic"].append(text)
+
+    def clearDynamicStatusbar(self):
+        self.statusbarText["dynamic"].clear()
+        self.statusbarText["static"].clear()
