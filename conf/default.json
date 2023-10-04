@@ -1,17 +1,17 @@
 {
     "color": 
     {
-        "logline-error":    [[255, 0, 0], [0, 0, 0]],
-        "logline-warning":  [[0, 255, 255],  [0, 0, 0]],
-        "logline-info":     [[0, 0, 255]],
-        "logline-debug":    [[0, 255, 0]],
-        "logline-verbose":  [[128, 128, 128]],
-        "logline-status":   [[0, 0, 0], [255, 0, 0]],
+        "logline-error":    {"len": 2, "data": [[255, 0, 0], [0, 0, 0]]},
+        "logline-warning":  {"len": 2, "data": [[0, 255, 255],  [0, 0, 0]]},
+        "logline-info":     {"len": 2, "data": [[0, 0, 255], null]},
+        "logline-debug":    {"len": 2, "data": [[0, 255, 0], null]},
+        "logline-verbose":  {"len": 2, "data": [[128, 128, 128], null]},
+        "logline-status":   {"len": 2, "data": [[0, 0, 0], [255, 0, 0]]},
 
-        "combobox-eof_reached": [[0, 150, 255]],
-        "combobox-query_error": [[255, 36, 0]],
-        "combobox-query_ok":    [[80, 200, 120]],
-        "combobox-query_empty": [[255, 215, 0]]
+        "combobox-eof_reached": {"len": 2, "data": [[0, 150, 255], null]},
+        "combobox-query_error": {"len": 2, "data": [[255, 36, 0], null]},
+        "combobox-query_ok":    {"len": 2, "data": [[80, 200, 120], null]},
+        "combobox-query_empty": {"len": 2, "data": [[255, 215, 0], null]}
     },
     "combobox":{},
     "dimensions":
