@@ -109,17 +109,15 @@ class PreferencesDialog(QtWidgets.QDialog):
         return [255, 255, 255]
     
     def _createUiTab_misc(self):
-        for entry in SettingsSingleton().data["misc"]:
+        for miscName, miscValue in SettingsSingleton().items():
             miscSection = QtWidgets.QHBoxLayout()
-            label = QtWidgets.QLabel()
-            label.setText(entry)
-            miscSection.addWidget(label)
-            widget = self._createMiscItems(SettingsSingleton().data["misc"][entry], entry)
-            self.values["misc"].append({entry: widget}) 
+            miscSection.addWidget(QtWidgets.QLabel(miscName, self))
+            widget = self._createMiscItems(miscValue, miscName)
+            self.values["misc"].append({miscName: widget}) 
             miscSection.addWidget(widget)
             self.uiGridLayout_miscTab.addLayout(miscSection)
                 
-    def _createMiscItems(self, item, entry):
+    def _createMiscItems(self, item):
         if type(item) == int:
             widget = QtWidgets.QSpinBox()
             widget.setMaximum(170)

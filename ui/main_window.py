@@ -11,7 +11,7 @@ from storage import Rawlog, SettingsSingleton
 from ui_utils import Completer, MagicLineEdit, Statusbar
 from utils import catch_exceptions, Search, QueryStatus, matchQuery, paths
 from utils.constants import LOGLEVELS
-from .prefecrences_dialog import PreferencesDialog
+from .preferences_dialog import PreferencesDialog
 
 import logging
 logger = logging.getLogger(__name__)
