@@ -19,6 +19,10 @@ class SettingsSingleton():
         self.defaultPath = paths.get_default_conf_filepath("settings.json")
         self._load()
 
+    def __setitem__(self, key, value):
+        self.data["misc"][key] = value
+        self._store()  
+
     def __getitem__(self, key):
         if not key in self.data["misc"]:
             return None
