@@ -89,7 +89,7 @@ class MainWindow(QtWidgets.QMainWindow):
             file, check = QtWidgets.QFileDialog.getSaveFileName(None, "MLV | Export file",
                                                             "", "Textfile (*.txt)")
             if check:
-                status = self.rawlog.export_fp(open(file, "wb"), False, custom_store_callback = lambda entry: entry["data"] if not entry["uiItem"].isHidden() else None)
+                status = self.rawlog.export_file(file, custom_store_callback = lambda entry: entry["data"] if not entry["uiItem"].isHidden() else None)
                 if status:
                     self.statusbar.showDynamicText(str("Done ✓ | Export was successful"))
                 else:
