@@ -115,6 +115,9 @@ class SettingsSingleton():
     
     def getCssColor(self, name):
         return self.getCssColorTuple(name)[0]
+    
+    def getColorNames(self):
+        return self.data["color"].keys()
         
     def getColor(self, name):
         return self.getColorTuple(name)[0]
@@ -139,9 +142,23 @@ class SettingsSingleton():
             colorList.append(color)
         return colorList
     
+    # see https://stackoverflow.com/a/3943023
+    def getCssContrastColor(self, r, g, b):
+        colors = []
+        for c in (r, g, b):
+            c = c / 255.0
+            if c <= 0.04045:
+                c = c/12.92
+            else:
+                c = ((c+0.055)/1.055) ** 2.4
+            colors.append(c)
+        if 0.2126 * colors[0] + 0.7152 * colors[1] + 0.0722 * colors[2] > 0.179:
+            return "rgb(0, 0, 0)"
+        return "rgb(255, 255, 255)"
+    
     def setQColorTuple(self, name, colors):
         for color in range(len(colors)):
-            if color == None:
+            if colors[color] == None:
                 colors[color] = None
             else:
                 colors[color] = QtGui.QColor.red(colors[color]), QtGui.QColor.green(colors[color]), QtGui.QColor.blue(colors[color])

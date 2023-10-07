@@ -23,6 +23,7 @@ class PreferencesDialog(QtWidgets.QDialog):
 
         self.values = {"color": [], "history": [], "misc": [], "displayText": []}
 
+        self._setColor()
         self._createUiTab_color()
         self._createHistory()
         self._createUiTab_misc()
@@ -34,90 +35,71 @@ class PreferencesDialog(QtWidgets.QDialog):
 
     def _createUiTab_color(self):
         self.uiTab_colorWidgetList = []
-        for colorIndex in range(len(SettingsSingleton().data["color"])):
+        for colorName in SettingsSingleton().getColorNames():
             colorSection = QtWidgets.QHBoxLayout()
-            color = list(SettingsSingleton().data["color"].keys())[colorIndex]
-            label = QtWidgets.QLabel(self)
-            label.setText(color)
-            colorSection.addWidget(label)
-            self.values["color"].append({color: SettingsSingleton().data["color"][color]["data"]})
+            colorSection.addWidget(QtWidgets.QLabel(colorName, self))
+            self.values["color"].append({colorName: SettingsSingleton().getColorTuple(colorName)})
 
-            for position in range(len(SettingsSingleton().data["color"][color].keys())):
-                colorSection.addWidget(self._createColorButton(colorIndex, position, "create"))
+            for button in self._createColorButton(colorName):
+                colorSection.addWidget(button)
 
             self.uiGridLayout_colorTab.addLayout(colorSection)
             self.uiTab_colorWidgetList.append(colorSection)
+        self.update()
 
-    def _createColorButton(self, column, row, color=None):
-        button = QtWidgets.QPushButton(self.uiTab_color)
-        if color == "create":
-            entry = SettingsSingleton().data["color"][list(SettingsSingleton().data["color"].keys())[column]]["data"][row]
-        else:
-            entry = color
-        
-        if entry != None:
-            backgroundColor = "rgb("+ str(entry).replace("[", "").replace("]", "") + ")"
-            r, g, b = entry
-            foregroundColor = "rgb("+ str(self.get_luminance(r, g, b)).replace("[", "").replace("]", "") +")"
-            button.setText(backgroundColor)
-            button.setStyleSheet("background-color:"+backgroundColor+"; color: "+foregroundColor+"")
-        else:
-            button.setText("Add")
-        button.clicked.connect(functools.partial(self._openColorPicker, column, row))
-        button.setContextMenuPolicy(QtCore.Qt.CustomContextMenu)
-        button.customContextMenuRequested.connect(functools.partial(self._deleteColor, column, row))
-        button.show()
-        return button
-    
-    def _openColorPicker(self, column, row):
-        color = QtWidgets.QColorDialog.getColor()
-        if color.isValid():
-            self._setColor(column, row, color.name())
-
-    def _deleteColor(self, column, row):
-        self._setColor(column, row)
-
-    def _setColor(self, column, row, color=None):
-        name = list(SettingsSingleton().data["color"].keys())[column]
-        colorRange = SettingsSingleton().getCssColorTuple(name)
-        colorRange[row] = color
-        self.values["color"][column][list(self.values["color"][column].keys())[0]][row] = self.returnRGBColor(color)
-        layout = self.uiTab_colorWidgetList[column]
-        itemToChange = layout.takeAt(row+1)
-        layout.removeItem(itemToChange)
-        layout.insertWidget(row+1, self._createColorButton(column,row, self.returnRGBColor(color)))
-
-    def returnRGBColor(self, color):
-        if color == None:
-            color = None
-        else:
-            color = list(int(color.lstrip('#')[i:i+2], 16) for i in (0, 2, 4))
-        return color
-
-    # see https://stackoverflow.com/a/3943023
-    def get_luminance(self, r, g, b):
-        colors = []
-        for c in (r, g, b):
-            c = c / 255.0
-            if c <= 0.04045:
-                c = c/12.92
+    def _createColorButton(self, colorName):
+        colorTuple = self.colors[colorName]
+        buttons = []
+        for index in range(len(colorTuple)):
+            button = QtWidgets.QPushButton(self.uiTab_color)
+            if colorTuple[index] != None:
+                rgbColor = [colorTuple[index].red(), colorTuple[index].green(), colorTuple[index].blue()]
+                button.setText("rgb(%s)" % str(rgbColor).replace("[", "").replace("]", ""))
+                button.setStyleSheet("background-color: %s; color: %s;" % (colorTuple[index].name(), SettingsSingleton().getCssContrastColor(*rgbColor)))
             else:
-                c = ((c+0.055)/1.055) ** 2.4
-            colors.append(c)
-        if 0.2126 * colors[0] + 0.7152 * colors[1] + 0.0722 * colors[2] > 0.179:
-            return [0, 0, 0]
-        return [255, 255, 255]
+                button.setText("Add")
+            button.clicked.connect(functools.partial(self._openColorPicker, colorName, index))
+            button.setContextMenuPolicy(QtCore.Qt.CustomContextMenu)
+            button.customContextMenuRequested.connect(functools.partial(self._delColor, colorName, index))
+            buttons.append(button)
+        return buttons
+
+    def _setColor(self):
+        self.colors = {}
+        for colorName in SettingsSingleton().getColorNames():
+            self.colors[colorName] = SettingsSingleton().getQColorTuple(colorName)
+
+    def _openColorPicker(self, colorName, index):
+        if self.colors[colorName][index] != None:
+            color = QtWidgets.QColorDialog.getColor(self.colors[colorName][index], parent=self)
+        else:
+            color = QtWidgets.QColorDialog.getColor()
+        if color.isValid():
+            self.colors[colorName][index] = color
+
+        for layout in self.uiTab_colorWidgetList:
+            for index in range(layout.count()):
+                layout.itemAt(index).widget().hide()
+        
+        self._createUiTab_color()
+
+    def _delColor(self, colorName, index):
+        self.colors[colorName][index] = None
+        for layout in self.uiTab_colorWidgetList:
+            for index in range(layout.count()):
+                layout.itemAt(index).widget().hide()
+        self._createUiTab_color()
     
     def _createUiTab_misc(self):
         for miscName, miscValue in SettingsSingleton().items():
             miscSection = QtWidgets.QHBoxLayout()
             miscSection.addWidget(QtWidgets.QLabel(miscName, self))
-            widget = self._createMiscItems(miscValue, miscName)
+            widget = self._prepareMiscItems(miscValue)
             self.values["misc"].append({miscName: widget}) 
             miscSection.addWidget(widget)
             self.uiGridLayout_miscTab.addLayout(miscSection)
                 
-    def _createMiscItems(self, item):
+    def _prepareMiscItems(self, item):
         if type(item) == int:
             widget = QtWidgets.QSpinBox()
             widget.setMaximum(170)
