@@ -1,5 +1,5 @@
 import json, logging
-from PyQt5 import QtGui, QtCore
+from PyQt5 import QtGui, QtCore, QtWidgets
 from utils import paths
 
 logger = logging.getLogger(__name__)
@@ -47,16 +47,12 @@ class SettingsSingleton():
         return self.data["misc"].items()
 
     def getMiscWidgetText(self, widget):
-        '''
-        if str(type(widget)) == "<class 'PyQt5.QtWidgets.QSpinBox'>":
+        if isinstance(widget, QtWidgets.QSpinBox):
             return widget.value()
-        if str(type(widget)) == "<class 'PyQt5.QtWidgets.QLineEdit'>":
+        if isinstance(widget, QtWidgets.QLineEdit):
             return widget.text()
-        if str(type(widget)) == "<class 'PyQt5.QtWidgets.QCheckBox'>":
+        if isinstance(widget, QtWidgets.QCheckBox):
             return widget.isChecked()
-        
-        -->if isinstance(widget, QtWidgets.QSpinBox):
-        '''
     
     def getComboboxHistory(self, combobox):
         return self.getComboboxHistoryByName(self._widgetName(combobox))

@@ -21,14 +21,11 @@ class PreferencesDialog(QtWidgets.QDialog):
         uic.loadUi(paths.get_ui_filepath("preferences_dialog.ui"), self)
         self.setWindowIcon(QtGui.QIcon(paths.get_art_filepath("monal_log_viewer.png")))
 
-        self.values = {"history": [], "misc": []}
-
         self.colors = {}
         for colorName in SettingsSingleton().getColorNames():
             self.colors[colorName] = SettingsSingleton().getQColorTuple(colorName)
-
         self.history = {}
-        
+        self.misc = {}
 
         self._createUiTab_color()
         self._createHistory()
@@ -36,6 +33,16 @@ class PreferencesDialog(QtWidgets.QDialog):
 
         self.buttonBox.button(QtWidgets.QDialogButtonBox.RestoreDefaults).clicked.connect(self._restoreDefaults)
         self.buttonBox.button(QtWidgets.QDialogButtonBox.Discard).clicked.connect(self.close)
+
+    def accept(self, *args):
+        for color in self.colors:
+            SettingsSingleton().setQColorTuple(color, self.colors[color])
+        for entry in self.history:
+            data = [self.history[data].item(item) for item in range(self.history[data].count())]
+            SettingsSingleton().setComboboxHistory(entry, data)
+        for miscItem in self.misc:
+            SettingsSingleton()[miscItem] = SettingsSingleton().getMiscWidgetText(self.misc[miscItem])
+        super().accept()
 
     def _createUiTab_color(self):
         for colorName in SettingsSingleton().getColorNames():
@@ -50,12 +57,12 @@ class PreferencesDialog(QtWidgets.QDialog):
 
     def _createColorButton(self, colorName):
         colorTuple = SettingsSingleton().getCssColorTuple(colorName)
-        rgbTuple = SettingsSingleton().getCssColorTuple(colorName)
+        rgbTuple = SettingsSingleton().getColorTuple(colorName)
         buttons = []
         for index in range(len(colorTuple)):
             button = QtWidgets.QPushButton(self.uiTab_color)
             if colorTuple[index] != None:
-                button.setText(colorTuple[index])
+                button.setText("rgb(%d, %d, %d)" % tuple(rgbTuple[index]))
                 button.setStyleSheet("background-color: %s; color: %s;" % (colorTuple[index], SettingsSingleton().getCssContrastColor(*rgbTuple[index])))
             else:
                 button.setText("Add")
@@ -76,7 +83,7 @@ class PreferencesDialog(QtWidgets.QDialog):
 
             colorTuple = self.colors[colorName]
             rgbColor = [colorTuple[index].red(), colorTuple[index].green(), colorTuple[index].blue()]
-            button.setText("rgb(%d, %d, %d)" % rgbColor)
+            button.setText("rgb(%d, %d, %d)" % tuple(rgbColor))
             button.setStyleSheet("background-color: %s; color: %s;" % (colorTuple[index].name(), SettingsSingleton().getCssContrastColor(*rgbColor)))
 
     def _delColor(self, colorName, index, button):
@@ -89,9 +96,9 @@ class PreferencesDialog(QtWidgets.QDialog):
             miscSection = QtWidgets.QHBoxLayout()
             miscSection.addWidget(QtWidgets.QLabel(miscName, self))
             widget = self._createMiscWidget(miscValue)
-            self.values["misc"].append({miscName: widget}) 
             miscSection.addWidget(widget)
             self.uiGridLayout_miscTab.addLayout(miscSection)
+            self.misc[miscName] = widget
                 
     def _createMiscWidget(self, item):
         if type(item) == int:
@@ -124,12 +131,12 @@ class PreferencesDialog(QtWidgets.QDialog):
             button.clicked.connect(functools.partial(self._addComboboxItem, deletableQListWidget, lineEdit))
             button.setText("Add")
             addSection.addWidget(button)
-            addSection.addWidget(lineEdit)
-            self.values["history"].append({combobox: deletableQListWidget}) 
+            addSection.addWidget(lineEdit) 
             historySection.addWidget(QtWidgets.QLabel(combobox, self))
             historySection.addWidget(deletableQListWidget)
             historySection.addLayout(addSection)
             self.uiVLayout_historyTab.addLayout(historySection)
+            self.history[combobox] = deletableQListWidget
 
     def _addComboboxItem(self, listWidget, lineEdit):
         if lineEdit.text() != None:
