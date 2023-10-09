@@ -45,39 +45,29 @@ class SettingsSingleton():
     
     def items(self):
         return self.data["misc"].items()
-    
-    def storePreferences(self, values):
-        for color in values["color"]:
-            self.data["color"][list(color.keys())[0]]["data"].clear()
-            for index in range(len(color)):
-                self.data["color"][list(color.keys())[0]]["data"] = list(color.values())[index]
-
-        for name in values["history"]:
-            listWidget = list(name.keys())[0]
-            self.data["combobox"][listWidget] = [name[listWidget].item(index).text() for index in range(name[listWidget].count())]
-
-        for widget in values["misc"]:
-            self.data["misc"][list(widget.keys())[0]] = self.getMiscWidgetText(widget[list(widget.keys())[0]])
-
-        for name in values["displayText"]:
-            textBox = name[list(name.keys())[0]]
-            if textBox.toPlainText() != "":
-                self.data["displayText"][list(name.keys())[0]] = textBox.toPlainText()
-        self._store()
 
     def getMiscWidgetText(self, widget):
+        '''
         if str(type(widget)) == "<class 'PyQt5.QtWidgets.QSpinBox'>":
             return widget.value()
         if str(type(widget)) == "<class 'PyQt5.QtWidgets.QLineEdit'>":
             return widget.text()
         if str(type(widget)) == "<class 'PyQt5.QtWidgets.QCheckBox'>":
             return widget.isChecked()
+        
+        -->if isinstance(widget, QtWidgets.QSpinBox):
+        '''
     
     def getComboboxHistory(self, combobox):
-            name = self._widgetName(combobox)
-            if name in self.data["combobox"]:
-                return self.data["combobox"][name]
-            return []
+        return self.getComboboxHistoryByName(self._widgetName(combobox))
+    
+    def getComboboxNames(self):
+        return list(self.data["combobox"].keys())
+    
+    def getComboboxHistoryByName(self, name):
+        if name in self.data["combobox"]:
+            return self.data["combobox"][name]
+        return []
 
     def loadDimensions(self, widget):
         if self._widgetName(widget) in self.data["dimensions"]:
@@ -117,7 +107,7 @@ class SettingsSingleton():
         return self.getCssColorTuple(name)[0]
     
     def getColorNames(self):
-        return self.data["color"].keys()
+        return list(self.data["color"].keys())
         
     def getColor(self, name):
         return self.getColorTuple(name)[0]

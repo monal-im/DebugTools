@@ -16,10 +16,10 @@
     "dimensions": {},
     "state": {},
     "misc": {
-        "staticLineWrap": 140
+        "staticLineWrap": 140,
+        "currentFormatter": "default"
     },
-    "displayText":
-    {
-        "openFile": "retval = '%s %s' % (timestamp, message)"
+    "formattingCode": {
+        "default": "retval = '%s %s' % (timestamp, message)"
     }
 }
