@@ -161,7 +161,7 @@ class MainWindow(QtWidgets.QMainWindow):
     
     def getLogMessage(self, entry):
         loc = {}
-        exec(SettingsSingleton().data["displayText"]["openFile"], {
+        exec(SettingsSingleton().getCurrentFormatter(), {
                 "entry": entry, 
                 "_counter": entry["_counter"],
                 "_processID": entry["_processID"],

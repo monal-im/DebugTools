@@ -51,6 +51,8 @@ class SettingsSingleton():
             return widget.value()
         if isinstance(widget, QtWidgets.QLineEdit):
             return widget.text()
+        if isinstance(widget, QtWidgets.QComboBox):
+            return widget.currentText()
         if isinstance(widget, QtWidgets.QCheckBox):
             return widget.isChecked()
     
@@ -92,6 +94,23 @@ class SettingsSingleton():
     def setComboboxHistory(self, combobox, history):
         self.data["combobox"][self._widgetName(combobox)] = history
         self._store()
+
+    def setFormat(self, name, value):
+        if value != None:
+            self.data["formattingCode"][name] = value
+        else:
+            if name in self.data["formattingCode"]:
+                self.data["formattingCode"].pop(name)
+        self._store()
+
+    def getformatterNames(self):
+        return list(self.data["formattingCode"].keys())
+    
+    def getformatterCodeData(self, key):
+        return self.data["formattingCode"][key]
+    
+    def getCurrentFormatter(self):
+        return self.data["formattingCode"][self.data["misc"]["currentFormatter"]]
 
     def getTupleColorLen(self, name):
         return self.data["color"][name]["len"]
