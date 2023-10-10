@@ -205,13 +205,17 @@ class PreferencesDialog(QtWidgets.QDialog):
         return (lineEdit, button, plainText)
 
     def _restoreDefaults(self):
-        msgBox = QtWidgets.QMessageBox.warning(
+        msgBox = QtWidgets.QMessageBox.question(
             self,
             "Monal Log Viewer | WARNING", 
-            "Make sure that nothing important is going on, due to the shutdown of this program!"
+            "Make sure that nothing important is going on, due to the shutdown of this program!",
+            QtWidgets.QMessageBox.Yes | QtWidgets.QMessageBox.No
         )
         def deleteSettings():
             os.remove(paths.get_conf_filepath("settings.json"))
             sys.exit()
-        msgBox.accepted.connect(deleteSettings)
+        if msgBox == QtWidgets.QMessageBox.Yes:
+            deleteSettings()
+        else:
+            return
         msgBox.show()
