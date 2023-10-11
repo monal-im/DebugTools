@@ -1,6 +1,6 @@
 from PyQt5 import QtWidgets, uic, QtGui, QtCore
 from storage import SettingsSingleton
-from ui_utils import PythonHighlighter
+from ui.utils import PythonHighlighter
 import functools
 import sys, os 
 

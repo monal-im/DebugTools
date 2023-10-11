@@ -8,7 +8,7 @@ import sys, os
 import textwrap
 
 from storage import Rawlog, SettingsSingleton
-from ui_utils import Completer, MagicLineEdit, Statusbar
+from ui.utils import Completer, MagicLineEdit, Statusbar
 from utils import catch_exceptions, Search, QueryStatus, matchQuery, paths
 from utils.constants import LOGLEVELS
 from .preferences_dialog import PreferencesDialog
