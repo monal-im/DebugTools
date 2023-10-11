@@ -41,7 +41,7 @@ class PreferencesDialog(QtWidgets.QDialog):
         for color in self.colors:
             SettingsSingleton().setQColorTuple(color, self.colors[color])
         for entry in self.history:
-            data = [self.history[data].item(item) for item in range(self.history[data].count())]
+            data = [self.history[entry].item(item).text() for item in range(self.history[entry].count())]
             SettingsSingleton().setComboboxHistory(entry, data)
         for miscItem in self.misc:
             SettingsSingleton()[miscItem] = SettingsSingleton().getMiscWidgetText(self.misc[miscItem])

@@ -149,43 +149,17 @@ class MainWindow(QtWidgets.QMainWindow):
             self._updateStatusbar()
             
     def itemColorFactory(self, flag):
-        table = {
-            LOGLEVELS['ERROR']: "logline-error", 
-            LOGLEVELS['WARNING']: "logline-warning",
-            LOGLEVELS['INFO']: "logline-info",
-            LOGLEVELS['DEBUG']: "logline-debug",
-            LOGLEVELS['VERBOSE']: "logline-verbose",
-            LOGLEVELS['STATUS']: "logline-status"
-        }
-        return tuple(SettingsSingleton().getQColorTuple(table[flag]))
+        return tuple(SettingsSingleton().getQColorTuple({v: "logline-%s" % k.lower() for k, v in LOGLEVELS.items()}[flag]))
     
     def getLogMessage(self, entry):
         loc = {}
-        exec(SettingsSingleton().getCurrentFormatter(), {
-                "entry": entry, 
-                "_counter": entry["_counter"],
-                "_processID": entry["_processID"],
-                "context": entry["context"],
-                "file": entry["file"],
-                "fileName": entry["fileName"],
-                "flag": entry["flag"],
-                "function": entry["function"],
-                "level": entry["level"],
-                "line": entry["line"],
-                "options": entry["options"],
-                "message": entry["message"],
-                "qos": entry["qos"],
-                "queueLabel": entry["queueLabel"],
-                "tag['processType']": entry["tag"]["processType"],
-                "tag['queueThreadLabel']": entry["tag"]["queueThreadLabel"],
-                "tag['representedObject']": entry["tag"]["representedObject"],
-                "threadID": entry["threadID"],
-                "threadName": entry["threadName"],
-                "timestamp": entry["timestamp"]
-            }, loc)
-        
-        return str(loc['retval'])
-
+        keywords = {value: entry[value] for value in entry.keys()}
+        try:
+            exec(SettingsSingleton().getCurrentFormatter(), keywords, loc)
+            return str(loc['retval'])
+        except:
+            return "Code execution failed, file couldn't be opened! ✗"
+            
     @catch_exceptions(logger=logger)
     def inspectLine(self, *args):
         self.uiTable_characteristics.setHorizontalHeaderLabels(["path", "value"])

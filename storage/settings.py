@@ -92,13 +92,13 @@ class SettingsSingleton():
         self._store()
 
     def setComboboxHistory(self, combobox, history):
-        self.data["combobox"][self._widgetName(combobox)] = history
+        self.data["combobox"][combobox] = history
         self._store()
 
     def setFormat(self, name, value):
         if value != None:
             self.data["formattingCode"][name] = value
-        else:
+        elif value == None:
             if name in self.data["formattingCode"]:
                 self.data["formattingCode"].pop(name)
         self._store()
