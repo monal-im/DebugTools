@@ -52,6 +52,7 @@ class PreferencesDialog(QtWidgets.QDialog):
     def _createUiTab_color(self):
         for colorName in SettingsSingleton().getColorNames():
             colorSection = QtWidgets.QHBoxLayout()
+            colorSection.setAlignment(QtCore.Qt.AlignTop)
             colorSection.addWidget(QtWidgets.QLabel(colorName, self))
 
             for button in self._createColorButton(colorName):
@@ -102,6 +103,7 @@ class PreferencesDialog(QtWidgets.QDialog):
             miscSection.addWidget(QtWidgets.QLabel(miscName, self))
             widget = self._createMiscWidget(miscValue, miscName)
             miscSection.addWidget(widget)
+            self.uiGridLayout_miscTab.setAlignment(QtCore.Qt.AlignTop)
             self.uiGridLayout_miscTab.addLayout(miscSection)
             self.misc[miscName] = widget
                 
