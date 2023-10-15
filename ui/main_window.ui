@@ -231,6 +231,9 @@
     </property>
     <addaction name="uiAction_preferences"/>
     <addaction name="uiAction_search"/>
+    <addaction name="separator"/>
+    <addaction name="uiAction_pushStack"/>
+    <addaction name="uiAction_popStack"/>
    </widget>
    <addaction name="menuFile"/>
    <addaction name="menuEdit"/>
@@ -276,6 +279,22 @@
    </property>
    <property name="shortcut">
     <string>Ctrl+E</string>
+   </property>
+  </action>
+  <action name="uiAction_pushStack">
+   <property name="text">
+    <string>set Stack</string>
+   </property>
+   <property name="shortcut">
+    <string>Ctrl+]</string>
+   </property>
+  </action>
+  <action name="uiAction_popStack">
+   <property name="text">
+    <string>pop Stack</string>
+   </property>
+   <property name="shortcut">
+    <string>Ctrl+-</string>
    </property>
   </action>
  </widget>

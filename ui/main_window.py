@@ -4,12 +4,12 @@
 
 from PyQt5 import QtWidgets, uic, QtGui, QtCore
 from PyQt5.QtWidgets import QStyle
-import sys, os
+import sys, os, functools
 import textwrap
 
 from storage import Rawlog, SettingsSingleton
-from ui.utils import Completer, MagicLineEdit, Statusbar
 from utils import catch_exceptions, Search, QueryStatus, matchQuery, paths
+from ui.utils import Completer, MagicLineEdit, Statusbar
 from utils.constants import LOGLEVELS
 from .preferences_dialog import PreferencesDialog
 
@@ -62,9 +62,11 @@ class MainWindow(QtWidgets.QMainWindow):
         self.uiCombobox_filterInput.lineEdit().setText("")
 
         QtWidgets.QApplication.instance().focusChanged.connect(self.focusChangedEvent)
+        self.uiSplitter_inspectLine.splitterMoved.connect(functools.partial(SettingsSingleton().storeSplitterDimension, self.uiSplitter_inspectLine))
+        SettingsSingleton().loadSplitterDimensions(self.uiSplitter_inspectLine)
 
-        QtWidgets.QShortcut(QtGui.QKeySequence("Ctrl++"), self).activated.connect(self.setStack)
-        QtWidgets.QShortcut(QtGui.QKeySequence("Ctrl+-"), self).activated.connect(self.getStack)
+        self.uiAction_pushStack.triggered.connect(self.pushStack)
+        self.uiAction_popStack.triggered.connect(self.popStack)
         self.stack = []
 
         self.currentDetailIndex = None
@@ -73,11 +75,9 @@ class MainWindow(QtWidgets.QMainWindow):
         #set enable false!!!
     
     def quit(self):
-        SettingsSingleton().storeSplitterDimension(self.uiSplitter_inspectLine)
         sys.exit()
 
     def closeEvent(self, event):
-        SettingsSingleton().storeSplitterDimension(self.uiSplitter_inspectLine)
         sys.exit()
 
     def resizeEvent(self, e: QtGui.QResizeEvent):
@@ -190,7 +190,6 @@ class MainWindow(QtWidgets.QMainWindow):
             row += 1
         
         self.uiTable_characteristics.show()
-        SettingsSingleton().loadSplitterDimensions(self.uiSplitter_inspectLine)
         self.currentDetailIndex = self.uiWidget_listView.selectedIndexes()[0].row()
 
     @catch_exceptions(logger=logger)
@@ -219,6 +218,7 @@ class MainWindow(QtWidgets.QMainWindow):
     def preferences(self, *args):
         self.preferencesDialog = PreferencesDialog()
         self.preferencesDialog.show()
+        self.preferencesDialog.exec_()
 
     @catch_exceptions(logger=logger)
     def openSearchwidget(self, *args):
@@ -338,7 +338,7 @@ class MainWindow(QtWidgets.QMainWindow):
         progressBar.show()
         return (progressBar, update_progressbar)
     
-    def setStack(self):
+    def pushStack(self):
         selectedLine = None
         if self.uiWidget_listView.selectedIndexes():
             selectedLine = self.uiWidget_listView.selectedIndexes()[0].row()
@@ -363,7 +363,7 @@ class MainWindow(QtWidgets.QMainWindow):
         self.stack.append(state)
         self.statusbar.showDynamicText("State saved ✓")
 
-    def getStack(self):
+    def popStack(self):
         if len(self.stack) < 1:
             self.statusbar.showDynamicText("Unable to load state ✗")
             return
