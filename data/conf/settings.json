@@ -7,10 +7,10 @@
         "logline-verbose":  {"len": 2, "data": [[128, 128, 128], null]},
         "logline-status":   {"len": 2, "data": [[0, 0, 0], [255, 0, 0]]},
 
-        "combobox-eof_reached": {"len": 2, "data": [[0, 150, 255], null]},
-        "combobox-query_error": {"len": 2, "data": [[255, 36, 0], null]},
-        "combobox-query_ok":    {"len": 2, "data": [[80, 200, 120], null]},
-        "combobox-query_empty": {"len": 2, "data": [[255, 215, 0], null]}
+        "combobox-eof_reached": {"len": 1, "data": [[0, 150, 255]]},
+        "combobox-query_error": {"len": 1, "data": [[255, 36, 0]]},
+        "combobox-query_ok":    {"len": 1, "data": [[80, 200, 120]]},
+        "combobox-query_empty": {"len": 1, "data": [[255, 215, 0]]}
     },
     "combobox": {},
     "dimensions": {},
@@ -19,7 +19,7 @@
         "staticLineWrap": 140,
         "currentFormatter": "default"
     },
-    "formattingCode": {
+    "formatter": {
         "default": "retval = '%s %s' % (timestamp, message)"
     }
 }
