@@ -9,11 +9,9 @@ def catch_exceptions(exception=Exception, logger=logging.getLogger(__name__)):
         @functools.wraps(func)
         def wrapper(*args, **kwargs):
             try:
-                #logger.debug("ARGS: %s" % str(args))
-                #logger.debug("KWARGS: %s" % str(kwargs))
                 return func(*args, **kwargs)
             except exception as err:
-                logger.exception(err)
+                logger.exception("Exception in thread/pyqt callback!")
                 logger.error("Shutting down immediately due to exception!")
                 #_thread.interrupt_main()
                 sys.exit(1)
