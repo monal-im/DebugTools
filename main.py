@@ -1,3 +1,4 @@
+#!/usr/bin/env python3
 import sys, os
 import argparse
 from PyQt5 import QtWidgets
