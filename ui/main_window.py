@@ -49,6 +49,8 @@ class MainWindow(QtWidgets.QMainWindow):
         MagicLineEdit(self.uiCombobox_searchInput)
         MagicLineEdit(self.uiCombobox_filterInput)
 
+        self.statusColor = {}
+
         QtWidgets.QShortcut(QtGui.QKeySequence("ESC"), self).activated.connect(self.hideSearch)
         self.uiCombobox_searchInput.clear()
         self.uiCombobox_searchInput.activated[str].connect(self.searchNext)
@@ -62,8 +64,8 @@ class MainWindow(QtWidgets.QMainWindow):
         self.uiCombobox_filterInput.lineEdit().setText("")
 
         QtWidgets.QApplication.instance().focusChanged.connect(self.focusChangedEvent)
-        self.uiSplitter_inspectLine.splitterMoved.connect(functools.partial(SettingsSingleton().storeSplitterDimension, self.uiSplitter_inspectLine))
-        SettingsSingleton().loadSplitterDimensions(self.uiSplitter_inspectLine)
+        self.uiSplitter_inspectLine.splitterMoved.connect(functools.partial(SettingsSingleton().storeState, self.uiSplitter_inspectLine))
+        SettingsSingleton().loadState(self.uiSplitter_inspectLine)
 
         self.uiAction_pushStack.triggered.connect(self.pushStack)
         self.uiAction_popStack.triggered.connect(self.popStack)
@@ -227,13 +229,14 @@ class MainWindow(QtWidgets.QMainWindow):
 
     @catch_exceptions(logger=logger)
     def setComboboxStatusColor(self, combobox, status):
-        table = {
-            QueryStatus.EOF_REACHED: "background-color: %s" % SettingsSingleton().getCssColor("combobox-eof_reached"),
-            QueryStatus.QUERY_ERROR: "background-color: %s" % SettingsSingleton().getCssColor("combobox-query_error"),
-            QueryStatus.QUERY_OK: "background-color: %s" % SettingsSingleton().getCssColor("combobox-query_ok"),
-            QueryStatus.QUERY_EMPTY: "background-color: %s" % SettingsSingleton().getCssColor("combobox-query_empty")
-        }
-        combobox.setStyleSheet(table[status])
+        if len(self.statusColor) == 0:
+            self.statusColor =  {
+                QueryStatus.EOF_REACHED: "background-color: %s" % SettingsSingleton().getCssColor("combobox-eof_reached"),
+                QueryStatus.QUERY_ERROR: "background-color: %s" % SettingsSingleton().getCssColor("combobox-query_error"),
+                QueryStatus.QUERY_OK: "background-color: %s" % SettingsSingleton().getCssColor("combobox-query_ok"),
+                QueryStatus.QUERY_EMPTY: "background-color: %s" % SettingsSingleton().getCssColor("combobox-query_empty")
+            }
+        combobox.setStyleSheet(self.statusColor[status])
 
     def searchNext(self):
         # use unbound function, self will be bound in _search() later on after the instance was created

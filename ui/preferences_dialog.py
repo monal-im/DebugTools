@@ -36,12 +36,22 @@ class PreferencesDialog(QtWidgets.QDialog):
             SettingsSingleton().setQColorTuple(color, self.colors[color])
         for combobox in self.history:
             data = [self.history[combobox].item(item).text() for item in range(self.history[combobox].count())]
-            SettingsSingleton().setComboboxHistory(combobox, data)
+            SettingsSingleton().setComboboxHistoryByName(combobox, data)
         for miscItem in self.misc:
-            SettingsSingleton()[miscItem] = SettingsSingleton().getMiscWidgetText(self.misc[miscItem])
+            SettingsSingleton()[miscItem] = self._getMiscWidgetText(self.misc[miscItem])
         for formatterName in self.formatter:
             SettingsSingleton().setFormatter(formatterName, self.formatter[formatterName])
         super().accept()
+
+    def _getMiscWidgetText(self, widget):
+        if isinstance(widget, QtWidgets.QSpinBox):
+            return widget.value()
+        if isinstance(widget, QtWidgets.QLineEdit):
+            return widget.text()
+        if isinstance(widget, QtWidgets.QComboBox):
+            return widget.currentText()
+        if isinstance(widget, QtWidgets.QCheckBox):
+            return widget.isChecked()
 
     def _createUiTab_color(self):
         for colorName in SettingsSingleton().getColorNames():
@@ -105,6 +115,7 @@ class PreferencesDialog(QtWidgets.QDialog):
         if type(item) == int:
             widget = QtWidgets.QSpinBox()
             widget.setValue(item)
+            widget.setMaximum(240)
         elif type(item) == int:
             widget = QtWidgets.QDoubleSpinBox()
             widget.setDecimals(1)

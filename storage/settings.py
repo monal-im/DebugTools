@@ -47,16 +47,6 @@ class SettingsSingleton():
     
     def items(self):
         return self.data["misc"].items()
-
-    def getMiscWidgetText(self, widget):
-        if isinstance(widget, QtWidgets.QSpinBox):
-            return widget.value()
-        if isinstance(widget, QtWidgets.QLineEdit):
-            return widget.text()
-        if isinstance(widget, QtWidgets.QComboBox):
-            return widget.currentText()
-        if isinstance(widget, QtWidgets.QCheckBox):
-            return widget.isChecked()
     
     def getComboboxHistory(self, combobox):
         return self.getComboboxHistoryByName(self._widgetName(combobox))
@@ -71,9 +61,10 @@ class SettingsSingleton():
     
     def setComboboxHistoryByName(self, name, value):
         self.data["combobox"][name] = value
+        self._store()
 
     def setComboboxHistory(self, combobox, history):
-        self.data["combobox"][combobox] = history
+        self.data["combobox"][self._widgetName(combobox)] = history
         self._store()
 
     def loadDimensions(self, widget):
@@ -84,21 +75,13 @@ class SettingsSingleton():
         self.data["dimensions"][self._widgetName(widget)] = str(widget.saveGeometry().toBase64(), "UTF-8")
         self._store()
 
-    def storeSplitterDimension(self, widget):
+    def storeState(self, widget):
         self.data["dimensions"][self._widgetName(widget)] = str(widget.saveState().toBase64(), "UTF-8")
         self._store()
-
-    def loadSplitterDimensions(self, widget):
-        if self._widgetName(widget) in self.data["dimensions"]:
-            widget.restoreState(QtCore.QByteArray.fromBase64(bytes(self.data["dimensions"][self._widgetName(widget)], "UTF-8")))
 
     def loadState(self, widget):
         if self._widgetName(widget) in self.data["dimensions"]:
             widget.restoreState(QtCore.QByteArray.fromBase64(bytes(self.data["dimensions"][self._widgetName(widget)], "UTF-8")))
-
-    def storeState(self, widget):
-        self.data["dimensions"][self._widgetName(widget)] = str(widget.saveState().toBase64(), "UTF-8")
-        self._store()
 
     def setFormatter(self, name, code):
         if code != None:
