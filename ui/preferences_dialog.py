@@ -40,7 +40,7 @@ class PreferencesDialog(QtWidgets.QDialog):
         for miscItem in self.misc:
             SettingsSingleton()[miscItem] = self._getMiscWidgetText(self.misc[miscItem])
         for formatterName in self.formatter:
-            SettingsSingleton().setFormatter(formatterName, self.formatter[formatterName])
+            SettingsSingleton().setFormatter(formatterName.text(), self.formatter[formatterName].toPlainText())
         super().accept()
 
     def _getMiscWidgetText(self, widget):
@@ -163,29 +163,28 @@ class PreferencesDialog(QtWidgets.QDialog):
             if index < len(names):
                 self.syntaxHighlights[names[index]] = PythonHighlighter(plainText.document())
                 lineEdit.setText(names[index])
-                formatterData = SettingsSingleton().getFormatter(names[index])
+                plainText.setPlainText(SettingsSingleton().getFormatter(names[index]))
                 plainText.show()
-                plainText.setPlainText(formatterData)
-                self.formatter[names[index]] = formatterData
+                self.formatter[lineEdit] = plainText
                 button.setText("Delete")
                 button.setIcon(self.style().standardIcon(getattr(QtWidgets.QStyle, "SP_DialogCancelButton")))
                 button.disconnect()
-                button.clicked.connect(functools.partial(self._deleteFormat, names[index], lineEdit, plainText, button))
+                button.clicked.connect(functools.partial(self._deleteFormat, lineEdit, plainText, button))
 
-    def _deleteFormat(self, name, lineEdit, plainText, button):
-        self.formatter[name] = None
+    def _deleteFormat(self, lineEdit, plainText, button):
+        del self.formatter[lineEdit]
         lineEdit.hide()
         plainText.hide()
         button.hide()
 
     def _addFormat(self, lineEdit, plainText, button):
         if lineEdit.text() != "" and plainText.toPlainText() != "":
-            self.formatter[lineEdit.text()] = plainText.toPlainText()
+            self.formatter[lineEdit] = plainText
             self.syntaxHighlights[lineEdit.text()] = PythonHighlighter(plainText.document())
             button.disconnect()
             button.setText("Delete")
             button.setIcon(self.style().standardIcon(getattr(QtWidgets.QStyle, "SP_DialogCancelButton")))
-            button.clicked.connect(functools.partial(self._deleteFormat, lineEdit.text(), lineEdit, plainText, button))
+            button.clicked.connect(functools.partial(self._deleteFormat, lineEdit, plainText, button))
             self._createFormatterEntry()
 
     def _createFormatterEntry(self):
