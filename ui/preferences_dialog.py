@@ -29,21 +29,22 @@ class PreferencesDialog(QtWidgets.QDialog):
         self._createUiTab_formatter()
 
         self.buttonBox.button(QtWidgets.QDialogButtonBox.RestoreDefaults).clicked.connect(self._restoreDefaults)
-        self.buttonBox.button(QtWidgets.QDialogButtonBox.Discard).clicked.connect(super().accept)
+        self.buttonBox.button(QtWidgets.QDialogButtonBox.Discard).clicked.connect(self.reject)
+        self.buttonBox.button(QtWidgets.QDialogButtonBox.Apply).clicked.connect(self.accept)
 
     def accept(self, *args):
-        for color in self.colors:
-            SettingsSingleton().setQColorTuple(color, self.colors[color])
-        for combobox in self.history:
-            data = [self.history[combobox].item(item).text() for item in range(self.history[combobox].count())]
-            SettingsSingleton().setComboboxHistoryByName(combobox, data)
-        for miscItem in self.misc:
-            SettingsSingleton()[miscItem] = self._getMiscWidgetText(self.misc[miscItem])
-        for formatterName in self.formatter:
-            SettingsSingleton().setFormatter(formatterName.text(), self.formatter[formatterName].toPlainText())
+        for colorName in self.colors:
+            SettingsSingleton().setQColorTuple(colorName, self.colors[colorName])
+        for comboboxName in self.history:
+            data = [self.history[comboboxName].item(item).text() for item in range(self.history[comboboxName].count())]
+            SettingsSingleton().setComboboxHistoryByName(comboboxName, data)
+        for miscName in self.misc:
+            SettingsSingleton()[miscName] = self._getMiscWidgetValue(self.misc[miscName])
+        for formatterNameLineEdit in self.formatter:
+            SettingsSingleton().setFormatter(formatterNameLineEdit.text(), self.formatter[formatterNameLineEdit].toPlainText())
         super().accept()
 
-    def _getMiscWidgetText(self, widget):
+    def _getMiscWidgetValue(self, widget):
         if isinstance(widget, QtWidgets.QSpinBox):
             return widget.value()
         if isinstance(widget, QtWidgets.QLineEdit):
@@ -111,23 +112,26 @@ class PreferencesDialog(QtWidgets.QDialog):
             self.uiGridLayout_miscTab.addLayout(miscSection)
             self.misc[miscName] = widget
                 
-    def _createMiscWidget(self, item, miscName):
-        if type(item) == int:
+    def _createMiscWidget(self, value, miscName):
+        if type(value) == int:
             widget = QtWidgets.QSpinBox()
-            widget.setValue(item)
-            widget.setMaximum(240)
-        elif type(item) == int:
+            widget.setValue(value)
+            widget.setMaximum(1024)
+        elif type(value) == int:
             widget = QtWidgets.QDoubleSpinBox()
             widget.setDecimals(1)
             widget.setSingleStep(0.1)
-            widget.setValue(item)
-        elif type(item) == str:
+            widget.setValue(value)
+        elif type(value) == str and miscName != "currentFormatter":
+            widget = QtWidgets.QLineEdit()
+            widget.setText(value)
+        elif type(value) == str and miscName == "currentFormatter":
             widget = QtWidgets.QComboBox()
             widget.addItems(SettingsSingleton().getFormatterNames())
-            widget.setCurrentText(item)
-        elif type(item) == bool:
+            widget.setCurrentText(value)
+        elif type(value) == bool:
             widget = QtWidgets.QCheckBox()
-            widget.setChecked(item)
+            widget.setChecked(value)
         return widget
 
     def _createUiTab_history(self):
@@ -156,43 +160,43 @@ class PreferencesDialog(QtWidgets.QDialog):
             listWidget.addItem(QtWidgets.QListWidgetItem(lineEdit.text()))
 
     def _createUiTab_formatter(self):
-        self.syntaxHighlights = {}
+        self.syntaxHighlighters = {}
         names = SettingsSingleton().getFormatterNames()
         for index in range(len(names)+1):
-            lineEdit, button, plainText = self._createFormatterEntry()
+            lineEdit, button, code = self._createFormatterEntry()
             if index < len(names):
-                self.syntaxHighlights[names[index]] = PythonHighlighter(plainText.document())
+                self.syntaxHighlighters[names[index]] = PythonHighlighter(code.document())
                 lineEdit.setText(names[index])
-                plainText.setPlainText(SettingsSingleton().getFormatter(names[index]))
-                plainText.show()
-                self.formatter[lineEdit] = plainText
+                code.setPlainText(SettingsSingleton().getFormatter(names[index]))
+                code.show()
+                self.formatter[lineEdit] = code
                 button.setText("Delete")
                 button.setIcon(self.style().standardIcon(getattr(QtWidgets.QStyle, "SP_DialogCancelButton")))
                 button.disconnect()
-                button.clicked.connect(functools.partial(self._deleteFormat, lineEdit, plainText, button))
+                button.clicked.connect(functools.partial(self._deleteFormat, lineEdit, code, button))
 
-    def _deleteFormat(self, lineEdit, plainText, button):
+    def _deleteFormat(self, lineEdit, code, button):
         del self.formatter[lineEdit]
         lineEdit.hide()
-        plainText.hide()
+        code.hide()
         button.hide()
 
-    def _addFormat(self, lineEdit, plainText, button):
-        if lineEdit.text() != "" and plainText.toPlainText() != "":
-            self.formatter[lineEdit] = plainText
-            self.syntaxHighlights[lineEdit.text()] = PythonHighlighter(plainText.document())
+    def _addFormatter(self, lineEdit, code, button):
+        if lineEdit.text() != "" and code.toPlainText() != "":
+            self.formatter[lineEdit] = code
+            self.syntaxHighlighters[lineEdit.text()] = PythonHighlighter(code.document())
             button.disconnect()
             button.setText("Delete")
             button.setIcon(self.style().standardIcon(getattr(QtWidgets.QStyle, "SP_DialogCancelButton")))
-            button.clicked.connect(functools.partial(self._deleteFormat, lineEdit, plainText, button))
+            button.clicked.connect(functools.partial(self._deleteFormat, lineEdit, code, button))
             self._createFormatterEntry()
 
     def _createFormatterEntry(self):
         lineEdit = QtWidgets.QLineEdit()
         lineEdit.setPlaceholderText("Formatter name")
-        plainText = QtWidgets.QPlainTextEdit()
-        plainText.setPlaceholderText("retval = [...]")
-        self.syntaxHighlights[""] = PythonHighlighter(plainText.document())
+        code = QtWidgets.QPlainTextEdit()
+        code.setPlaceholderText("retval = [...]")
+        self.syntaxHighlighters[""] = PythonHighlighter(code.document())
         button = QtWidgets.QPushButton()
         horizonalLayout = QtWidgets.QHBoxLayout()
         verticalLayout = QtWidgets.QVBoxLayout()
@@ -201,18 +205,18 @@ class PreferencesDialog(QtWidgets.QDialog):
 
         button.setText("Create")
         button.setIcon(self.style().standardIcon(getattr(QtWidgets.QStyle, "SP_DialogApplyButton")))
-        button.clicked.connect(functools.partial(self._addFormat, lineEdit, plainText, button))
+        button.clicked.connect(functools.partial(self._addFormatter, lineEdit, code, button))
 
         verticalLayout.addWidget(lineEdit)
         verticalLayout.addWidget(button)
         horizonalLayout.addLayout(verticalLayout)
-        horizonalLayout.addWidget(plainText)
+        horizonalLayout.addWidget(code)
         self.uiVLayout_formatTabs.addLayout(horizonalLayout)
 
-        return (lineEdit, button, plainText)
+        return (lineEdit, button, code)
 
     @catch_exceptions(logger=logger)
-    def _restoreDefaults(self):
+    def _restoreDefaults(self, *args):
         msgBox = QtWidgets.QMessageBox.question(
             self,
             "Monal Log Viewer | WARNING", 
@@ -224,6 +228,4 @@ class PreferencesDialog(QtWidgets.QDialog):
             sys.exit()
         if msgBox == QtWidgets.QMessageBox.Yes:
             deleteSettings()
-        else:
-            return
         msgBox.show()

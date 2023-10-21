@@ -64,8 +64,7 @@ class SettingsSingleton():
         self._store()
 
     def setComboboxHistory(self, combobox, history):
-        self.data["combobox"][self._widgetName(combobox)] = history
-        self._store()
+        self.setComboboxHistoryByName(self._widgetName(combobox), history)
 
     def loadDimensions(self, widget):
         if self._widgetName(widget) in self.data["dimensions"]:
@@ -76,18 +75,18 @@ class SettingsSingleton():
         self._store()
 
     def storeState(self, widget):
-        self.data["dimensions"][self._widgetName(widget)] = str(widget.saveState().toBase64(), "UTF-8")
+        self.data["state"][self._widgetName(widget)] = str(widget.saveState().toBase64(), "UTF-8")
         self._store()
 
     def loadState(self, widget):
-        if self._widgetName(widget) in self.data["dimensions"]:
-            widget.restoreState(QtCore.QByteArray.fromBase64(bytes(self.data["dimensions"][self._widgetName(widget)], "UTF-8")))
+        if self._widgetName(widget) in self.data["state"]:
+            widget.restoreState(QtCore.QByteArray.fromBase64(bytes(self.data["state"][self._widgetName(widget)], "UTF-8")))
 
     def setFormatter(self, name, code):
         if code != None:
             if name != "" and code != "":
                 self.data["formatter"][name] = code
-        elif code == None:
+        else:
             if name in self.data["formatter"]:
                 del self.data["formatter"][name]
         self._store()
@@ -95,10 +94,10 @@ class SettingsSingleton():
     def getFormatterNames(self):
         return list(self.data["formatter"].keys())
     
-    def getFormatter(self, key):
-        return self.data["formatter"][key]
+    def getFormatter(self, name):
+        return self.data["formatter"][name]
     
-    def getCurrentFormatter(self):
+    def getCurrentFormatterCode(self):
         return self.data["formatter"][self.data["misc"]["currentFormatter"]]
 
     def getTupleColorLen(self, name):
@@ -143,7 +142,7 @@ class SettingsSingleton():
             if colors[color] == None:
                 colors[color] = None
             else:
-                colors[color] = list(int(colors[color].lstrip('#')[i:i+2], 16) for i in (0, 2, 4))
+                colors[color] = [int(colors[color].lstrip('#')[i:i+2], 16) for i in (0, 2, 4)]
         self.setColorTuple(name, colors)
 
     def getColorTuple(self, name):

@@ -49,7 +49,12 @@ class MainWindow(QtWidgets.QMainWindow):
         MagicLineEdit(self.uiCombobox_searchInput)
         MagicLineEdit(self.uiCombobox_filterInput)
 
-        self.statusColor = {}
+        self.colors = {
+            QueryStatus.EOF_REACHED: "background-color: %s" % SettingsSingleton().getCssColor("combobox-eof_reached"),
+            QueryStatus.QUERY_ERROR: "background-color: %s" % SettingsSingleton().getCssColor("combobox-query_error"),
+            QueryStatus.QUERY_OK: "background-color: %s" % SettingsSingleton().getCssColor("combobox-query_ok"),
+            QueryStatus.QUERY_EMPTY: "background-color: %s" % SettingsSingleton().getCssColor("combobox-query_empty")
+        }
 
         QtWidgets.QShortcut(QtGui.QKeySequence("ESC"), self).activated.connect(self.hideSearch)
         self.uiCombobox_searchInput.clear()
@@ -157,7 +162,7 @@ class MainWindow(QtWidgets.QMainWindow):
         loc = {}
         keywords = {value: entry[value] for value in entry.keys()}
         try:
-            exec(SettingsSingleton().getCurrentFormatter(), keywords, loc)
+            exec(SettingsSingleton().getCurrentFormatterCode(), keywords, loc)
             return str(loc['retval'])
         except:
             return "Code execution failed, file couldn't be opened! ✗"
@@ -229,14 +234,7 @@ class MainWindow(QtWidgets.QMainWindow):
 
     @catch_exceptions(logger=logger)
     def setComboboxStatusColor(self, combobox, status):
-        if len(self.statusColor) == 0:
-            self.statusColor =  {
-                QueryStatus.EOF_REACHED: "background-color: %s" % SettingsSingleton().getCssColor("combobox-eof_reached"),
-                QueryStatus.QUERY_ERROR: "background-color: %s" % SettingsSingleton().getCssColor("combobox-query_error"),
-                QueryStatus.QUERY_OK: "background-color: %s" % SettingsSingleton().getCssColor("combobox-query_ok"),
-                QueryStatus.QUERY_EMPTY: "background-color: %s" % SettingsSingleton().getCssColor("combobox-query_empty")
-            }
-        combobox.setStyleSheet(self.statusColor[status])
+        combobox.setStyleSheet(self.colors[status])
 
     def searchNext(self):
         # use unbound function, self will be bound in _search() later on after the instance was created
