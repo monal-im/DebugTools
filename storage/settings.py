@@ -188,6 +188,16 @@ class SettingsSingleton():
         try:
             with open(self.path, 'rb') as fp:
                 self.data = json.load(fp)
+            with open(self.defaultPath, 'rb') as fp:
+                defaults = json.load(fp)
+            
+            # apply new defaults not yet stored in settings json
+            for section in defaults:
+                for key in defaults[section]:
+                    if section not in self.data:
+                        self.data[section] = defaults[section]
+                    elif key not in self.data[section]:
+                        self.data[section][key] = defaults[section][key]
         except:
             logger.info("settings.json does not exist! Using default theme.")
 
