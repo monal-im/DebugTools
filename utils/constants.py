@@ -4,6 +4,8 @@ LOGLEVELS = {
     "INFO": 4,
     "DEBUG": 8,
     "VERBOSE": 16,
+    "STDOUT": 32,
+    "STDERR": 64,
     "STATUS": 256,
 }
 
