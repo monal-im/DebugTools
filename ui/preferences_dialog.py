@@ -129,6 +129,7 @@ class PreferencesDialog(QtWidgets.QDialog):
             widget = QtWidgets.QComboBox()
             widget.addItems(SettingsSingleton().getFormatterNames())
             widget.setCurrentText(value)
+            self.currrentFormatter = widget
         elif type(value) == bool:
             widget = QtWidgets.QCheckBox()
             widget.setChecked(value)
@@ -183,6 +184,7 @@ class PreferencesDialog(QtWidgets.QDialog):
 
     def _addFormatter(self, lineEdit, code, button):
         if lineEdit.text() != "" and code.toPlainText() != "":
+            self.currrentFormatter.addItem(lineEdit.text())
             self.formatter[lineEdit] = code
             self.syntaxHighlighters[lineEdit.text()] = PythonHighlighter(code.document())
             button.disconnect()
