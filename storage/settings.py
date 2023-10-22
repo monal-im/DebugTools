@@ -99,6 +99,9 @@ class SettingsSingleton():
     
     def getCurrentFormatterCode(self):
         return self.data["formatter"][self.data["misc"]["currentFormatter"]]
+    
+    def getTabWidth(self):
+        return self.data["misc"]["tabWidth"]
 
     def getTupleColorLen(self, name):
         return self.data["color"][name]["len"]

@@ -207,6 +207,11 @@ class PreferencesDialog(QtWidgets.QDialog):
         button.setIcon(self.style().standardIcon(getattr(QtWidgets.QStyle, "SP_DialogApplyButton")))
         button.clicked.connect(functools.partial(self._addFormatter, lineEdit, code, button))
 
+        lineEdit.setMaximumWidth(400)
+        button.setMaximumWidth(400)
+
+        code.setTabStopWidth(code.fontMetrics().width(' ') * SettingsSingleton().getTabWidth())
+
         verticalLayout.addWidget(lineEdit)
         verticalLayout.addWidget(button)
         horizonalLayout.addLayout(verticalLayout)

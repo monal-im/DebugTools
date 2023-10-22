@@ -19,7 +19,8 @@
     "state": {},
     "misc": {
         "staticLineWrap": 140,
-        "currentFormatter": "default"
+        "currentFormatter": "default",
+        "tabWidth": 4
     },
     "formatter": {
         "default": "retval = '%s %s' % (timestamp, message)"
