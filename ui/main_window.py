@@ -4,7 +4,7 @@
 
 from PyQt5 import QtWidgets, uic, QtGui, QtCore
 from PyQt5.QtWidgets import QStyle
-import sys, os, functools
+import sys, os, functools, traceback
 import textwrap
 
 from storage import Rawlog, SettingsSingleton
@@ -23,8 +23,8 @@ class MainWindow(QtWidgets.QMainWindow):
         uic.loadUi(paths.get_ui_filepath("main_window.ui"), self)
         self.setWindowIcon(QtGui.QIcon(paths.get_art_filepath("monal_log_viewer.png")))
         SettingsSingleton().loadDimensions(self)
-
         self.rawlog = Rawlog()
+
         self.search = None
         self.statusbar = Statusbar(self.uistatusbar_state)
 
@@ -33,7 +33,7 @@ class MainWindow(QtWidgets.QMainWindow):
         self.uiButton_next.setIcon(self.style().standardIcon(getattr(QStyle, "SP_ArrowForward")))
         self.uiButton_next.clicked.connect(self.searchNext)
 
-        self.uiAction_open.triggered.connect(self.openLogFile)
+        self.uiAction_open.triggered.connect(self.openFileBrowser)
         self.uiAction_close.triggered.connect(self.closeFile)
         self.uiAction_quit.triggered.connect(self.quit)
         self.uiAction_preferences.triggered.connect(self.preferences)
@@ -112,48 +112,53 @@ class MainWindow(QtWidgets.QMainWindow):
         combobox.setCompleter(completer)
 
     @catch_exceptions(logger=logger)
-    def openLogFile(self, *args):
+    def openFileBrowser(self, *args):
         file, check = QtWidgets.QFileDialog.getOpenFileName(None, "Monal Log Viewer | Open Logfile",
                                                             "", "Raw Log (*.rawlog)")
         if check:
-            self.statusbar.setText("Loading File: '%s'..." % os.path.basename(file))
+            self.openLogFile(file)
 
-            def loader(entry):
-                fg, bg = self.itemColorFactory(entry["flag"])
+    def openLogFile(self, file):
+        self.statusbar.setText("Loading File: '%s'..." % os.path.basename(file))
+        self.rawlog = Rawlog()
+        self.uiWidget_listView.clear()
 
-                item_with_color = "\n".join([textwrap.fill(line, SettingsSingleton()["staticLineWrap"],
-                    expand_tabs=False,
-                    replace_whitespace=False,
-                    drop_whitespace=False,
-                    break_long_words=True,
-                    break_on_hyphens=True,
-                    max_lines=None
-                ) if len(line) > SettingsSingleton()["staticLineWrap"] else line for line in self.getLogMessage(entry).strip().splitlines(keepends=False)])
+        def loader(entry):
+            fg, bg = self.itemColorFactory(entry["flag"])
 
-                item_with_color = QtWidgets.QListWidgetItem(item_with_color)
-                item_with_color.setForeground(fg)
-                if bg != None:
-                    item_with_color.setBackground(bg)
-                return {"uiItem": item_with_color, "data": entry}
+            item_with_color = "\n".join([textwrap.fill(line, SettingsSingleton()["staticLineWrap"],
+                expand_tabs=False,
+                replace_whitespace=False,
+                drop_whitespace=False,
+                break_long_words=True,
+                break_on_hyphens=True,
+                max_lines=None
+            ) if len(line) > SettingsSingleton()["staticLineWrap"] else line for line in self.getLogMessage(entry).strip().splitlines(keepends=False)])
 
-            progressbar, updateProgressbar = self.progressDialog("Opening File...", "Opening File: "+ file)
-            self.rawlog.load_file(file, progress_callback=updateProgressbar, custom_load_callback=loader)
+            item_with_color = QtWidgets.QListWidgetItem(item_with_color)
+            item_with_color.setForeground(fg)
+            if bg != None:
+                item_with_color.setBackground(bg)
+            return {"uiItem": item_with_color, "data": entry}
 
-            self.statusbar.setText("Rendering File: '%s'..." % file)
+        progressbar, updateProgressbar = self.progressDialog("Opening File...", "Opening File: "+ file)
+        self.rawlog.load_file(file, progress_callback=updateProgressbar, custom_load_callback=loader)
 
-            itemListsize = len(self.rawlog)
-            for index in range(itemListsize):
-                self.uiWidget_listView.addItem(self.rawlog[index]["uiItem"])
-                if "__warning" in self.rawlog[index]["data"] and self.rawlog[index]["data"]["__warning"] == True:
-                    self.QtWidgets.QMessageBox.warning(self, "File corruption detected", self.getLogMessage(self.rawlog[index]["data"]))
+        self.statusbar.setText("Rendering File: '%s'..." % file)
 
-            self.file = file
-            self.statusbar.showDynamicText(str("Done ✓ | file opened: " + os.path.basename(file)))
+        itemListsize = len(self.rawlog)
+        for index in range(itemListsize):
+            self.uiWidget_listView.addItem(self.rawlog[index]["uiItem"])
+            if "__warning" in self.rawlog[index]["data"] and self.rawlog[index]["data"]["__warning"] == True:
+                self.QtWidgets.QMessageBox.warning(self, "File corruption detected", self.getLogMessage(self.rawlog[index]["data"]))
 
-            self.setCompleter(self.uiCombobox_filterInput)
-            self.setCompleter(self.uiCombobox_searchInput)
+        self.file = file
+        self.statusbar.showDynamicText(str("Done ✓ | file opened: " + os.path.basename(file)))
 
-            self._updateStatusbar()
+        self.setCompleter(self.uiCombobox_filterInput)
+        self.setCompleter(self.uiCombobox_searchInput)
+
+        self._updateStatusbar()
             
     def itemColorFactory(self, flag):
         return tuple(SettingsSingleton().getQColorTuple({v: "logline-%s" % k.lower() for k, v in LOGLEVELS.items()}[flag]))
@@ -164,9 +169,18 @@ class MainWindow(QtWidgets.QMainWindow):
         try:
             exec(SettingsSingleton().getCurrentFormatterCode(), keywords, loc)
             return str(loc['retval'])
-        except:
-            return "Code execution failed, file couldn't be opened! ✗"
-            
+        except Exception:
+            msgBox = QtWidgets.QMessageBox.critical(
+                self,
+                "Monal Log Viewer | ERROR", 
+                "Error in code execution: \n %s" % str(traceback.format_exc()),
+                QtWidgets.QMessageBox.Ok
+            )
+
+            if msgBox == QtWidgets.QMessageBox.Ok:
+                return
+            msgBox.show()
+
     @catch_exceptions(logger=logger)
     def inspectLine(self, *args):
         self.uiTable_characteristics.setHorizontalHeaderLabels(["entry", "value"])
