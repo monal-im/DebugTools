@@ -41,7 +41,10 @@ class PreferencesDialog(QtWidgets.QDialog):
         for miscName in self.misc:
             SettingsSingleton()[miscName] = self._getMiscWidgetValue(self.misc[miscName])
         for formatterNameLineEdit in self.formatter:
-            SettingsSingleton().setFormatter(formatterNameLineEdit.text(), self.formatter[formatterNameLineEdit].toPlainText())
+            code = None
+            if self.formatter[formatterNameLineEdit] != None:
+                code = self.formatter[formatterNameLineEdit].toPlainText()
+            SettingsSingleton().setFormatter(formatterNameLineEdit.text(), code)
         super().accept()
 
     def _getMiscWidgetValue(self, widget):
@@ -177,7 +180,7 @@ class PreferencesDialog(QtWidgets.QDialog):
                 button.clicked.connect(functools.partial(self._deleteFormat, lineEdit, code, button))
 
     def _deleteFormat(self, lineEdit, code, button):
-        del self.formatter[lineEdit]
+        self.formatter[lineEdit] = None
         lineEdit.hide()
         code.hide()
         button.hide()
