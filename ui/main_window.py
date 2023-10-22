@@ -28,6 +28,11 @@ class MainWindow(QtWidgets.QMainWindow):
         self.search = None
         self.statusbar = Statusbar(self.uistatusbar_state)
 
+        # The itemList is a list of all buttons or actions that should be enabled or disabled at a given time
+        self.itemList = [self.uiAction_close, self.uiAction_export, self.uiAction_pushStack, 
+                         self.uiAction_popStack, self.uiButton_previous, self.uiButton_next]
+        self.disableButtons()
+
         self.uiButton_previous.setIcon(self.style().standardIcon(getattr(QStyle, "SP_ArrowBack")))
         self.uiButton_previous.clicked.connect(self.searchPrevious)
         self.uiButton_next.setIcon(self.style().standardIcon(getattr(QStyle, "SP_ArrowForward")))
@@ -78,8 +83,6 @@ class MainWindow(QtWidgets.QMainWindow):
 
         self.currentDetailIndex = None
         self.currentFilterQuery = None
-
-        #set enable false!!!
     
     def quit(self):
         sys.exit()
@@ -90,6 +93,16 @@ class MainWindow(QtWidgets.QMainWindow):
     def resizeEvent(self, e: QtGui.QResizeEvent):
         super().resizeEvent(e)
         SettingsSingleton().storeDimension(self)
+
+    def enableButtons(self):
+        for item in self.itemList:
+            item.setEnabled(True)
+        self.setEnabled = True
+
+    def disableButtons(self):
+        for item in self.itemList:
+            item.setEnabled(False)
+        self.setEnabled = False
 
     def export(self):
         if self.rawlog:
@@ -122,6 +135,8 @@ class MainWindow(QtWidgets.QMainWindow):
         self.statusbar.setText("Loading File: '%s'..." % os.path.basename(file))
         self.rawlog = Rawlog()
         self.uiWidget_listView.clear()
+
+        self.enableButtons()
 
         def loader(entry):
             fg, bg = self.itemColorFactory(entry["flag"])
@@ -235,6 +250,8 @@ class MainWindow(QtWidgets.QMainWindow):
         self.uiTable_characteristics.hide()
         self.uiFrame_search.hide()
 
+        self.disableButtons()
+
     @catch_exceptions(logger=logger)
     def preferences(self, *args):
         self.preferencesDialog = PreferencesDialog()
@@ -251,6 +268,8 @@ class MainWindow(QtWidgets.QMainWindow):
         combobox.setStyleSheet(self.colors[status])
 
     def searchNext(self):
+        if self.setEnabled == False:
+            return
         # use unbound function, self will be bound in _search() later on after the instance was created
         self._search(Search.next)
 
@@ -308,6 +327,9 @@ class MainWindow(QtWidgets.QMainWindow):
         self._updateStatusbar()
 
     def filter(self):
+        if self.setEnabled == False:
+            return
+        
         query = self.uiCombobox_filterInput.currentText()
 
         result = matchQuery(query, self.rawlog)
