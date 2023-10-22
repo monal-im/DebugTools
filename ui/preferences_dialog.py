@@ -115,8 +115,8 @@ class PreferencesDialog(QtWidgets.QDialog):
     def _createMiscWidget(self, value, miscName):
         if type(value) == int:
             widget = QtWidgets.QSpinBox()
-            widget.setValue(value)
             widget.setMaximum(1024)
+            widget.setValue(value)
         elif type(value) == int:
             widget = QtWidgets.QDoubleSpinBox()
             widget.setDecimals(1)
