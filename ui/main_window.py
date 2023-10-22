@@ -169,10 +169,10 @@ class MainWindow(QtWidgets.QMainWindow):
             
     @catch_exceptions(logger=logger)
     def inspectLine(self, *args):
-        self.uiTable_characteristics.setHorizontalHeaderLabels(["path", "value"])
-        self.uiTable_characteristics.horizontalHeader().setSectionResizeMode(0, int(QtWidgets.QHeaderView.ResizeToContents))
-        self.uiTable_characteristics.horizontalHeader().setSectionResizeMode(1, int(QtWidgets.QHeaderView.ResizeToContents))
+        self.uiTable_characteristics.setHorizontalHeaderLabels(["entry", "value"])
         self.uiTable_characteristics.horizontalHeader().setDefaultAlignment(QtCore.Qt.AlignLeft  | QtCore.Qt.Alignment(QtCore.Qt.TextWordWrap))
+        self.uiTable_characteristics.horizontalHeader().setSectionResizeMode(QtWidgets.QHeaderView.Stretch)
+        self.uiTable_characteristics.horizontalHeader().setStretchLastSection(True)
         selectedEntry = self.rawlog[self.uiWidget_listView.selectedIndexes()[0].row()].get('data')
         self.uiTable_characteristics.setRowCount(len(selectedEntry)+1)
 
@@ -184,7 +184,7 @@ class MainWindow(QtWidgets.QMainWindow):
                     retval += splitter(value, path)
                 else:
                     retval.append({
-                        "path": path[0] + "".join(map(lambda value: "[%s]" % self.pythonize(value), path[1:])),
+                        "entry": path[0] + "".join(map(lambda value: "[%s]" % self.pythonize(value), path[1:])),
                         "value": self.pythonize(value)
                     })
                 path.pop(-1)
@@ -192,7 +192,7 @@ class MainWindow(QtWidgets.QMainWindow):
 
         row = 1
         for index in splitter(selectedEntry):
-            self.uiTable_characteristics.setItem(row,0, QtWidgets.QTableWidgetItem(index['path']))
+            self.uiTable_characteristics.setItem(row,0, QtWidgets.QTableWidgetItem(index['entry']))
             self.uiTable_characteristics.setItem(row,1, QtWidgets.QTableWidgetItem(index['value']))
             row += 1
         
