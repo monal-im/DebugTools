@@ -232,6 +232,7 @@
     </property>
     <addaction name="uiAction_preferences"/>
     <addaction name="uiAction_search"/>
+    <addaction name="uiAction_inspectLine"/>
     <addaction name="separator"/>
     <addaction name="uiAction_pushStack"/>
     <addaction name="uiAction_popStack"/>
@@ -304,6 +305,14 @@
    </property>
    <property name="shortcut">
     <string>Ctrl+S</string>
+   </property>
+  </action>
+  <action name="uiAction_inspectLine">
+   <property name="text">
+    <string>Inspect Line</string>
+   </property>
+   <property name="shortcut">
+    <string>Ctrl+D</string>
    </property>
   </action>
  </widget>
