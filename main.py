@@ -34,7 +34,3 @@ application_run = QtWidgets.QApplication(sys.argv)
 Main_application = MainWindow()
 Main_application.show()
 application_run.exec_()
-
-#TODO: 
-# 0.1 EXPORT rawlog (save)
-# 1. STRG + D opens and closes INSPECT LINE

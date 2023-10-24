@@ -33,7 +33,7 @@ class MainWindow(QtWidgets.QMainWindow):
         self.itemList = [self.uiAction_close, self.uiAction_export, self.uiAction_pushStack, 
                          self.uiAction_popStack, self.uiButton_previous, self.uiButton_next,
                          self.uiAction_search, self.uiCombobox_searchInput, self.uiCombobox_filterInput,
-                         self.uiButton_filterClear]
+                         self.uiButton_filterClear, self.uiAction_save]
         self.disableButtons()
 
         self.uiButton_previous.setIcon(self.style().standardIcon(getattr(QStyle, "SP_ArrowBack")))
@@ -47,6 +47,7 @@ class MainWindow(QtWidgets.QMainWindow):
         self.uiAction_preferences.triggered.connect(self.preferences)
         self.uiAction_search.triggered.connect(self.openSearchwidget)
         self.uiAction_export.triggered.connect(self.export)
+        self.uiAction_save.triggered.connect(self.save)
 
         self.uiWidget_listView.doubleClicked.connect(self.inspectLine)
         self.uiWidget_listView.itemSelectionChanged.connect(self.loglineSelectionChanged)
@@ -125,6 +126,17 @@ class MainWindow(QtWidgets.QMainWindow):
                     self.statusbar.showDynamicText(str("Done ✓ | Export was successful"))
                 else:
                     self.statusbar.showDynamicText(str("Error ✗ | Export was unsuccessful"))
+
+    def save(self):
+        if self.rawlog:
+            file, check = QtWidgets.QFileDialog.getSaveFileName(None, "MLV | Export file",
+                                                            "", "Raw Log (*.rawlog)")
+            if check:
+                status = self.rawlog.store_file(file, custom_store_callback = lambda entry: entry["data"] if not entry["uiItem"].isHidden() else None)
+                if status:
+                    self.statusbar.showDynamicText(str("Done ✓ | Export was successful"))
+                else:
+                    self.statusbar.showDynamicText(str("Error ✗ | Export was unsuccessful"))   
 
     def setCompleter(self, combobox):
         wordlist = self.rawlog.getCompleterList(lambda entry: entry["data"])
