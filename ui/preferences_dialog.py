@@ -38,6 +38,7 @@ class PreferencesDialog(QtWidgets.QDialog):
         for comboboxName in self.history:
             data = [self.history[comboboxName].item(item).text() for item in range(self.history[comboboxName].count())]
             SettingsSingleton().setComboboxHistoryByName(comboboxName, data)
+
         for miscName in self.misc:
             SettingsSingleton()[miscName] = self._getMiscWidgetValue(self.misc[miscName])
         for formatterNameLineEdit in self.formatter:
@@ -58,15 +59,13 @@ class PreferencesDialog(QtWidgets.QDialog):
             return widget.isChecked()
 
     def _createUiTab_color(self):
-        for colorName in SettingsSingleton().getColorNames():
-            colorSection = QtWidgets.QHBoxLayout()
-            colorSection.setAlignment(QtCore.Qt.AlignTop)
-            colorSection.addWidget(QtWidgets.QLabel(colorName, self))
+        colorNames = SettingsSingleton().getColorNames()
+        for colorIndex in range(len(colorNames)):
+            self.uiGridLayout_colorTab.addWidget(QtWidgets.QLabel(colorNames[colorIndex], self), colorIndex, 0)
+            buttons = self._createColorButton(colorNames[colorIndex])
 
-            for button in self._createColorButton(colorName):
-                colorSection.addWidget(button)
-
-            self.uiGridLayout_colorTab.addLayout(colorSection)
+            for buttonIndex in range(len(buttons)):
+                self.uiGridLayout_colorTab.addWidget(buttons[buttonIndex], colorIndex, buttonIndex+1)
         self.update()
 
     def _createColorButton(self, colorName):
@@ -212,8 +211,8 @@ class PreferencesDialog(QtWidgets.QDialog):
         button.setIcon(self.style().standardIcon(getattr(QtWidgets.QStyle, "SP_DialogApplyButton")))
         button.clicked.connect(functools.partial(self._addFormatter, lineEdit, code, button))
 
-        lineEdit.setMaximumWidth(400)
-        button.setMaximumWidth(400)
+        lineEdit.setMaximumWidth(200)
+        button.setMaximumWidth(200)
 
         code.setTabStopWidth(code.fontMetrics().width(' ') * SettingsSingleton().getTabWidth())
 

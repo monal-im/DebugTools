@@ -21,11 +21,11 @@
      </property>
      <widget class="QWidget" name="uiTab_color">
       <attribute name="title">
-       <string>Color</string>
+       <string>Colors</string>
       </attribute>
       <layout class="QGridLayout" name="gridLayout_2">
        <item row="0" column="0">
-        <layout class="QVBoxLayout" name="uiGridLayout_colorTab"/>
+        <layout class="QGridLayout" name="uiGridLayout_colorTab"/>
        </item>
       </layout>
      </widget>
@@ -55,7 +55,7 @@
      </widget>
      <widget class="QWidget" name="uiTab_formatTabs">
       <attribute name="title">
-       <string>Log formatter</string>
+       <string>Log formatters</string>
       </attribute>
       <layout class="QVBoxLayout" name="verticalLayout_4">
        <item>

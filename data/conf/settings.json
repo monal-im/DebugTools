@@ -20,7 +20,8 @@
     "misc": {
         "staticLineWrap": 140,
         "currentFormatter": "default",
-        "tabWidth": 4
+        "tabWidth": 4,
+        "fontSize": 6
     },
     "formatter": {
         "default": "retval = '%s %s' % (timestamp, message)"

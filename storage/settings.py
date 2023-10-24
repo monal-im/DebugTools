@@ -102,6 +102,9 @@ class SettingsSingleton():
     
     def getTabWidth(self):
         return self.data["misc"]["tabWidth"]
+    
+    def getFontSize(self):
+        return self.data["misc"]["fontSize"]
 
     def getTupleColorLen(self, name):
         return self.data["color"][name]["len"]

@@ -4,7 +4,7 @@
 
 from PyQt5 import QtWidgets, uic, QtGui, QtCore
 from PyQt5.QtWidgets import QStyle
-import sys, os, functools, traceback
+import sys, os, functools
 import textwrap
 
 from storage import Rawlog, SettingsSingleton
@@ -24,13 +24,16 @@ class MainWindow(QtWidgets.QMainWindow):
         self.setWindowIcon(QtGui.QIcon(paths.get_art_filepath("monal_log_viewer.png")))
         SettingsSingleton().loadDimensions(self)
         self.rawlog = Rawlog()
+        self.file = None
 
         self.search = None
         self.statusbar = Statusbar(self.uistatusbar_state)
 
         # The itemList is a list of all buttons or actions that should be enabled or disabled at a given time
         self.itemList = [self.uiAction_close, self.uiAction_export, self.uiAction_pushStack, 
-                         self.uiAction_popStack, self.uiButton_previous, self.uiButton_next]
+                         self.uiAction_popStack, self.uiButton_previous, self.uiButton_next,
+                         self.uiAction_search, self.uiCombobox_searchInput, self.uiCombobox_filterInput,
+                         self.uiButton_filterClear]
         self.disableButtons()
 
         self.uiButton_previous.setIcon(self.style().standardIcon(getattr(QStyle, "SP_ArrowBack")))
@@ -61,17 +64,13 @@ class MainWindow(QtWidgets.QMainWindow):
             QueryStatus.QUERY_EMPTY: "background-color: %s" % SettingsSingleton().getCssColor("combobox-query_empty")
         }
 
-        QtWidgets.QShortcut(QtGui.QKeySequence("ESC"), self).activated.connect(self.hideSearch)
-        self.uiCombobox_searchInput.clear()
-        self.uiCombobox_searchInput.activated[str].connect(self.searchNext)
-        self.uiCombobox_searchInput.addItems(SettingsSingleton().getComboboxHistory(self.uiCombobox_searchInput))
-        self.uiCombobox_searchInput.lineEdit().setText("")
+        self.rebuildUi()
 
-        self.uiCombobox_filterInput.clear()
+        QtWidgets.QShortcut(QtGui.QKeySequence("ESC"), self).activated.connect(self.hideSearch)
+        self.uiCombobox_searchInput.activated[str].connect(self.searchNext)
+
         self.uiButton_filterClear.clicked.connect(self.clearFilter)
         self.uiCombobox_filterInput.activated[str].connect(self.filter)
-        self.uiCombobox_filterInput.addItems(SettingsSingleton().getComboboxHistory(self.uiCombobox_filterInput))
-        self.uiCombobox_filterInput.lineEdit().setText("")
 
         QtWidgets.QApplication.instance().focusChanged.connect(self.focusChangedEvent)
         self.uiSplitter_inspectLine.splitterMoved.connect(functools.partial(SettingsSingleton().storeState, self.uiSplitter_inspectLine))
@@ -103,6 +102,18 @@ class MainWindow(QtWidgets.QMainWindow):
         for item in self.itemList:
             item.setEnabled(False)
         self.setEnabled = False
+
+    def rebuildUi(self):
+        if self.file != None:
+            self.openLogFile(self.file)
+        
+        self.uiCombobox_filterInput.clear()
+        self.uiCombobox_filterInput.addItems(SettingsSingleton().getComboboxHistory(self.uiCombobox_filterInput))
+        self.uiCombobox_filterInput.lineEdit().setText("")
+
+        self.uiCombobox_searchInput.clear()
+        self.uiCombobox_searchInput.addItems(SettingsSingleton().getComboboxHistory(self.uiCombobox_searchInput))
+        self.uiCombobox_searchInput.lineEdit().setText("")
 
     def export(self):
         if self.rawlog:
@@ -136,25 +147,29 @@ class MainWindow(QtWidgets.QMainWindow):
         self.rawlog = Rawlog()
         self.uiWidget_listView.clear()
 
+        self.compileError = True
+
         self.enableButtons()
 
         def loader(entry):
-            fg, bg = self.itemColorFactory(entry["flag"])
+            if self.compileError == True:
+                fg, bg = self.itemColorFactory(entry["flag"])
 
-            item_with_color = "\n".join([textwrap.fill(line, SettingsSingleton()["staticLineWrap"],
-                expand_tabs=False,
-                replace_whitespace=False,
-                drop_whitespace=False,
-                break_long_words=True,
-                break_on_hyphens=True,
-                max_lines=None
-            ) if len(line) > SettingsSingleton()["staticLineWrap"] else line for line in self.getLogMessage(entry).strip().splitlines(keepends=False)])
+                item_with_color = "\n".join([textwrap.fill(line, SettingsSingleton()["staticLineWrap"],
+                    expand_tabs=False,
+                    replace_whitespace=False,
+                    drop_whitespace=False,
+                    break_long_words=True,
+                    break_on_hyphens=True,
+                    max_lines=None
+                ) if len(line) > SettingsSingleton()["staticLineWrap"] else line for line in self.getLogMessage(entry).strip().splitlines(keepends=False)])
 
-            item_with_color = QtWidgets.QListWidgetItem(item_with_color)
-            item_with_color.setForeground(fg)
-            if bg != None:
-                item_with_color.setBackground(bg)
-            return {"uiItem": item_with_color, "data": entry}
+                item_with_color = QtWidgets.QListWidgetItem(item_with_color)
+                item_with_color.setFont(QtGui.QFont("", SettingsSingleton().getFontSize()))
+                item_with_color.setForeground(fg)
+                if bg != None:
+                    item_with_color.setBackground(bg)
+                return {"uiItem": item_with_color, "data": entry}
 
         progressbar, updateProgressbar = self.progressDialog("Opening File...", "Opening File: "+ file)
         self.rawlog.load_file(file, progress_callback=updateProgressbar, custom_load_callback=loader)
@@ -184,16 +199,18 @@ class MainWindow(QtWidgets.QMainWindow):
         try:
             exec(SettingsSingleton().getCurrentFormatterCode(), keywords, loc)
             return str(loc['retval'])
-        except Exception:
+        except Exception as e:
+            self.compileError = False
+            logger.exception(e)
             msgBox = QtWidgets.QMessageBox.critical(
                 self,
                 "Monal Log Viewer | ERROR", 
-                "Error in code execution: \n %s" % str(traceback.format_exc()),
+                "Error in code execution: \n %s" % str(e),
                 QtWidgets.QMessageBox.Ok
             )
 
             if msgBox == QtWidgets.QMessageBox.Ok:
-                return
+                return ""
             msgBox.show()
 
     @catch_exceptions(logger=logger)
@@ -249,6 +266,7 @@ class MainWindow(QtWidgets.QMainWindow):
         self.uiTable_characteristics.hide()
         self.uiTable_characteristics.hide()
         self.uiFrame_search.hide()
+        self.file = None
 
         self.disableButtons()
 
@@ -256,7 +274,9 @@ class MainWindow(QtWidgets.QMainWindow):
     def preferences(self, *args):
         self.preferencesDialog = PreferencesDialog()
         self.preferencesDialog.show()
-        self.preferencesDialog.exec_()
+        result = self.preferencesDialog.exec_()
+        if result:
+            self.rebuildUi()
 
     @catch_exceptions(logger=logger)
     def openSearchwidget(self, *args):
@@ -424,7 +444,7 @@ class MainWindow(QtWidgets.QMainWindow):
 
         #unpacking filter
         self.uiCombobox_filterInput.setCurrentText(stack["filter"]["currentText"])
-        if stack["filter"]["active"]:
+        if stack["filter"]["currentFilterQuery"]:
             self.filter()
 
         self.statusbar.showDynamicText("State loaded ✓")
