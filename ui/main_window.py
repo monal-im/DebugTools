@@ -164,6 +164,11 @@ class MainWindow(QtWidgets.QMainWindow):
         self.enableButtons()
 
         def loader(entry):
+            # directly warn about file corruptions when they happen to allow the user to abort the loading process
+            # using the cancel button in the progressbar window
+            if "__warning" in entry and entry["__warning"] == True:
+                QtWidgets.QMessageBox.warning(self, "File corruption detected", entry["message"])
+            
             formattedEntry, error = self.formatLogEntry(entry)
             if error != None:
                 QtWidgets.QMessageBox.critical(
@@ -198,12 +203,8 @@ class MainWindow(QtWidgets.QMainWindow):
         self.rawlog.load_file(file, progress_callback=updateProgressbar, custom_load_callback=loader)
 
         self.statusbar.setText("Rendering File: '%s'..." % file)
-
-        itemListsize = len(self.rawlog)
-        for index in range(itemListsize):
+        for index in range(len(self.rawlog)):
             self.uiWidget_listView.addItem(self.rawlog[index]["uiItem"])
-            if "__warning" in self.rawlog[index]["data"] and self.rawlog[index]["data"]["__warning"] == True:
-                QtWidgets.QMessageBox.warning(self, "File corruption detected", self.rawlog[index]["data"]["message"])
 
         self.file = file
         self.statusbar.showDynamicText(str("Done ✓ | file opened: " + os.path.basename(file)))
