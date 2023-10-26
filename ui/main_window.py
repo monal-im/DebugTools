@@ -7,7 +7,7 @@ from PyQt5.QtWidgets import QStyle
 import sys, os, functools
 import textwrap
 
-from storage import Rawlog, SettingsSingleton
+from storage import Rawlog, AbortRawlogLoading, SettingsSingleton
 from utils import catch_exceptions, Search, QueryStatus, matchQuery, paths
 from ui.utils import Completer, MagicLineEdit, Statusbar
 from utils.constants import LOGLEVELS
@@ -161,30 +161,38 @@ class MainWindow(QtWidgets.QMainWindow):
         self.statusbar.setText("Loading File: '%s'..." % os.path.basename(file))
         self.rawlog = Rawlog()
         self.uiWidget_listView.clear()
-
-        self.compileError = True
-
         self.enableButtons()
 
         def loader(entry):
-            if self.compileError == True:
-                fg, bg = self.itemColorFactory(entry["flag"])
+            formattedEntry, error = self.formatLogEntry(entry)
+            if error != None:
+                QtWidgets.QMessageBox.critical(
+                    self,
+                    "Monal Log Viewer | ERROR", 
+                    "Exception in formatter code:\n%s: %s" % (str(type(error).__name__), str(error)),
+                    QtWidgets.QMessageBox.Ok
+                )
+                raise AbortRawlogLoading()       # abort loading
+            # return None if our formatter filtered out that entry
+            if formattedEntry == None:
+                return None
+            
+            item_with_color = "\n".join([textwrap.fill(line, SettingsSingleton()["staticLineWrap"],
+                expand_tabs=False,
+                replace_whitespace=False,
+                drop_whitespace=False,
+                break_long_words=True,
+                break_on_hyphens=True,
+                max_lines=None
+            ) if len(line) > SettingsSingleton()["staticLineWrap"] else line for line in formattedEntry.strip().splitlines(keepends=False)])
 
-                item_with_color = "\n".join([textwrap.fill(line, SettingsSingleton()["staticLineWrap"],
-                    expand_tabs=False,
-                    replace_whitespace=False,
-                    drop_whitespace=False,
-                    break_long_words=True,
-                    break_on_hyphens=True,
-                    max_lines=None
-                ) if len(line) > SettingsSingleton()["staticLineWrap"] else line for line in self.getLogMessage(entry).strip().splitlines(keepends=False)])
-
-                item_with_color = QtWidgets.QListWidgetItem(item_with_color)
-                item_with_color.setFont(QtGui.QFont("", SettingsSingleton().getFontSize()))
-                item_with_color.setForeground(fg)
-                if bg != None:
-                    item_with_color.setBackground(bg)
-                return {"uiItem": item_with_color, "data": entry}
+            fg, bg = self.itemColorFactory(entry["flag"])
+            item_with_color = QtWidgets.QListWidgetItem(item_with_color)
+            item_with_color.setFont(QtGui.QFont("", SettingsSingleton().getFontSize()))
+            item_with_color.setForeground(fg)
+            if bg != None:
+                item_with_color.setBackground(bg)
+            return {"uiItem": item_with_color, "data": entry}
 
         progressbar, updateProgressbar = self.progressDialog("Opening File...", "Opening File: "+ file)
         self.rawlog.load_file(file, progress_callback=updateProgressbar, custom_load_callback=loader)
@@ -195,7 +203,7 @@ class MainWindow(QtWidgets.QMainWindow):
         for index in range(itemListsize):
             self.uiWidget_listView.addItem(self.rawlog[index]["uiItem"])
             if "__warning" in self.rawlog[index]["data"] and self.rawlog[index]["data"]["__warning"] == True:
-                self.QtWidgets.QMessageBox.warning(self, "File corruption detected", self.getLogMessage(self.rawlog[index]["data"]))
+                QtWidgets.QMessageBox.warning(self, "File corruption detected", self.rawlog[index]["data"]["message"])
 
         self.file = file
         self.statusbar.showDynamicText(str("Done ✓ | file opened: " + os.path.basename(file)))
@@ -208,25 +216,15 @@ class MainWindow(QtWidgets.QMainWindow):
     def itemColorFactory(self, flag):
         return tuple(SettingsSingleton().getQColorTuple({v: "logline-%s" % k.lower() for k, v in LOGLEVELS.items()}[flag]))
     
-    def getLogMessage(self, entry):
+    def formatLogEntry(self, entry):
         loc = {}
         keywords = {value: entry[value] for value in entry.keys()}
         try:
             exec(SettingsSingleton().getCurrentFormatterCode(), keywords, loc)
-            return str(loc['retval'])
+            return str(loc['retval']), None
         except Exception as e:
-            self.compileError = False
-            logger.exception(e)
-            msgBox = QtWidgets.QMessageBox.critical(
-                self,
-                "Monal Log Viewer | ERROR", 
-                "Error in code execution: \n %s" % str(e),
-                QtWidgets.QMessageBox.Ok
-            )
-
-            if msgBox == QtWidgets.QMessageBox.Ok:
-                return ""
-            msgBox.show()
+            logger.exception("Exception inside log formatter")
+            return None, e
 
     @catch_exceptions(logger=logger)
     def inspectLine(self, *args):

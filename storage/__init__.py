@@ -1,2 +1,2 @@
-from .rawlog import Rawlog
+from .rawlog import Rawlog, AbortRawlogLoading
 from .settings import SettingsSingleton
