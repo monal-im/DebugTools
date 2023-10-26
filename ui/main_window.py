@@ -199,12 +199,21 @@ class MainWindow(QtWidgets.QMainWindow):
                 item_with_color.setBackground(bg)
             return {"uiItem": item_with_color, "data": entry}
 
-        progressbar, updateProgressbar = self.progressDialog("Opening File...", "Opening File: "+ file)
-        self.rawlog.load_file(file, progress_callback=updateProgressbar, custom_load_callback=loader)
+        progressbar, updateProgressbar = self.progressDialog("Opening File...", "Opening File: "+ file, True)
+        # don't pretend something was loaded if the loading was aborted
+        if self.rawlog.load_file(file, progress_callback=updateProgressbar, custom_load_callback=loader) != True:
+            self.closeFile()        # reset our ui to a sane state
+            progressbar.hide()
+            return
 
         self.statusbar.setText("Rendering File: '%s'..." % file)
+        progressbar.setLabelText("Rendering File: '%s'..." % file)
+        progressbar.setCancelButton(None)       # disable cancel button when rendering our file
+        QtWidgets.QApplication.processEvents()
         for index in range(len(self.rawlog)):
             self.uiWidget_listView.addItem(self.rawlog[index]["uiItem"])
+        QtWidgets.QApplication.processEvents()
+        progressbar.hide()
 
         self.file = file
         self.statusbar.showDynamicText(str("Done ✓ | file opened: " + os.path.basename(file)))
@@ -393,18 +402,23 @@ class MainWindow(QtWidgets.QMainWindow):
         combobox.setCurrentText(query)
 
     @catch_exceptions(logger=logger)
-    def progressDialog(self, title, label):
-        progressBar = QtWidgets.QProgressDialog(label, 'OK', 0, 100, self)
+    def progressDialog(self, title, label, hasCancelButton=False):
+        progressBar = QtWidgets.QProgressDialog(label, "Cancel", 0, 100, self)
         progressBar.setWindowTitle(title)
         progressBar.setGeometry(200, 200, 650, 100)
-        progressBar.setCancelButton(None)
-        progressBar.setAutoClose(True)
+        if not hasCancelButton:
+            progressBar.setCancelButton(None)
+        progressBar.setAutoClose(False)
         progressBar.setValue(0)
 
         # we need to do this because we can't write primitive datatypes from within our closure
         oldpercentage = {"value": 0}
 
         def update_progressbar(readsize, filesize):
+            # cancel loading if the progress dialog was canceled
+            if progressBar.wasCanceled():
+                return True
+            
             currentpercentage = int(readsize/filesize*100)
             if currentpercentage != oldpercentage["value"]:
                 progressBar.setValue(currentpercentage)
