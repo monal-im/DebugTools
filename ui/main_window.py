@@ -67,6 +67,7 @@ class MainWindow(QtWidgets.QMainWindow):
             QueryStatus.QUERY_OK: "background-color: %s" % SettingsSingleton().getCssColor("combobox-query_ok"),
             QueryStatus.QUERY_EMPTY: "background-color: %s" % SettingsSingleton().getCssColor("combobox-query_empty")
         }
+        self.logflag2colorMapping = {v: "logline-%s" % k.lower() for k, v in LOGLEVELS.items()}
 
         self.rebuildUi()
 
@@ -190,8 +191,8 @@ class MainWindow(QtWidgets.QMainWindow):
                 break_on_hyphens=True,
                 max_lines=None
             ) if len(line) > SettingsSingleton()["staticLineWrap"] else line for line in formattedEntry.strip().splitlines(keepends=False)])
-
-            fg, bg = self.itemColorFactory(entry["flag"])
+            
+            fg, bg = tuple(SettingsSingleton().getQColorTuple(self.logflag2colorMapping[entry["flag"]]))
             item_with_color = QtWidgets.QListWidgetItem(item_with_color)
             item_with_color.setFont(QtGui.QFont("", SettingsSingleton().getFontSize()))
             item_with_color.setForeground(fg)
@@ -222,9 +223,6 @@ class MainWindow(QtWidgets.QMainWindow):
         self.setCompleter(self.uiCombobox_searchInput)
 
         self._updateStatusbar()
-            
-    def itemColorFactory(self, flag):
-        return tuple(SettingsSingleton().getQColorTuple({v: "logline-%s" % k.lower() for k, v in LOGLEVELS.items()}[flag]))
     
     def formatLogEntry(self, entry):
         loc = {}
