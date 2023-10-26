@@ -61,11 +61,11 @@ class MainWindow(QtWidgets.QMainWindow):
         MagicLineEdit(self.uiCombobox_searchInput)
         MagicLineEdit(self.uiCombobox_filterInput)
 
-        self.colors = {
-            QueryStatus.EOF_REACHED: "background-color: %s" % SettingsSingleton().getCssColor("combobox-eof_reached"),
-            QueryStatus.QUERY_ERROR: "background-color: %s" % SettingsSingleton().getCssColor("combobox-query_error"),
-            QueryStatus.QUERY_OK: "background-color: %s" % SettingsSingleton().getCssColor("combobox-query_ok"),
-            QueryStatus.QUERY_EMPTY: "background-color: %s" % SettingsSingleton().getCssColor("combobox-query_empty")
+        self.queryStatus2colorMapping = {
+            QueryStatus.EOF_REACHED:    SettingsSingleton().getCssColor("combobox-eof_reached"),
+            QueryStatus.QUERY_ERROR:    SettingsSingleton().getCssColor("combobox-query_error"),
+            QueryStatus.QUERY_OK:       SettingsSingleton().getCssColor("combobox-query_ok"),
+            QueryStatus.QUERY_EMPTY:    SettingsSingleton().getCssColor("combobox-query_empty"),
         }
         self.logflag2colorMapping = {v: "logline-%s" % k.lower() for k, v in LOGLEVELS.items()}
 
@@ -311,7 +311,7 @@ class MainWindow(QtWidgets.QMainWindow):
 
     @catch_exceptions(logger=logger)
     def setComboboxStatusColor(self, combobox, status):
-        combobox.setStyleSheet(self.colors[status])
+        combobox.setStyleSheet("background-color: %s" % self.queryStatus2colorMapping[status])
 
     def searchNext(self):
         if self.setEnabled == False:
