@@ -50,8 +50,6 @@ class MainWindow(QtWidgets.QMainWindow):
         self.uiAction_save.triggered.connect(self.save)
         self.uiAction_inspectLine.triggered.connect(self.inspectLine)
 
-        self.inspectLineSwitch = False
-
         self.uiWidget_listView.doubleClicked.connect(self.inspectLine)
         self.uiWidget_listView.itemSelectionChanged.connect(self.loglineSelectionChanged)
         self.uiTable_characteristics.hide()
