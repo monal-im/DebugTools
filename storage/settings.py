@@ -205,7 +205,7 @@ class SettingsSingleton():
                     elif key not in self.data[section]:
                         self.data[section][key] = defaults[section][key]
         except:
-            logger.info("settings.json does not exist! Using default theme.")
+            logger.info("settings.json does not exist! Loading default config.")
 
             with open(self.defaultPath, 'rb') as fp:
                 self.data = json.load(fp)
