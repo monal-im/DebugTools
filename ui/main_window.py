@@ -154,26 +154,44 @@ class MainWindow(QtWidgets.QMainWindow):
             self.openLogFile(file)
 
     def openLogFile(self, file):
+        # first of all: try to compile our log formatter code and abort, if this isn't generating a callable formatter function
+        try:
+            formatter = self.compileLogFormatter(SettingsSingleton().getCurrentFormatterCode())
+        except Exception as e:
+            logger.exception("Exception while compiling log formatter")
+            QtWidgets.QMessageBox.critical(
+                self,
+                "Monal Log Viewer | ERROR",
+                "Exception in formatter code:\n%s: %s" % (str(type(e).__name__), str(e)),
+                QtWidgets.QMessageBox.Ok
+            )
+            return
+        
         self.statusbar.setText("Loading File: '%s'..." % os.path.basename(file))
         self.rawlog = Rawlog()
         self.uiWidget_listView.clear()
         self.enableButtons()
-
+        
         def loader(entry):
             # directly warn about file corruptions when they happen to allow the user to abort the loading process
             # using the cancel button in the progressbar window
             if "__warning" in entry and entry["__warning"] == True:
                 QtWidgets.QMessageBox.warning(self, "File corruption detected", entry["message"])
             
-            formattedEntry, error = self.formatLogEntry(entry)
-            if error != None:
+            try:
+                # this will make sure the log formatter does not change our log entry, but it makes loading slower
+                # formattedEntry = formatter({value: entry[value] for value in entry.keys()})
+                formattedEntry = formatter(entry)
+            except Exception as e:
+                logger.exception("Exception while calling log formatter")
                 QtWidgets.QMessageBox.critical(
                     self,
                     "Monal Log Viewer | ERROR", 
-                    "Exception in formatter code:\n%s: %s" % (str(type(error).__name__), str(error)),
+                    "Exception in formatter code:\n%s: %s" % (str(type(e).__name__), str(e)),
                     QtWidgets.QMessageBox.Ok
                 )
                 raise AbortRawlogLoading()       # abort loading
+            
             # return None if our formatter filtered out that entry
             if formattedEntry == None:
                 return None
@@ -219,15 +237,15 @@ class MainWindow(QtWidgets.QMainWindow):
 
         self._updateStatusbar()
     
-    def formatLogEntry(self, entry):
+    def compileLogFormatter(self, code):
+        # compile our code by executing it
         loc = {}
-        keywords = {value: entry[value] for value in entry.keys()}
-        try:
-            exec(SettingsSingleton().getCurrentFormatterCode(), keywords, loc)
-            return str(loc['retval']), None
-        except Exception as e:
-            logger.exception("Exception inside log formatter")
-            return None, e
+        exec(code, {}, loc)
+        if "formatter" not in loc or not callable(loc["formatter"]):
+            logger.error("Formatter code did not evaluate to formatter() function!")
+            raise RuntimeError("Log formatter MUST define a function following this signature: formatter(e, **g)")
+        # bind all local variables (code imported, other defined functions etc.) onto our log formatter to be used later
+        return functools.partial(loc["formatter"], **loc)
 
     @catch_exceptions(logger=logger)
     def inspectLine(self, *args):

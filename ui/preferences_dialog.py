@@ -199,7 +199,7 @@ class PreferencesDialog(QtWidgets.QDialog):
         lineEdit = QtWidgets.QLineEdit()
         lineEdit.setPlaceholderText("Formatter name")
         code = QtWidgets.QPlainTextEdit()
-        code.setPlaceholderText("retval = [...]")
+        code.setPlaceholderText("def formatter(e, **g):\n\tglobals().update(g)\n\treturn \"%s %s\" % (e[\"timestamp\"], e[\"message\"])")
         self.syntaxHighlighters[""] = PythonHighlighter(code.document())
         button = QtWidgets.QPushButton()
         horizonalLayout = QtWidgets.QHBoxLayout()
@@ -214,7 +214,7 @@ class PreferencesDialog(QtWidgets.QDialog):
         lineEdit.setMaximumWidth(200)
         button.setMaximumWidth(200)
 
-        code.setTabStopWidth(code.fontMetrics().width(' ') * SettingsSingleton().getTabWidth())
+        code.setTabStopWidth(code.fontMetrics().width(" ") * SettingsSingleton().getTabWidth())
 
         verticalLayout.addWidget(lineEdit)
         verticalLayout.addWidget(button)

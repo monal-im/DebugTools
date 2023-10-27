@@ -24,6 +24,6 @@
         "fontSize": 6
     },
     "formatter": {
-        "default": "retval = '%s %s' % (timestamp, message)"
+        "default": "def formatter(e, **g):\n\tglobals().update(g)\n\treturn \"%s %s\" % (e[\"timestamp\"], e[\"message\"])"
     }
 }
