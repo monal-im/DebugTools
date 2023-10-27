@@ -11,16 +11,14 @@ class SettingsSingleton():
 
     def __new__(cls):
         if cls._instance is None:
+            logger.error("not none")
             cls._instance = super(SettingsSingleton, cls).__new__(cls)
-            cls._instance.__init__()
+            cls._instance.path = paths.get_conf_filepath("settings.json")
+            cls._instance.defaultPath = paths.get_default_conf_filepath("settings.json")
+            cls._instance._load()
             logger.debug("Instanciated SettingsSingleton...")
         return cls._instance
     
-    def __init__(self):
-        self.path = paths.get_conf_filepath("settings.json")
-        self.defaultPath = paths.get_default_conf_filepath("settings.json")
-        self._load()
-
     def __setitem__(self, key, value):
         self.data["misc"][key] = value
         self._store()  
@@ -187,15 +185,16 @@ class SettingsSingleton():
             names.append(obj.objectName())
             obj = obj.parent()
         name = ".".join(names[::-1])
-        logger.error("full name: " + name)
         return name
     
     def _load(self):
+        logger.info("Loading default settings from '%s'..." % self.defaultPath)
+        with open(self.defaultPath, 'rb') as fp:
+            defaults = json.load(fp)
         try:
+            logger.info("Loading settings from '%s'..." % self.path)
             with open(self.path, 'rb') as fp:
                 self.data = json.load(fp)
-            with open(self.defaultPath, 'rb') as fp:
-                defaults = json.load(fp)
             
             # apply new defaults not yet stored in settings json
             for section in defaults:
@@ -205,10 +204,8 @@ class SettingsSingleton():
                     elif key not in self.data[section]:
                         self.data[section][key] = defaults[section][key]
         except:
-            logger.info("settings.json does not exist! Loading default config.")
-
-            with open(self.defaultPath, 'rb') as fp:
-                self.data = json.load(fp)
+            logger.info("File not loadable or does not exist: '%s', loading default config." % self.path)
+            self.data = defaults
             with open(self.path, 'w+') as fp:
                 json.dump(self.data, fp)
 
