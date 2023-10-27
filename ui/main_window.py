@@ -120,25 +120,23 @@ class MainWindow(QtWidgets.QMainWindow):
 
     def export(self):
         if self.rawlog:
-            file, check = QtWidgets.QFileDialog.getSaveFileName(None, "MLV | Export file",
-                                                            "", "Textfile (*.txt)")
+            file, check = QtWidgets.QFileDialog.getSaveFileName(None, "Choose where to save this text logfile", "", "Compressed logfile (*.log.gz)(*.log.gz);;Logfile (*.log)(*.log);;All files (*)")
             if check:
                 status = self.rawlog.export_file(file, custom_store_callback = lambda entry: entry["data"] if not entry["uiItem"].isHidden() else None)
                 if status:
-                    self.statusbar.showDynamicText(str("Done ✓ | Export was successful"))
+                    self.statusbar.showDynamicText(str("Done ✓ | Log export was successful"))
                 else:
-                    self.statusbar.showDynamicText(str("Error ✗ | Export was unsuccessful"))
+                    self.statusbar.showDynamicText(str("Error ✗ | Could not export log"))
 
     def save(self):
         if self.rawlog:
-            file, check = QtWidgets.QFileDialog.getSaveFileName(None, "MLV | Export file",
-                                                            "", "Raw Log (*.rawlog)")
+            file, check = QtWidgets.QFileDialog.getSaveFileName(None, "Choose where to save this rawlog logfile", "", "Compressed Monal rawlog (*.rawlog.gz)(*.rawlog.gz);;Monal rawlog (*.rawlog)(*.rawlog);;All files (*)")
             if check:
                 status = self.rawlog.store_file(file, custom_store_callback = lambda entry: entry["data"] if not entry["uiItem"].isHidden() else None)
                 if status:
-                    self.statusbar.showDynamicText(str("Done ✓ | Export was successful"))
+                    self.statusbar.showDynamicText(str("Done ✓ | Rawlog saved successfully"))
                 else:
-                    self.statusbar.showDynamicText(str("Error ✗ | Export was unsuccessful"))   
+                    self.statusbar.showDynamicText(str("Error ✗ | Could not save warlow"))   
 
     def setCompleter(self, combobox):
         wordlist = self.rawlog.getCompleterList(lambda entry: entry["data"])
@@ -151,8 +149,7 @@ class MainWindow(QtWidgets.QMainWindow):
 
     @catch_exceptions(logger=logger)
     def openFileBrowser(self, *args):
-        file, check = QtWidgets.QFileDialog.getOpenFileName(None, "Monal Log Viewer | Open Logfile",
-                                                            "", "Raw Log (*.rawlog)")
+        file, check = QtWidgets.QFileDialog.getOpenFileName(None, "Open rawlog logfile", "", "Monal rawlog (*.rawlog.gz *.rawlog)(*.rawlog.gz *.rawlog);;All files (*)")
         if check:
             self.openLogFile(file)
 
