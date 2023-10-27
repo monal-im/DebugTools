@@ -172,6 +172,7 @@ class MainWindow(QtWidgets.QMainWindow):
         self.uiWidget_listView.clear()
         self.enableButtons()
         
+        itemFont = QtGui.QFont("", SettingsSingleton().getFontSize())
         def loader(entry):
             # directly warn about file corruptions when they happen to allow the user to abort the loading process
             # using the cancel button in the progressbar window
@@ -207,7 +208,7 @@ class MainWindow(QtWidgets.QMainWindow):
             
             fg, bg = tuple(SettingsSingleton().getQColorTuple(self.logflag2colorMapping[entry["flag"]]))
             item_with_color = QtWidgets.QListWidgetItem(item_with_color)
-            item_with_color.setFont(QtGui.QFont("", SettingsSingleton().getFontSize()))
+            item_with_color.setFont(itemFont)
             item_with_color.setForeground(fg)
             if bg != None:
                 item_with_color.setBackground(bg)
