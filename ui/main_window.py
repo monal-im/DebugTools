@@ -252,13 +252,6 @@ class MainWindow(QtWidgets.QMainWindow):
     def inspectLine(self, *args):
         if len(self.uiWidget_listView.selectedIndexes()) != 0:
             if self.currentDetailIndex != self.uiWidget_listView.selectedIndexes()[0].row():
-                self.uiTable_characteristics.setHorizontalHeaderLabels(["entry", "value"])
-                self.uiTable_characteristics.horizontalHeader().setDefaultAlignment(QtCore.Qt.AlignLeft  | QtCore.Qt.Alignment(QtCore.Qt.TextWordWrap))
-                self.uiTable_characteristics.horizontalHeader().setSectionResizeMode(QtWidgets.QHeaderView.Stretch)
-                self.uiTable_characteristics.horizontalHeader().setStretchLastSection(True)
-                selectedEntry = self.rawlog[self.uiWidget_listView.selectedIndexes()[0].row()].get('data')
-                self.uiTable_characteristics.setRowCount(len(selectedEntry)+1)
-
                 def splitter(dictionary, path=[]):
                     retval = []
                     for key, value in dictionary.items():
@@ -267,16 +260,27 @@ class MainWindow(QtWidgets.QMainWindow):
                             retval += splitter(value, path)
                         else:
                             retval.append({
-                                "entry": path[0] + "".join(map(lambda value: "[%s]" % self.pythonize(value), path[1:])),
+                                "name": path[0] + "".join(map(lambda value: "[%s]" % self.pythonize(value), path[1:])),
                                 "value": self.pythonize(value)
                             })
                         path.pop(-1)
                     return retval
-
-                row = 1
-                for index in splitter(selectedEntry):
-                    self.uiTable_characteristics.setItem(row,0, QtWidgets.QTableWidgetItem(index['entry']))
-                    self.uiTable_characteristics.setItem(row,1, QtWidgets.QTableWidgetItem(index['value']))
+                
+                selectedEntry = self.rawlog[self.uiWidget_listView.selectedIndexes()[0].row()].get("data")
+                details_table_data = splitter(selectedEntry)
+                logger.debug("details table data: %s" % details_table_data)
+                
+                self.uiTable_characteristics.setHorizontalHeaderLabels(["Name", "Value"])
+                self.uiTable_characteristics.horizontalHeader().setDefaultAlignment(QtCore.Qt.AlignLeft  | QtCore.Qt.Alignment(QtCore.Qt.TextWordWrap))
+                self.uiTable_characteristics.horizontalHeader().setSectionResizeMode(QtWidgets.QHeaderView.Stretch)
+                self.uiTable_characteristics.horizontalHeader().setStretchLastSection(True)
+                self.uiTable_characteristics.setRowCount(len(details_table_data))
+                
+                # now fill our table
+                row = 0
+                for entry in splitter(selectedEntry):
+                    self.uiTable_characteristics.setItem(row, 0, QtWidgets.QTableWidgetItem(entry["name"]))
+                    self.uiTable_characteristics.setItem(row, 1, QtWidgets.QTableWidgetItem(entry["value"]))
                     row += 1
                 
                 self.uiTable_characteristics.show()
