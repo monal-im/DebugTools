@@ -30,7 +30,9 @@ logger = logging.getLogger(__name__)
 logger.info('Logger configured...')
 
 # display GUI
-application_run = QtWidgets.QApplication(sys.argv)
-Main_application = MainWindow()
-Main_application.show()
-application_run.exec_()
+application = QtWidgets.QApplication(sys.argv)
+main_window = MainWindow()
+main_window.show()
+if args.file != None:
+    main_window.openLogFile(args.file)
+application.exec_()
