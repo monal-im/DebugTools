@@ -35,6 +35,7 @@ class MainWindow(QtWidgets.QMainWindow):
                          self.uiAction_search, self.uiCombobox_searchInput, self.uiCombobox_filterInput,
                          self.uiButton_filterClear, self.uiAction_save]
         self.disableButtons()
+        self.selectedCombobox = self.uiCombobox_filterInput
 
         self.uiButton_previous.setIcon(self.style().standardIcon(getattr(QStyle, "SP_ArrowBack")))
         self.uiButton_previous.clicked.connect(self.searchPrevious)
