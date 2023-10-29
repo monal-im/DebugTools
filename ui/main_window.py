@@ -245,6 +245,9 @@ class MainWindow(QtWidgets.QMainWindow):
         self.setCompleter(self.uiCombobox_searchInput)
 
         self._updateStatusbar()
+
+        if self.uiCombobox_filterInput.currentText() != "":
+            self.filter()
     
     def compileLogFormatter(self, code):
         # compile our code by executing it
