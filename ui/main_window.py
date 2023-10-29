@@ -29,11 +29,10 @@ class MainWindow(QtWidgets.QMainWindow):
         self.search = None
         self.statusbar = Statusbar(self.uistatusbar_state)
 
-        # The itemList is a list of all buttons or actions that should be enabled or disabled at a given time
-        self.itemList = [self.uiAction_close, self.uiAction_export, self.uiAction_pushStack, 
-                         self.uiAction_popStack, self.uiButton_previous, self.uiButton_next,
-                         self.uiAction_search, self.uiCombobox_searchInput, self.uiCombobox_filterInput,
-                         self.uiButton_filterClear, self.uiAction_save]
+        self.toggleUiActions = [self.uiAction_close, self.uiAction_export, self.uiAction_pushStack, 
+                         self.uiAction_popStack, self.uiAction_search, self.uiAction_save]
+        self.toggleUiButtons = [self.uiButton_previous, self.uiButton_next, self.uiButton_filterClear]
+        self.toggleUiComboboxes = [self.uiCombobox_searchInput, self.uiCombobox_filterInput]
         self.disableButtons()
         self.selectedCombobox = self.uiCombobox_filterInput
 
@@ -98,12 +97,20 @@ class MainWindow(QtWidgets.QMainWindow):
         SettingsSingleton().storeDimension(self)
 
     def enableButtons(self):
-        for item in self.itemList:
+        for item in self.toggleUiActions:
+            item.setEnabled(True)
+        for item in self.toggleUiButtons:
+            item.setEnabled(True)
+        for item in self.toggleUiComboboxes:
             item.setEnabled(True)
         self.setEnabled = True
 
     def disableButtons(self):
-        for item in self.itemList:
+        for item in self.toggleUiActions:
+            item.setEnabled(False)
+        for item in self.toggleUiButtons:
+            item.setEnabled(False)
+        for item in self.toggleUiComboboxes:
             item.setEnabled(False)
         self.setEnabled = False
 
@@ -488,7 +495,7 @@ class MainWindow(QtWidgets.QMainWindow):
         #unpacking search
         if stack["search"]["isOpen"]:
             self.uiCombobox_searchInput.setCurrentText(stack["search"]["currentText"])
-            if stack["search"]["active"]:
+            if stack["search"]["instance"]:
                 self.uiWidget_listView.setCurrentRow(stack["search"]["currentPosition"])
                 self.searchNext()
 
