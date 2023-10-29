@@ -38,14 +38,11 @@ class PreferencesDialog(QtWidgets.QDialog):
         for comboboxName in self.history:
             data = [self.history[comboboxName].item(item).text() for item in range(self.history[comboboxName].count())]
             SettingsSingleton().setComboboxHistoryByName(comboboxName, data)
-
         for miscName in self.misc:
             SettingsSingleton()[miscName] = self._getMiscWidgetValue(self.misc[miscName])
+        SettingsSingleton().clearFormatter()
         for formatterNameLineEdit in self.formatter:
-            code = None
-            if self.formatter[formatterNameLineEdit] != None:
-                code = self.formatter[formatterNameLineEdit].toPlainText()
-            SettingsSingleton().setFormatter(formatterNameLineEdit.text(), code)
+            SettingsSingleton().setFormatter(formatterNameLineEdit.text(), self.formatter[formatterNameLineEdit].toPlainText())
         super().accept()
 
     def _getMiscWidgetValue(self, widget):
@@ -179,7 +176,8 @@ class PreferencesDialog(QtWidgets.QDialog):
                 button.clicked.connect(functools.partial(self._deleteFormat, lineEdit, code, button))
 
     def _deleteFormat(self, lineEdit, code, button):
-        self.formatter[lineEdit] = None
+        del self.formatter[lineEdit]
+        self.currrentFormatter.removeItem(self.currrentFormatter.findText(lineEdit.text()))
         lineEdit.hide()
         code.hide()
         button.hide()

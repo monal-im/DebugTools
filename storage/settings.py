@@ -80,13 +80,13 @@ class SettingsSingleton():
         if self._widgetName(widget) in self.data["state"]:
             widget.restoreState(QtCore.QByteArray.fromBase64(bytes(self.data["state"][self._widgetName(widget)], "UTF-8")))
 
+    def clearFormatter(self):
+        print(self.data["formatter"])
+        self.data["formatter"].clear()
+        print(self.data["formatter"])
+
     def setFormatter(self, name, code):
-        if code != None:
-            if name != "" and code != "":
-                self.data["formatter"][name] = code
-        else:
-            if name in self.data["formatter"]:
-                del self.data["formatter"][name]
+        self.data["formatter"][name] = code
         self._store()
 
     def getFormatterNames(self):
