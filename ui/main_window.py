@@ -239,6 +239,7 @@ class MainWindow(QtWidgets.QMainWindow):
         progressbar.hide()
 
         self.file = file
+        self.filesize = os.stat(file).st_size
         self.statusbar.showDynamicText(str("Done ✓ | file opened: " + os.path.basename(file)))
 
         self.setCompleter(self.uiCombobox_filterInput)
@@ -411,8 +412,12 @@ class MainWindow(QtWidgets.QMainWindow):
         self.setComboboxStatusColor(self.uiCombobox_filterInput, result["status"])
         self.updateComboboxHistory(query, self.uiCombobox_filterInput)
 
+        progressBar, update_progressbar = self.progressDialog("Filtering...", query)
+
         for rawlogPosition in range(len(self.rawlog)):
             self.rawlog[rawlogPosition]["uiItem"].setHidden(rawlogPosition not in result["entries"])
+            update_progressbar(rawlogPosition, self.filesize)
+        progressBar.hide()
 
         SettingsSingleton().setComboboxHistory(self.uiCombobox_filterInput, [self.uiCombobox_filterInput.itemText(i) for i in range(self.uiCombobox_filterInput.count())])
         self.currentFilterQuery = query
