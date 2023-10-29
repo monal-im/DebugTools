@@ -496,8 +496,9 @@ class MainWindow(QtWidgets.QMainWindow):
         if stack["search"]["isOpen"]:
             self.uiCombobox_searchInput.setCurrentText(stack["search"]["currentText"])
             if stack["search"]["instance"]:
-                self.uiWidget_listView.setCurrentRow(stack["search"]["currentPosition"])
+                self.search = stack["search"]["instance"]
                 self.searchNext()
+                self.searchPrevious()
 
         #unpacking filter
         self.uiCombobox_filterInput.setCurrentText(stack["filter"]["currentText"])
