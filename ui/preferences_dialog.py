@@ -54,6 +54,9 @@ class PreferencesDialog(QtWidgets.QDialog):
             return widget.currentText()
         if isinstance(widget, QtWidgets.QCheckBox):
             return widget.isChecked()
+        if isinstance(widget, QtWidgets.QPushButton):
+            fontList = widget.text().split(",")
+            return [fontList[0], int(fontList[1])]
 
     def _createUiTab_color(self):
         colorNames = SettingsSingleton().getColorNames()
@@ -121,7 +124,7 @@ class PreferencesDialog(QtWidgets.QDialog):
             widget.setDecimals(1)
             widget.setSingleStep(0.1)
             widget.setValue(value)
-        elif type(value) == str and miscName != "currentFormatter":
+        elif type(value) == str and miscName != "currentFormatter" and miscName != "font":
             widget = QtWidgets.QLineEdit()
             widget.setText(value)
         elif type(value) == str and miscName == "currentFormatter":
@@ -129,10 +132,23 @@ class PreferencesDialog(QtWidgets.QDialog):
             widget.addItems(SettingsSingleton().getFormatterNames())
             widget.setCurrentText(value)
             self.currrentFormatter = widget
+        elif type(value) == list:
+            widget = QtWidgets.QPushButton()
+            widget.setText(value[0] + ", " + str(value[1]))
+            widget.setFont(QtGui.QFont(value[0], value[1]))
+            widget.clicked.connect(functools.partial(self._changeFont, widget))
         elif type(value) == bool:
             widget = QtWidgets.QCheckBox()
             widget.setChecked(value)
         return widget
+    
+    def _changeFont(self, widget):
+        fontDialog = QtWidgets.QFontDialog()
+        font, valid = fontDialog.getFont()
+        if valid:
+            fontParameters = font.toString().split(",")
+            widget.setText(fontParameters[0] + ", " + fontParameters[1])
+            widget.setFont(QtGui.QFont(fontParameters[0], int(fontParameters[1])))
 
     def _createUiTab_history(self):
         for combobox in SettingsSingleton().getComboboxNames():

@@ -180,7 +180,7 @@ class MainWindow(QtWidgets.QMainWindow):
         self.uiWidget_listView.clear()
         self.enableButtons()
         
-        itemFont = QtGui.QFont("monospace", SettingsSingleton().getFontSize())
+        itemFont = QtGui.QFont(SettingsSingleton().getFont(), SettingsSingleton().getFontSize())
         def loader(entry):
             # directly warn about file corruptions when they happen to allow the user to abort the loading process
             # using the cancel button in the progressbar window

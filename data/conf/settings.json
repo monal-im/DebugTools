@@ -21,7 +21,7 @@
         "staticLineWrap": 140,
         "currentFormatter": "default",
         "tabWidth": 4,
-        "fontSize": 10
+        "font": ["monospace", 10]
     },
     "formatter": {
         "default": "def formatter(e, **g):\n\tglobals().update(g)\n\treturn \"%s %s\" % (e[\"timestamp\"], e[\"message\"])"
