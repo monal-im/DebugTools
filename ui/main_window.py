@@ -33,7 +33,7 @@ class MainWindow(QtWidgets.QMainWindow):
                          self.uiAction_popStack, self.uiAction_search, self.uiAction_save]
         self.toggleUiButtons = [self.uiButton_previous, self.uiButton_next, self.uiButton_filterClear]
         self.toggleUiComboboxes = [self.uiCombobox_searchInput, self.uiCombobox_filterInput]
-        self.disableButtons()
+        self.disableUiItems()
         self.selectedCombobox = self.uiCombobox_filterInput
 
         self.uiButton_previous.setIcon(self.style().standardIcon(getattr(QStyle, "SP_ArrowBack")))
@@ -94,7 +94,7 @@ class MainWindow(QtWidgets.QMainWindow):
         super().resizeEvent(e)
         SettingsSingleton().storeDimension(self)
 
-    def enableButtons(self):
+    def enableUiItems(self):
         for item in self.toggleUiActions:
             item.setEnabled(True)
         for item in self.toggleUiButtons:
@@ -103,7 +103,7 @@ class MainWindow(QtWidgets.QMainWindow):
             item.setEnabled(True)
         self.setEnabled = True
 
-    def disableButtons(self):
+    def disableUiItems(self):
         for item in self.toggleUiActions:
             item.setEnabled(False)
         for item in self.toggleUiButtons:
@@ -164,7 +164,7 @@ class MainWindow(QtWidgets.QMainWindow):
         self.statusbar.setText("Loading File: '%s'..." % os.path.basename(file))
         self.rawlog = Rawlog()
         self.uiWidget_listView.clear()
-        self.enableButtons()
+        self.enableUiItems()
         
         def loader(entry):
             itemFont = QtGui.QFont(SettingsSingleton().getFont(), SettingsSingleton().getFontSize())
@@ -283,9 +283,11 @@ class MainWindow(QtWidgets.QMainWindow):
                 
                 self.uiTable_characteristics.show()
                 self.currentDetailIndex = self.uiWidget_listView.selectedIndexes()[0].row()
+                self.uiAction_inspectLine.setData(True)
             else:
                 self.currentDetailIndex = None
                 self.uiTable_characteristics.hide()
+                self.uiAction_inspectLine.setData(False)
 
     @catch_exceptions(logger=logger)
     def focusChangedEvent(self, oldWidget, newWidget):
@@ -310,7 +312,7 @@ class MainWindow(QtWidgets.QMainWindow):
         self.uiFrame_search.hide()
         self.file = None
 
-        self.disableButtons()
+        self.disableUiItems()
 
     @catch_exceptions(logger=logger)
     def preferences(self, *args):
