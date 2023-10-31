@@ -308,6 +308,12 @@
    </property>
   </action>
   <action name="uiAction_inspectLine">
+   <property name="checkable">
+    <bool>true</bool>
+   </property>
+   <property name="enabled">
+    <bool>true</bool>
+   </property>
    <property name="text">
     <string>Inspect Line</string>
    </property>

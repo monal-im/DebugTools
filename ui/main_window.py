@@ -67,8 +67,6 @@ class MainWindow(QtWidgets.QMainWindow):
         }
         self.logflag2colorMapping = {v: "logline-%s" % k.lower() for k, v in LOGLEVELS.items()}
 
-        self.rebuildUi()
-
         QtWidgets.QShortcut(QtGui.QKeySequence("ESC"), self).activated.connect(self.hideSearch)
         self.uiCombobox_searchInput.activated[str].connect(self.searchNext)
 
@@ -113,18 +111,6 @@ class MainWindow(QtWidgets.QMainWindow):
         for item in self.toggleUiComboboxes:
             item.setEnabled(False)
         self.setEnabled = False
-
-    def rebuildUi(self):
-        if self.file != None:
-            self.openLogFile(self.file)
-        
-        self.uiCombobox_filterInput.clear()
-        self.uiCombobox_filterInput.addItems(SettingsSingleton().getComboboxHistory(self.uiCombobox_filterInput))
-        self.uiCombobox_filterInput.lineEdit().setText("")
-
-        self.uiCombobox_searchInput.clear()
-        self.uiCombobox_searchInput.addItems(SettingsSingleton().getComboboxHistory(self.uiCombobox_searchInput))
-        self.uiCombobox_searchInput.lineEdit().setText("")
 
     def export(self):
         if self.rawlog:
@@ -180,8 +166,8 @@ class MainWindow(QtWidgets.QMainWindow):
         self.uiWidget_listView.clear()
         self.enableButtons()
         
-        itemFont = QtGui.QFont(SettingsSingleton().getFont(), SettingsSingleton().getFontSize())
         def loader(entry):
+            itemFont = QtGui.QFont(SettingsSingleton().getFont(), SettingsSingleton().getFontSize())
             # directly warn about file corruptions when they happen to allow the user to abort the loading process
             # using the cancel button in the progressbar window
             if "__warning" in entry and entry["__warning"] == True:
@@ -328,11 +314,19 @@ class MainWindow(QtWidgets.QMainWindow):
 
     @catch_exceptions(logger=logger)
     def preferences(self, *args):
+        preInstance = {"color": {}, "staticLineWrap": None, "font": None, "formatter": None}
+        for colorName in SettingsSingleton().getColorNames():
+            preInstance["color"][colorName] = SettingsSingleton().getQColorTuple(colorName)
+        preInstance["staticLineWrap"] = SettingsSingleton()["staticLineWrap"]
+        preInstance["font"] = [SettingsSingleton().getFont(), SettingsSingleton().getFontSize()]
+        preInstance["formatter"] = SettingsSingleton().getCurrentFormatterCode()
+
+        
         self.preferencesDialog = PreferencesDialog()
         self.preferencesDialog.show()
         result = self.preferencesDialog.exec_()
         if result:
-            self.rebuildUi()
+            self.rebuildUi(preInstance)
 
     @catch_exceptions(logger=logger)
     def openSearchwidget(self, *args):
@@ -536,3 +530,88 @@ class MainWindow(QtWidgets.QMainWindow):
                 text += ", search: no result!"
 
         self.statusbar.setText(text)
+
+    @catch_exceptions(logger=logger)
+    def rebuildUi(self, preInstance):
+        def rebuildCombobox(combobox):
+            if len(SettingsSingleton().getComboboxHistory(combobox)) != combobox:
+                combobox.clear()
+                combobox.addItems(SettingsSingleton().getComboboxHistory(combobox))
+                combobox.lineEdit().setText("")
+        rebuildCombobox(self.uiCombobox_filterInput)
+        rebuildCombobox(self.uiCombobox_searchInput)
+
+        if self.file != None:
+            fontChanged = False
+            lineWrapChanged = False
+            formatterChanged = False
+
+            if preInstance["font"] != [SettingsSingleton().getFont(), SettingsSingleton().getFontSize()]:
+                fontChanged = True
+            if preInstance["staticLineWrap"] != SettingsSingleton()["staticLineWrap"]:
+                lineWrapChanged = True
+            if preInstance["formatter"] != SettingsSingleton().getCurrentFormatterCode():
+                formatterChanged = True
+
+            if formatterChanged:
+                # first of all: try to compile our log formatter code and abort, if this isn't generating a callable formatter function
+                try:
+                    formatter = self.compileLogFormatter(SettingsSingleton().getCurrentFormatterCode())
+                except Exception as e:
+                    logger.exception("Exception while compiling log formatter")
+                    QtWidgets.QMessageBox.critical(
+                        self,
+                        "Monal Log Viewer | ERROR",
+                        "Exception in formatter code:\n%s: %s" % (str(type(e).__name__), str(e)),
+                        QtWidgets.QMessageBox.Ok
+                    )
+                    return
+                self.uiWidget_listView.clear()
+                for index in range(len(self.rawlog)):
+                    itemFont = QtGui.QFont(SettingsSingleton().getFont(), SettingsSingleton().getFontSize())
+                    
+                    try:
+                        # this will make sure the log formatter does not change our log entry, but it makes loading slower
+                        # formattedEntry = formatter({value: entry[value] for value in entry.keys()})
+                        formattedEntry = formatter(self.rawlog[index]["data"])
+                    except Exception as e:
+                        logger.exception("Exception while calling log formatter")
+                        QtWidgets.QMessageBox.critical(
+                            self,
+                            "Monal Log Viewer | ERROR", 
+                            "Exception in formatter code:\n%s: %s" % (str(type(e).__name__), str(e)),
+                            QtWidgets.QMessageBox.Ok
+                        )
+                        raise AbortRawlogLoading()       # abort loading
+                    
+                    item_with_color = "\n".join([textwrap.fill(line, SettingsSingleton()["staticLineWrap"],
+                        expand_tabs=False,
+                        replace_whitespace=False,
+                        drop_whitespace=False,
+                        break_long_words=True,
+                        break_on_hyphens=True,
+                        max_lines=None
+                    ) if len(line) > SettingsSingleton()["staticLineWrap"] else line for line in formattedEntry.strip().splitlines(keepends=False)])
+                    
+                    fg, bg = tuple(SettingsSingleton().getQColorTuple(self.logflag2colorMapping[self.rawlog[index]["data"]["flag"]]))
+                    item_with_color = QtWidgets.QListWidgetItem(item_with_color)
+                    item_with_color.setFont(itemFont)
+                    item_with_color.setForeground(fg)
+                    if bg != None:
+                        item_with_color.setBackground(bg)
+                    self.rawlog[index]["uiItem"] = item_with_color
+                    self.uiWidget_listView.addItem(item_with_color)
+            else:
+                for item in self.rawlog:
+                    if fontChanged:
+                        item["uiItem"].setFont(QtGui.QFont(SettingsSingleton().getFont(), SettingsSingleton().getFontSize()))
+                    if lineWrapChanged:
+                        pass
+
+                for colorName in SettingsSingleton().getColorNames():
+                    if preInstance["color"][colorName] != SettingsSingleton().getQColorTuple(colorName):
+                        fg, bg = tuple(SettingsSingleton().getQColorTuple(colorName))
+                        for item in self.rawlog:
+                            item["uiItem"].setForeground(fg)
+                            if bg != None:
+                                item["uiItem"].setBackground(bg)
