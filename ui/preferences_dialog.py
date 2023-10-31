@@ -192,11 +192,12 @@ class PreferencesDialog(QtWidgets.QDialog):
                 button.clicked.connect(functools.partial(self._deleteFormat, lineEdit, code, button))
 
     def _deleteFormat(self, lineEdit, code, button):
-        del self.formatter[lineEdit]
-        self.currrentFormatter.removeItem(self.currrentFormatter.findText(lineEdit.text()))
-        lineEdit.hide()
-        code.hide()
-        button.hide()
+        if len(self.formatter) >= 2:
+            del self.formatter[lineEdit]
+            self.currrentFormatter.removeItem(self.currrentFormatter.findText(lineEdit.text()))
+            lineEdit.hide()
+            code.hide()
+            button.hide()
 
     def _addFormatter(self, lineEdit, code, button):
         if lineEdit.text() != "" and code.toPlainText() != "":
