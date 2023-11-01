@@ -148,18 +148,7 @@ class MainWindow(QtWidgets.QMainWindow):
             self.openLogFile(file)
 
     def openLogFile(self, file):
-        # first of all: try to compile our log formatter code and abort, if this isn't generating a callable formatter function
-        try:
-            formatter = self.compileLogFormatter(SettingsSingleton().getCurrentFormatterCode())
-        except Exception as e:
-            logger.exception("Exception while compiling log formatter")
-            QtWidgets.QMessageBox.critical(
-                self,
-                "Monal Log Viewer | ERROR",
-                "Exception in formatter code:\n%s: %s" % (str(type(e).__name__), str(e)),
-                QtWidgets.QMessageBox.Ok
-            )
-            return
+        formatter = self.createFormatter()
         
         self.statusbar.setText("Loading File: '%s'..." % os.path.basename(file))
         self.rawlog = Rawlog()
@@ -172,20 +161,9 @@ class MainWindow(QtWidgets.QMainWindow):
             # using the cancel button in the progressbar window
             if "__warning" in entry and entry["__warning"] == True:
                 QtWidgets.QMessageBox.warning(self, "File corruption detected", entry["message"])
-            
-            try:
-                # this will make sure the log formatter does not change our log entry, but it makes loading slower
-                # formattedEntry = formatter({value: entry[value] for value in entry.keys()})
-                formattedEntry = formatter(entry)
-            except Exception as e:
-                logger.exception("Exception while calling log formatter")
-                QtWidgets.QMessageBox.critical(
-                    self,
-                    "Monal Log Viewer | ERROR", 
-                    "Exception in formatter code:\n%s: %s" % (str(type(e).__name__), str(e)),
-                    QtWidgets.QMessageBox.Ok
-                )
-                raise AbortRawlogLoading()       # abort loading
+
+            formattedEntry = self.createFormatterText(formatter, entry)
+            entry["__formattedMessage"] = formattedEntry
             
             # return None if our formatter filtered out that entry
             if formattedEntry == None:
@@ -236,6 +214,35 @@ class MainWindow(QtWidgets.QMainWindow):
         if self.uiCombobox_filterInput.currentText() != "":
             self.filter()
     
+    def createFormatterText(self, formatter, entry):        
+        try:
+            # this will make sure the log formatter does not change our log entry, but it makes loading slower
+            # formattedEntry = formatter({value: entry[value] for value in entry.keys()})
+            return formatter(entry)
+        except Exception as e:
+            logger.exception("Exception while calling log formatter")
+            QtWidgets.QMessageBox.critical(
+                self,
+                "Monal Log Viewer | ERROR", 
+                "Exception in formatter code:\n%s: %s" % (str(type(e).__name__), str(e)),
+                QtWidgets.QMessageBox.Ok
+            )
+            raise AbortRawlogLoading()       # abort loading
+
+    def createFormatter(self):
+        # first of all: try to compile our log formatter code and abort, if this isn't generating a callable formatter function
+        try:
+            return self.compileLogFormatter(SettingsSingleton().getCurrentFormatterCode())
+        except Exception as e:
+            logger.exception("Exception while compiling log formatter")
+            QtWidgets.QMessageBox.critical(
+                self,
+                "Monal Log Viewer | ERROR",
+                "Exception in formatter code:\n%s: %s" % (str(type(e).__name__), str(e)),
+                QtWidgets.QMessageBox.Ok
+            )
+            return
+
     def compileLogFormatter(self, code):
         # compile our code by executing it
         loc = {}
@@ -318,7 +325,9 @@ class MainWindow(QtWidgets.QMainWindow):
     def preferences(self, *args):
         preInstance = {"color": {}, "staticLineWrap": None, "font": None, "formatter": None}
         for colorName in SettingsSingleton().getColorNames():
-            preInstance["color"][colorName] = SettingsSingleton().getQColorTuple(colorName)
+            colorTuple = SettingsSingleton().getQColorTuple(colorName)
+            if len(colorTuple) > 1:
+                preInstance["color"][colorName] = colorTuple
         preInstance["staticLineWrap"] = SettingsSingleton()["staticLineWrap"]
         preInstance["font"] = [SettingsSingleton().getFont(), SettingsSingleton().getFontSize()]
         preInstance["formatter"] = SettingsSingleton().getCurrentFormatterCode()
@@ -540,80 +549,54 @@ class MainWindow(QtWidgets.QMainWindow):
                 combobox.clear()
                 combobox.addItems(SettingsSingleton().getComboboxHistory(combobox))
                 combobox.lineEdit().setText("")
+
+        def rebuildFormatter():
+            formatter = self.createFormatter()
+            for index in range(len(self.rawlog)):
+                formattedEntry = self.createFormatterText(formatter, self.rawlog[index]["data"])
+                self.rawlog[index]["data"]["__formattedMessage"] = formattedEntry
+
+        def rebuildLineWrap():
+            for entry in range(len(self.rawlog)):
+                uiItem = "\n".join([textwrap.fill(line, SettingsSingleton()["staticLineWrap"],
+                    expand_tabs=False,
+                    replace_whitespace=False,
+                    drop_whitespace=False,
+                    break_long_words=True,
+                    break_on_hyphens=True,
+                    max_lines=None
+                ) if len(line) > SettingsSingleton()["staticLineWrap"]  else line for line in self.rawlog[entry]["data"]["__formattedMessage"].strip().splitlines(keepends=False)])
+                uiItem = QtWidgets.QListWidgetItem(uiItem)
+                self.uiWidget_listView.takeItem(entry)
+                self.uiWidget_listView.insertItem(entry, uiItem)
+                self.rawlog[entry]["uiItem"] = uiItem
+
+        def rebuildColor():
+            for colorName in SettingsSingleton().getColorNames():
+                colorTuple = SettingsSingleton().getQColorTuple(colorName)
+                if colorName in preInstance["color"] and colorTuple != preInstance["color"][colorName]:
+                    for index in range(len(self.rawlog)):
+                        uiItem = self.rawlog[index]["uiItem"]
+                        if self.logflag2colorMapping[self.rawlog[index]["data"]["flag"]] == colorName:
+                            fg, bg = tuple(SettingsSingleton().getQColorTuple(colorName))
+                            uiItem.setForeground(fg)
+                            if bg != None:
+                                uiItem.setBackground(bg)
+
+        def rebuildFont():
+            for item in self.rawlog:
+                item["uiItem"].setFont(QtGui.QFont(SettingsSingleton().getFont(), SettingsSingleton().getFontSize()))  
+
         rebuildCombobox(self.uiCombobox_filterInput)
         rebuildCombobox(self.uiCombobox_searchInput)
 
         if self.file != None:
-            fontChanged = False
-            lineWrapChanged = False
-            formatterChanged = False
-
-            if preInstance["font"] != [SettingsSingleton().getFont(), SettingsSingleton().getFontSize()]:
-                fontChanged = True
-            if preInstance["staticLineWrap"] != SettingsSingleton()["staticLineWrap"]:
-                lineWrapChanged = True
             if preInstance["formatter"] != SettingsSingleton().getCurrentFormatterCode():
-                formatterChanged = True
-
-            if formatterChanged:
-                # first of all: try to compile our log formatter code and abort, if this isn't generating a callable formatter function
-                try:
-                    formatter = self.compileLogFormatter(SettingsSingleton().getCurrentFormatterCode())
-                except Exception as e:
-                    logger.exception("Exception while compiling log formatter")
-                    QtWidgets.QMessageBox.critical(
-                        self,
-                        "Monal Log Viewer | ERROR",
-                        "Exception in formatter code:\n%s: %s" % (str(type(e).__name__), str(e)),
-                        QtWidgets.QMessageBox.Ok
-                    )
-                    return
-                self.uiWidget_listView.clear()
-                for index in range(len(self.rawlog)):
-                    itemFont = QtGui.QFont(SettingsSingleton().getFont(), SettingsSingleton().getFontSize())
-                    
-                    try:
-                        # this will make sure the log formatter does not change our log entry, but it makes loading slower
-                        # formattedEntry = formatter({value: entry[value] for value in entry.keys()})
-                        formattedEntry = formatter(self.rawlog[index]["data"])
-                    except Exception as e:
-                        logger.exception("Exception while calling log formatter")
-                        QtWidgets.QMessageBox.critical(
-                            self,
-                            "Monal Log Viewer | ERROR", 
-                            "Exception in formatter code:\n%s: %s" % (str(type(e).__name__), str(e)),
-                            QtWidgets.QMessageBox.Ok
-                        )
-                        raise AbortRawlogLoading()       # abort loading
-                    
-                    item_with_color = "\n".join([textwrap.fill(line, SettingsSingleton()["staticLineWrap"],
-                        expand_tabs=False,
-                        replace_whitespace=False,
-                        drop_whitespace=False,
-                        break_long_words=True,
-                        break_on_hyphens=True,
-                        max_lines=None
-                    ) if len(line) > SettingsSingleton()["staticLineWrap"] else line for line in formattedEntry.strip().splitlines(keepends=False)])
-                    
-                    fg, bg = tuple(SettingsSingleton().getQColorTuple(self.logflag2colorMapping[self.rawlog[index]["data"]["flag"]]))
-                    item_with_color = QtWidgets.QListWidgetItem(item_with_color)
-                    item_with_color.setFont(itemFont)
-                    item_with_color.setForeground(fg)
-                    if bg != None:
-                        item_with_color.setBackground(bg)
-                    self.rawlog[index]["uiItem"] = item_with_color
-                    self.uiWidget_listView.addItem(item_with_color)
-            else:
-                for item in self.rawlog:
-                    if fontChanged:
-                        item["uiItem"].setFont(QtGui.QFont(SettingsSingleton().getFont(), SettingsSingleton().getFontSize()))
-                    if lineWrapChanged:
-                        pass
-
-                for colorName in SettingsSingleton().getColorNames():
-                    if preInstance["color"][colorName] != SettingsSingleton().getQColorTuple(colorName):
-                        fg, bg = tuple(SettingsSingleton().getQColorTuple(colorName))
-                        for item in self.rawlog:
-                            item["uiItem"].setForeground(fg)
-                            if bg != None:
-                                item["uiItem"].setBackground(bg)
+                rebuildFormatter()
+                rebuildLineWrap()
+                rebuildFont()
+            elif preInstance["staticLineWrap"] != SettingsSingleton()["staticLineWrap"]:
+                rebuildLineWrap()
+            elif preInstance["font"] != [SettingsSingleton().getFont(), SettingsSingleton().getFontSize()]:
+                rebuildFont()
+            rebuildColor()
