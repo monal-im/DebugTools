@@ -33,7 +33,7 @@ class MainWindow(QtWidgets.QMainWindow):
                          self.uiAction_popStack, self.uiAction_search, self.uiAction_save]
         self.toggleUiButtons = [self.uiButton_previous, self.uiButton_next, self.uiButton_filterClear]
         self.toggleUiComboboxes = [self.uiCombobox_searchInput, self.uiCombobox_filterInput]
-        self.disableUiItems()
+        self.toggleUiItems(False)
         self.selectedCombobox = self.uiCombobox_filterInput
 
         self.uiButton_previous.setIcon(self.style().standardIcon(getattr(QStyle, "SP_ArrowBack")))
@@ -95,23 +95,14 @@ class MainWindow(QtWidgets.QMainWindow):
         super().resizeEvent(e)
         SettingsSingleton().storeDimension(self)
 
-    def enableUiItems(self):
+    def toggleUiItems(self, switchBool):
         for item in self.toggleUiActions:
-            item.setEnabled(True)
+            item.setEnabled(switchBool)
         for item in self.toggleUiButtons:
-            item.setEnabled(True)
+            item.setEnabled(switchBool)
         for item in self.toggleUiComboboxes:
-            item.setEnabled(True)
-        self.setEnabled = True
-
-    def disableUiItems(self):
-        for item in self.toggleUiActions:
-            item.setEnabled(False)
-        for item in self.toggleUiButtons:
-            item.setEnabled(False)
-        for item in self.toggleUiComboboxes:
-            item.setEnabled(False)
-        self.setEnabled = False
+            item.setEnabled(switchBool)
+        self.setEnabled = switchBool
 
     def export(self):
         if self.rawlog:
@@ -154,7 +145,7 @@ class MainWindow(QtWidgets.QMainWindow):
         self.statusbar.setText("Loading File: '%s'..." % os.path.basename(file))
         self.rawlog = Rawlog()
         self.uiWidget_listView.clear()
-        self.enableUiItems()
+        self.toggleUiItems(True)
         
         def loader(entry):
             itemFont = QtGui.QFont(SettingsSingleton().getFont(), SettingsSingleton().getFontSize())
@@ -322,7 +313,7 @@ class MainWindow(QtWidgets.QMainWindow):
         self.uiFrame_search.hide()
         self.file = None
 
-        self.disableUiItems()
+        self.toggleUiItems(False)
 
     @catch_exceptions(logger=logger)
     def preferences(self, *args):
