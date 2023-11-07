@@ -54,6 +54,7 @@ class MainWindow(QtWidgets.QMainWindow):
         self.uiWidget_listView.itemSelectionChanged.connect(self.loglineSelectionChanged)
         self.uiTable_characteristics.hide()
         self.uiFrame_search.hide()
+        self.uiAction_inspectLine.setData(False)
 
         self.uiTable_characteristics.doubleClicked.connect(self.pasteDetailItem)
         MagicLineEdit(self.uiCombobox_searchInput)
@@ -291,10 +292,12 @@ class MainWindow(QtWidgets.QMainWindow):
                 self.uiTable_characteristics.show()
                 self.currentDetailIndex = self.uiWidget_listView.selectedIndexes()[0].row()
                 self.uiAction_inspectLine.setData(True)
+                self.uiAction_inspectLine.setChecked(True)
             else:
                 self.currentDetailIndex = None
                 self.uiTable_characteristics.hide()
                 self.uiAction_inspectLine.setData(False)
+                self.uiAction_inspectLine.setChecked(False)
 
     @catch_exceptions(logger=logger)
     def focusChangedEvent(self, oldWidget, newWidget):
