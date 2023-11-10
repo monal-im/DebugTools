@@ -40,6 +40,7 @@ class PreferencesDialog(QtWidgets.QDialog):
             SettingsSingleton().setComboboxHistoryByName(comboboxName, data)
         for miscName in self.misc:
             SettingsSingleton()[miscName] = self._getMiscWidgetValue(self.misc[miscName])
+        #??? using a method named setAllFormatters instead if distinct clear and set methods would be better and more atomic
         SettingsSingleton().clearFormatter()
         for formatterNameLineEdit in self.formatter:
             SettingsSingleton().setFormatter(formatterNameLineEdit.text(), self.formatter[formatterNameLineEdit].toPlainText())
@@ -124,7 +125,7 @@ class PreferencesDialog(QtWidgets.QDialog):
             widget.setDecimals(1)
             widget.setSingleStep(0.1)
             widget.setValue(value)
-        elif type(value) == str and miscName != "currentFormatter" and miscName != "font":
+        elif type(value) == str and miscName != "currentFormatter" and miscName != "font":#??? not needed, fonts are lists not type str
             widget = QtWidgets.QLineEdit()
             widget.setText(value)
         elif type(value) == str and miscName == "currentFormatter":
@@ -132,7 +133,7 @@ class PreferencesDialog(QtWidgets.QDialog):
             widget.addItems(SettingsSingleton().getFormatterNames())
             widget.setCurrentText(value)
             self.currrentFormatter = widget
-        elif type(value) == list:
+        elif type(value) == list:#??? this will interprete all misc values being a list as being font values!
             widget = QtWidgets.QPushButton()
             widget.setText(value[0] + ", " + str(value[1]))
             widget.setFont(QtGui.QFont(value[0], value[1]))
@@ -143,10 +144,11 @@ class PreferencesDialog(QtWidgets.QDialog):
         return widget
     
     def _changeFont(self, widget):
+        #??? this is not opening the font dialog with the currently configured font preselected
         fontDialog = QtWidgets.QFontDialog()
-        font, valid = fontDialog.getFont()
+        font, valid = fontDialog.getFont()#??? this should be used as static method not an instance method, see: https://doc.qt.io/qt-6/qfontdialog.html
         if valid:
-            fontParameters = font.toString().split(",")
+            fontParameters = font.toString().split(",")#??? DON'T EVER USE toString() ON A FONT TO GET ITS NAME AND SIZE!!
             widget.setText(fontParameters[0] + ", " + fontParameters[1])
             widget.setFont(QtGui.QFont(fontParameters[0], int(fontParameters[1])))
 

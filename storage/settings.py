@@ -80,7 +80,9 @@ class SettingsSingleton():
         if self._widgetName(widget) in self.data["state"]:
             widget.restoreState(QtCore.QByteArray.fromBase64(bytes(self.data["state"][self._widgetName(widget)], "UTF-8")))
 
+    #??? wrong name: clearAllFormatters would be better; clearFormatter implies that only one specific formater is being "cleared" (whatever that means)
     def clearFormatter(self):
+        #??? use logger instead of print or remove these statements altogether
         print(self.data["formatter"])
         self.data["formatter"].clear()
         print(self.data["formatter"])
