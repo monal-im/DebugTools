@@ -161,22 +161,21 @@ class MainWindow(QtWidgets.QMainWindow):
             # return None if our formatter filtered out that entry
             if formattedEntry == None:
                 return None
-            #??? code duplication!!
-            item_with_color = "\n".join([textwrap.fill(line, SettingsSingleton()["staticLineWrap"],
-                expand_tabs=False,
-                replace_whitespace=False,
-                drop_whitespace=False,
-                break_long_words=True,
-                break_on_hyphens=True,
-                max_lines=None
-            ) if len(line) > SettingsSingleton()["staticLineWrap"] else line for line in formattedEntry.strip().splitlines(keepends=False)])
-            
+
+            item_with_color = self.wordWrapLogline(formattedEntry)   
             fg, bg = tuple(SettingsSingleton().getQColorTuple(self.logflag2colorMapping[entry["flag"]]))
             item_with_color = QtWidgets.QListWidgetItem(item_with_color)
             item_with_color.setFont(itemFont)
             item_with_color.setForeground(fg)
             if bg != None:
                 item_with_color.setBackground(bg)
+
+            if self.uiCombobox_filterInput.currentText():
+                if len(self.rawlog) not in self.currentFilterResult:
+                    item_with_color.setHidden(True)
+                else:
+                    item_with_color.setHidden(False)
+
             return {"uiItem": item_with_color, "data": entry}
 
         progressbar, updateProgressbar = self.progressDialog("Opening File...", "Opening File: "+ file, True)
@@ -196,17 +195,13 @@ class MainWindow(QtWidgets.QMainWindow):
         progressbar.hide()
 
         self.file = file
-        self.filesize = os.stat(file).st_size#??? don't use filesize for progress!
+        self.filesize = len(self.rawlog)
         self.statusbar.showDynamicText(str("Done ✓ | file opened: " + os.path.basename(file)))
 
         self.setCompleter(self.uiCombobox_filterInput)
         self.setCompleter(self.uiCombobox_searchInput)
 
         self._updateStatusbar()
-
-        #??? don't filter after loading, but integrate filtering into loading!
-        if self.uiCombobox_filterInput.currentText() != "":
-            self.filter()
     
     def createFormatterText(self, formatter, entry):        
         try:
@@ -322,7 +317,7 @@ class MainWindow(QtWidgets.QMainWindow):
         preInstance = {"color": {}, "staticLineWrap": None, "font": None, "formatter": None}
         for colorName in SettingsSingleton().getColorNames():
             colorTuple = SettingsSingleton().getQColorTuple(colorName)
-            if len(colorTuple) > 1:#??? why > 1? it's a coincidence that logline colors have >1 while other colors don't --> this will break as soon as we add other >1 colors somewhere else in this project!!
+            if colorTuple[:8] == "logline-":
                 preInstance["color"][colorName] = colorTuple
         preInstance["staticLineWrap"] = SettingsSingleton()["staticLineWrap"]
         preInstance["font"] = [SettingsSingleton().getFont(), SettingsSingleton().getFontSize()]
@@ -415,7 +410,6 @@ class MainWindow(QtWidgets.QMainWindow):
 
         progressBar, update_progressbar = self.progressDialog("Filtering...", query)
 
-        #??? BUG: (rawlogPosition / self.filesize) will not generate the correct percent value!! that's comparing apples with oranges!
         for rawlogPosition in range(len(self.rawlog)):
             self.rawlog[rawlogPosition]["uiItem"].setHidden(rawlogPosition not in result["entries"])
             update_progressbar(rawlogPosition, self.filesize)
@@ -423,6 +417,7 @@ class MainWindow(QtWidgets.QMainWindow):
 
         SettingsSingleton().setComboboxHistory(self.uiCombobox_filterInput, [self.uiCombobox_filterInput.itemText(i) for i in range(self.uiCombobox_filterInput.count())])
         self.currentFilterQuery = query
+        self.currentFilterResult = result
 
         self._updateStatusbar()
 
@@ -549,39 +544,23 @@ class MainWindow(QtWidgets.QMainWindow):
 
         def rebuildFormatter():
             formatter = self.createFormatter()
-            for index in range(len(self.rawlog)):#??? why index? just iterate over our entry directly instead of using self.rawlog[index] everywhere
-                formattedEntry = self.createFormatterText(formatter, self.rawlog[index]["data"])
-                self.rawlog[index]["data"]["__formattedMessage"] = formattedEntry
+            for entry in self.rawlog:
+                formattedEntry = self.createFormatterText(formatter, entry["data"])
+                entry["data"]["__formattedMessage"] = formattedEntry
+            rebuildLineWrap()
 
         def rebuildLineWrap():
             for entry in range(len(self.rawlog)):
-                #??? code duplication!!
-                uiItem = "\n".join([textwrap.fill(line, SettingsSingleton()["staticLineWrap"],
-                    expand_tabs=False,
-                    replace_whitespace=False,
-                    drop_whitespace=False,
-                    break_long_words=True,
-                    break_on_hyphens=True,
-                    max_lines=None
-                ) if len(line) > SettingsSingleton()["staticLineWrap"]  else line for line in self.rawlog[entry]["data"]["__formattedMessage"].strip().splitlines(keepends=False)])
-                #??? simply change text instead of recreating item! --> self.rawlog[entry]["uiItem"].setText()
-                uiItem = QtWidgets.QListWidgetItem(uiItem)
-                self.uiWidget_listView.takeItem(entry)
-                self.uiWidget_listView.insertItem(entry, uiItem)
-                self.rawlog[entry]["uiItem"] = uiItem
+                self.rawlog[entry]["uiItem"].setText(self.wordWrapLogline(self.rawlog[entry]["data"]["__formattedMessage"]))
 
         def rebuildColor():
-            #??? this is not performant at all: only iterate over self.rawlog and color names once!
-            for colorName in SettingsSingleton().getColorNames():
-                colorTuple = SettingsSingleton().getQColorTuple(colorName)
-                if colorName in preInstance["color"] and colorTuple != preInstance["color"][colorName]:
-                    for index in range(len(self.rawlog)):
-                        uiItem = self.rawlog[index]["uiItem"]
-                        if self.logflag2colorMapping[self.rawlog[index]["data"]["flag"]] == colorName:
-                            fg, bg = tuple(SettingsSingleton().getQColorTuple(colorName))
-                            uiItem.setForeground(fg)
-                            if bg != None:
-                                uiItem.setBackground(bg)
+            for entry in self.rawlog:
+                fg, bg = tuple(SettingsSingleton().getQColorTuple(self.logflag2colorMapping[entry["data"]["flag"]]))
+                for color in preInstance["color"].values():
+                    if fg != color or bg != color:
+                        self.rawlog["uiItem"].setForeground(fg)
+                        if bg != None:
+                            self.rawlog["uiItem"].setBackground(bg)
 
         def rebuildFont():
             for item in self.rawlog:
@@ -592,13 +571,21 @@ class MainWindow(QtWidgets.QMainWindow):
 
         if self.file != None:
             if preInstance["formatter"] != SettingsSingleton().getCurrentFormatterCode():
-                #??? this is not performant and will iterate over self.rawlog multiple times!
-                rebuildFormatter()#??? rebuildFormatter should integrate rebuildLineWrap
-                rebuildLineWrap()
-                rebuildFont()#??? not needed if only the formatter changed (and if setText() is used)
+                rebuildFormatter()
             elif preInstance["staticLineWrap"] != SettingsSingleton()["staticLineWrap"]:
                 rebuildLineWrap()
             elif preInstance["font"] != [SettingsSingleton().getFont(), SettingsSingleton().getFontSize()]:
                 rebuildFont()
-            rebuildColor()#??? should be integrated into rebuildFormatter (except if the formatter did not change)
-#??? files should end with an empty line
+            if preInstance["formatter"] == SettingsSingleton().getCurrentFormatterCode():
+                rebuildColor()
+
+    def wordWrapLogline(self, formattedMessage):
+        uiItem = "\n".join([textwrap.fill(line, SettingsSingleton()["staticLineWrap"],
+            expand_tabs=False,
+            replace_whitespace=False,
+            drop_whitespace=False,
+            break_long_words=True,
+            break_on_hyphens=True,
+            max_lines=None
+        ) if len(line) > SettingsSingleton()["staticLineWrap"]  else line for line in formattedMessage.strip().splitlines(keepends=False)])
+        return uiItem
