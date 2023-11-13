@@ -85,6 +85,8 @@ class MainWindow(QtWidgets.QMainWindow):
 
         self.currentDetailIndex = None
         self.currentFilterQuery = None
+
+        #TEST SEARCH CLOSING ON REOPENING
     
     def quit(self):
         sys.exit()
@@ -170,14 +172,8 @@ class MainWindow(QtWidgets.QMainWindow):
             if bg != None:
                 item_with_color.setBackground(bg)
 
-            if self.uiCombobox_filterInput.currentText():
-                if len(self.rawlog) not in self.currentFilterResult:
-                    item_with_color.setHidden(True)
-                else:
-                    item_with_color.setHidden(False)
-
             return {"uiItem": item_with_color, "data": entry}
-
+        
         progressbar, updateProgressbar = self.progressDialog("Opening File...", "Opening File: "+ file, True)
         # don't pretend something was loaded if the loading was aborted
         if self.rawlog.load_file(file, progress_callback=updateProgressbar, custom_load_callback=loader) != True:
@@ -189,8 +185,17 @@ class MainWindow(QtWidgets.QMainWindow):
         progressbar.setLabelText("Rendering File: '%s'..." % file)
         progressbar.setCancelButton(None)       # disable cancel button when rendering our file
         QtWidgets.QApplication.processEvents()
+        error = None
+        visibleCounter = 0
         for index in range(len(self.rawlog)):
             self.uiWidget_listView.addItem(self.rawlog[index]["uiItem"])
+            if len(self.uiCombobox_filterInput.currentText().strip()) != 0:
+                tmpError, tmpNum = self.filterEntry(self.uiCombobox_filterInput.currentText(), index)
+                visibleCounter += tmpNum
+                if tmpError != None:
+                    error = tmpError
+        if len(self.uiCombobox_filterInput.currentText().strip()) != 0:
+            self.checkFilterResult(error, visibleCounter)
         QtWidgets.QApplication.processEvents()
         progressbar.hide()
 
@@ -403,23 +408,48 @@ class MainWindow(QtWidgets.QMainWindow):
             return
         
         query = self.uiCombobox_filterInput.currentText()
-
-        result = matchQuery(query, self.rawlog)
-        self.setComboboxStatusColor(self.uiCombobox_filterInput, result["status"])
-        self.updateComboboxHistory(query, self.uiCombobox_filterInput)
-
         progressBar, update_progressbar = self.progressDialog("Filtering...", query)
-
+        error = None
+        visibleCounter = 0
+        filterList = []
         for rawlogPosition in range(len(self.rawlog)):
-            self.rawlog[rawlogPosition]["uiItem"].setHidden(rawlogPosition not in result["entries"])
+            tmpError, tmpNum = self.filterEntry(query, rawlogPosition)
+            visibleCounter += tmpNum
+            if tmpError != None:
+                error = tmpError
             update_progressbar(rawlogPosition, self.filesize)
+
+        self.checkFilterResult(error, visibleCounter)
         progressBar.hide()
+        self.updateComboboxHistory(query, self.uiCombobox_filterInput)
 
         SettingsSingleton().setComboboxHistory(self.uiCombobox_filterInput, [self.uiCombobox_filterInput.itemText(i) for i in range(self.uiCombobox_filterInput.count())])
         self.currentFilterQuery = query
-        self.currentFilterResult = result
 
         self._updateStatusbar()
+
+    def filterEntry(self, query, rawlogPosition):
+        error = None
+        result = matchQuery(query, self.rawlog, rawlogPosition)
+        if result["status"] != QueryStatus.QUERY_ERROR:
+            self.rawlog[rawlogPosition]["uiItem"].setHidden(not result["matching"])
+        else:
+            error = result["error"]
+        return (error, 1 if result["matching"] else 0)   
+
+    def checkFilterResult(self, error = None, visibleCounter = 0):
+        if error != None:
+            QtWidgets.QMessageBox.critical(
+                self,
+                "Monal Log Viewer | ERROR", 
+                "Exception in filter:\n%s: %s" % (str(type(error).__name__), str(error)),
+                QtWidgets.QMessageBox.Ok
+            )
+            self.setComboboxStatusColor(self.uiCombobox_filterInput, QueryStatus.QUERY_ERROR)
+        elif visibleCounter == 0:
+            self.setComboboxStatusColor(self.uiCombobox_filterInput, QueryStatus.QUERY_EMPTY)
+        else:
+            self.setComboboxStatusColor(self.uiCombobox_filterInput, QueryStatus.QUERY_OK)
 
     def updateComboboxHistory(self, query, combobox):
         if query.strip() == "":

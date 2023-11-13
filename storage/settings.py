@@ -80,7 +80,7 @@ class SettingsSingleton():
         if self._widgetName(widget) in self.data["state"]:
             widget.restoreState(QtCore.QByteArray.fromBase64(bytes(self.data["state"][self._widgetName(widget)], "UTF-8")))
 
-    def clearAllFormatter(self):
+    def clearAllFormatters(self):
         self.data["formatter"].clear()
 
     def setFormatter(self, name, code):

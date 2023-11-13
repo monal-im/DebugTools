@@ -7,11 +7,20 @@ class Search:
     def __init__(self, rawlog, query, startIndex):
         super().__init__()
         self.query = query
-        result = matchQuery(query, rawlog, self._additionalSearchFilter)
-        self.status, self.filteredList = result["status"], result["entries"]
+        self.filteredList = []
+        self.status = QueryStatus.QUERY_OK
+        for index in range(len(rawlog)):
+            # Presearch filter is expecting a finished rawlog loading
+            result = matchQuery(query, rawlog, index, preSearchFilter=self._preSearchFilter)
+            if result["matching"]:
+                self.filteredList.append(index)
+            if result["status"] == QueryStatus.QUERY_ERROR:
+                self.status = result["status"]
+        if len(self.filteredList) == 0:
+            self.status = QueryStatus.QUERY_EMPTY
         self.setStartIndex(startIndex)
 
-    def _additionalSearchFilter(self, resultIndex, rawlog):
+    def _preSearchFilter(self, resultIndex, rawlog):
         if rawlog[resultIndex]["uiItem"].isHidden() == False:
             return True
         return False

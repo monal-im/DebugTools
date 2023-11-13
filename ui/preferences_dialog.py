@@ -40,7 +40,7 @@ class PreferencesDialog(QtWidgets.QDialog):
             SettingsSingleton().setComboboxHistoryByName(comboboxName, data)
         for miscName in self.misc:
             SettingsSingleton()[miscName] = self._getMiscWidgetValue(self.misc[miscName])
-        SettingsSingleton().clearAllFormatter()
+        SettingsSingleton().clearAllFormatters()
         for formatterNameLineEdit in self.formatter:
             SettingsSingleton().setFormatter(formatterNameLineEdit.text(), self.formatter[formatterNameLineEdit].toPlainText())
         super().accept()

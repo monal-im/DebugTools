@@ -10,31 +10,24 @@ class QueryStatus(Enum):
     QUERY_OK = 3
     QUERY_EMPTY = 4
 
-def matchQuery(query, rawlog, additionalMatchFunc = None):
-    entries = []
+def matchQuery(query, rawlog, index, entry=None, preSearchFilter=None):
+    matching = False
     error = None
     status = QueryStatus.QUERY_OK
 
-    for resultIndex in range(len(rawlog)):
-
-        if additionalMatchFunc != None and not additionalMatchFunc(resultIndex, rawlog):
-            continue
-
-        try:
+    try:
+        if entry == None:
+            entry = rawlog[index]['data']
+        if preSearchFilter == None or preSearchFilter(index, rawlog):
             if eval(query, {
                 **LOGLEVELS,
                 "true" : True,
                 "false": False,
-                "__index": resultIndex,
-                "__rawlog": rawlog,
-            }, rawlog[resultIndex]['data']):
-                entries.append(resultIndex)
-
-        except (SyntaxError, NameError) as e:
-            error = e
-            status = QueryStatus.QUERY_ERROR
-            
-    if len(entries) == 0 and error == None:
-        status = QueryStatus.QUERY_EMPTY
+            }, entry):
+                matching = True
+        
+    except (SyntaxError, NameError) as e:
+        error = e
+        status = QueryStatus.QUERY_ERROR
     
-    return {"status": status, "entries": entries, "error": error}
+    return {"status": status, "error": error, "matching": matching}
