@@ -369,7 +369,7 @@ class MainWindow(QtWidgets.QMainWindow):
         self._updateStatusbar()
 
     def _prepareSearch(self):
-        query = self.uiCombobox_searchInput.currentText()
+        query = self.uiCombobox_searchInput.currentText().strip()
         if self.search != None:
             if self.search.getQuery() == query:
                 return None
@@ -408,7 +408,10 @@ class MainWindow(QtWidgets.QMainWindow):
         if self.setEnabled == False:
             return
         
-        query = self.uiCombobox_filterInput.currentText()
+        query = self.uiCombobox_filterInput.currentText().strip()
+        if query == self.currentFilterQuery:
+            return
+        
         progressbar, update_progressbar = self.progressDialog("Filtering...", query)
         error = None
         visibleCounter = 0
