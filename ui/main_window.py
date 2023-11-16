@@ -61,6 +61,12 @@ class MainWindow(QtWidgets.QMainWindow):
         MagicLineEdit(self.uiCombobox_searchInput)
         MagicLineEdit(self.uiCombobox_filterInput)
 
+        self.uiCombobox_filterInput.addItems(SettingsSingleton().getComboboxHistory(self.uiCombobox_filterInput))
+        self.uiCombobox_searchInput.addItems(SettingsSingleton().getComboboxHistory(self.uiCombobox_searchInput))
+
+        self.uiCombobox_filterInput.lineEdit().setText("")
+        self.uiCombobox_searchInput.lineEdit().setText("")
+
         self.queryStatus2colorMapping = {
             QueryStatus.EOF_REACHED:    SettingsSingleton().getCssColor("combobox-eof_reached"),
             QueryStatus.QUERY_ERROR:    SettingsSingleton().getCssColor("combobox-query_error"),
@@ -568,7 +574,7 @@ class MainWindow(QtWidgets.QMainWindow):
     @catch_exceptions(logger=logger)
     def rebuildUi(self, preInstance):
         def rebuildCombobox(combobox):
-            if len(SettingsSingleton().getComboboxHistory(combobox)) != combobox:
+            if len(SettingsSingleton().getComboboxHistory(combobox)) != len([combobox.itemText(i) for i in range(combobox.count())]):
                 combobox.clear()
                 combobox.addItems(SettingsSingleton().getComboboxHistory(combobox))
                 combobox.lineEdit().setText("")
