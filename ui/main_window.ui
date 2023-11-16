@@ -146,7 +146,7 @@
         <enum>QAbstractScrollArea::AdjustToContents</enum>
        </property>
        <property name="editTriggers">
-        <set>QAbstractItemView::SelectedClicked</set>
+        <set>QAbstractItemView::NoEditTriggers</set>
        </property>
        <property name="alternatingRowColors">
         <bool>true</bool>
