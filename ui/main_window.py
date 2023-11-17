@@ -87,8 +87,6 @@ class MainWindow(QtWidgets.QMainWindow):
 
         self.currentDetailIndex = None
         self.currentFilterQuery = None
-
-        #TEST SEARCH CLOSING ON REOPENING
     
     def quit(self):
         sys.exit()
@@ -146,6 +144,7 @@ class MainWindow(QtWidgets.QMainWindow):
 
     def openLogFile(self, file):
         formatter = self.createFormatter()
+        self.uiFrame_search.hide()
         
         self.statusbar.setText("Loading File: '%s'..." % os.path.basename(file))
         self.rawlog = Rawlog()
@@ -211,6 +210,9 @@ class MainWindow(QtWidgets.QMainWindow):
         self.setCompleter(self.uiCombobox_searchInput)
 
         self._updateStatusbar()
+
+        if len(self.uiCombobox_searchInput.currentText().strip()) != 0:
+            self.searchNext()
     
     def createFormatterText(self, formatter, entry):        
         try:
