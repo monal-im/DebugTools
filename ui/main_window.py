@@ -61,12 +61,6 @@ class MainWindow(QtWidgets.QMainWindow):
         MagicLineEdit(self.uiCombobox_searchInput)
         MagicLineEdit(self.uiCombobox_filterInput)
 
-        self.uiCombobox_filterInput.addItems(SettingsSingleton().getComboboxHistory(self.uiCombobox_filterInput))
-        self.uiCombobox_searchInput.addItems(SettingsSingleton().getComboboxHistory(self.uiCombobox_searchInput))
-
-        self.uiCombobox_filterInput.lineEdit().setText("")
-        self.uiCombobox_searchInput.lineEdit().setText("")
-
         self.queryStatus2colorMapping = {
             QueryStatus.EOF_REACHED:    SettingsSingleton().getCssColor("combobox-eof_reached"),
             QueryStatus.QUERY_ERROR:    SettingsSingleton().getCssColor("combobox-query_error"),
@@ -75,9 +69,11 @@ class MainWindow(QtWidgets.QMainWindow):
         }
         self.logflag2colorMapping = {v: "logline-%s" % k.lower() for k, v in LOGLEVELS.items()}
 
+        self.loadComboboxHistory(self.uiCombobox_searchInput)
         QtWidgets.QShortcut(QtGui.QKeySequence("ESC"), self).activated.connect(self.hideSearch)
         self.uiCombobox_searchInput.activated[str].connect(self.searchNext)
 
+        self.loadComboboxHistory(self.uiCombobox_filterInput)
         self.uiButton_filterClear.clicked.connect(self.clearFilter)
         self.uiCombobox_filterInput.activated[str].connect(self.filter)
 
@@ -401,7 +397,7 @@ class MainWindow(QtWidgets.QMainWindow):
 
     def clearFilter(self):
         self.uiCombobox_filterInput.setCurrentText("")
-        self.uiCombobox_filterInput.setStyleSheet('')
+        self.uiCombobox_filterInput.setStyleSheet("")
 
         for index in range(len(self.rawlog)):
             self.rawlog[index]["uiItem"].setHidden(False)
@@ -626,3 +622,8 @@ class MainWindow(QtWidgets.QMainWindow):
             max_lines=None
         ) if len(line) > SettingsSingleton()["staticLineWrap"]  else line for line in formattedMessage.strip().splitlines(keepends=False)])
         return uiItem
+    
+    def loadComboboxHistory(self, combobox):
+        combobox.clear()
+        combobox.addItems(SettingsSingleton().getComboboxHistory(combobox))
+        combobox.lineEdit().setText("")
