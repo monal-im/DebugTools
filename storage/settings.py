@@ -1,5 +1,5 @@
 import json
-from PyQt5 import QtGui, QtCore, QtWidgets
+from PyQt5 import QtGui, QtCore
 
 from utils import paths
 
@@ -80,6 +80,14 @@ class SettingsSingleton():
         if self._widgetName(widget) in self.data["state"]:
             widget.restoreState(QtCore.QByteArray.fromBase64(bytes(self.data["state"][self._widgetName(widget)], "UTF-8")))
 
+    def getFontParameterList(self, qFont):
+        return qFont.toString()
+    
+    def getQFont(self, fontString):
+        font = QtGui.QFont()
+        font.fromString(fontString)
+        return font
+
     def clearAllFormatters(self):
         self.data["formatter"].clear()
 
@@ -100,10 +108,10 @@ class SettingsSingleton():
         return self.data["misc"]["tabWidth"]
 
     def getFont(self):
-        return self.data["misc"]["font"][0]
+        return self.getQFont(self.data["misc"]["font"]).family()
     
     def getFontSize(self):
-        return self.data["misc"]["font"][1]
+        return self.getQFont(self.data["misc"]["font"]).pointSize()
 
     def getTupleColorLen(self, name):
         return self.data["color"][name]["len"]

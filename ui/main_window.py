@@ -327,9 +327,7 @@ class MainWindow(QtWidgets.QMainWindow):
     def preferences(self, *args):
         preInstance = {"color": {}, "staticLineWrap": None, "font": None, "formatter": None}
         for colorName in SettingsSingleton().getColorNames():
-            colorTuple = SettingsSingleton().getQColorTuple(colorName)
-            if colorTuple[:8] == "logline-":
-                preInstance["color"][colorName] = colorTuple
+            preInstance["color"][colorName] = SettingsSingleton().getQColorTuple(colorName)
         preInstance["staticLineWrap"] = SettingsSingleton()["staticLineWrap"]
         preInstance["font"] = [SettingsSingleton().getFont(), SettingsSingleton().getFontSize()]
         preInstance["formatter"] = SettingsSingleton().getCurrentFormatterCode()
@@ -582,37 +580,38 @@ class MainWindow(QtWidgets.QMainWindow):
             for entry in self.rawlog:
                 formattedEntry = self.createFormatterText(formatter, entry["data"])
                 entry["data"]["__formattedMessage"] = formattedEntry
-            rebuildLineWrap()
+                rebuildFont(entry)
+                rebuildColor(entry)
 
-        def rebuildLineWrap():
-            for entry in range(len(self.rawlog)):
-                self.rawlog[entry]["uiItem"].setText(self.wordWrapLogline(self.rawlog[entry]["data"]["__formattedMessage"]))
-
-        def rebuildColor():
-            for entry in self.rawlog:
-                fg, bg = tuple(SettingsSingleton().getQColorTuple(self.logflag2colorMapping[entry["data"]["flag"]]))
-                for color in preInstance["color"].values():
-                    if fg != color or bg != color:
-                        self.rawlog["uiItem"].setForeground(fg)
+            self.rawlog[entry]["uiItem"].setText(self.wordWrapLogline(self.rawlog[entry]["data"]["__formattedMessage"]))
+            
+        def rebuildColor(entry):
+            for colorName in preInstance["color"].keys():
+                if colorName in self.logflag2colorMapping:
+                    fg, bg = tuple(SettingsSingleton().getQColorTuple(colorName))
+                    if fg != preInstance["color"][colorName][0] or bg != preInstance["color"][colorName][1]:
+                        entry["uiItem"].setForeground(fg)
                         if bg != None:
-                            self.rawlog["uiItem"].setBackground(bg)
+                            entry["uiItem"].setBackground(bg)
 
-        def rebuildFont():
-            for item in self.rawlog:
-                item["uiItem"].setFont(QtGui.QFont(SettingsSingleton().getFont(), SettingsSingleton().getFontSize()))  
-
+        def rebuildFont(item):
+            item["uiItem"].setFont(QtGui.QFont(SettingsSingleton().getFont(), SettingsSingleton().getFontSize()))  
+            
         rebuildCombobox(self.uiCombobox_filterInput)
         rebuildCombobox(self.uiCombobox_searchInput)
 
         if self.file != None:
             if preInstance["formatter"] != SettingsSingleton().getCurrentFormatterCode():
                 rebuildFormatter()
-            elif preInstance["staticLineWrap"] != SettingsSingleton()["staticLineWrap"]:
-                rebuildLineWrap()
-            elif preInstance["font"] != [SettingsSingleton().getFont(), SettingsSingleton().getFontSize()]:
-                rebuildFont()
-            if preInstance["formatter"] == SettingsSingleton().getCurrentFormatterCode():
-                rebuildColor()
+            else:
+                if preInstance["staticLineWrap"] != SettingsSingleton()["staticLineWrap"]:
+                    for entry in range(len(self.rawlog)):
+                        self.rawlog[entry]["uiItem"].setText(self.wordWrapLogline(self.rawlog[entry]["data"]["__formattedMessage"]))
+                if preInstance["font"] != [SettingsSingleton().getFont(), SettingsSingleton().getFontSize()]:
+                    for item in self.rawlog:
+                        rebuildFont(item)
+                for entry in self.rawlog:
+                    rebuildColor(entry)
 
     def wordWrapLogline(self, formattedMessage):
         uiItem = "\n".join([textwrap.fill(line, SettingsSingleton()["staticLineWrap"],

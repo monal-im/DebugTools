@@ -55,8 +55,7 @@ class PreferencesDialog(QtWidgets.QDialog):
         if isinstance(widget, QtWidgets.QCheckBox):
             return widget.isChecked()
         if isinstance(widget, QtWidgets.QPushButton):
-            fontList = widget.text().split(",")
-            return [fontList[0], int(fontList[1])]
+            return SettingsSingleton().getFontParameterList(self.font)
 
     def _createUiTab_color(self):
         colorNames = SettingsSingleton().getColorNames()
@@ -124,7 +123,7 @@ class PreferencesDialog(QtWidgets.QDialog):
             widget.setDecimals(1)
             widget.setSingleStep(0.1)
             widget.setValue(value)
-        elif type(value) == str and miscName != "currentFormatter":
+        elif type(value) == str and miscName != "currentFormatter" and miscName != "font":
             widget = QtWidgets.QLineEdit()
             widget.setText(value)
         elif type(value) == str and miscName == "currentFormatter":
@@ -132,22 +131,27 @@ class PreferencesDialog(QtWidgets.QDialog):
             widget.addItems(SettingsSingleton().getFormatterNames())
             widget.setCurrentText(value)
             self.currrentFormatter = widget
-        elif type(value) == list and miscName == "font":
+        elif type(value) == str and miscName == "font":
             widget = QtWidgets.QPushButton()
-            widget.setText(value[0] + ", " + str(value[1]))
-            widget.setFont(QtGui.QFont(value[0], value[1]))
+            self.font = SettingsSingleton().getQFont(value)
+            displayValue = QtGui.QFontInfo(SettingsSingleton().getQFont(value))
+            widget.setText("%s, %s" % (displayValue.family(), str(displayValue.pointSize())))
+            widget.setFont(QtGui.QFont(QtGui.QFont.family(self.font), QtGui.QFont.pointSize(self.font)))
             widget.clicked.connect(functools.partial(self._changeFont, widget))
         elif type(value) == bool:
             widget = QtWidgets.QCheckBox()
             widget.setChecked(value)
+        else:
+            raise RuntimeError("Misc value type not implemented yet: %s" % str(type(value)))
         return widget
     
     def _changeFont(self, widget):
-        fontParameters = widget.text().split(",")
         fontDialog = QtWidgets.QFontDialog()
-        font, valid = fontDialog.getFont(QtGui.QFont(fontParameters[0], int(fontParameters[1])))
+        font, valid = fontDialog.getFont(QtGui.QFont(QtGui.QFont.family(self.font), QtGui.QFont.pointSize(self.font)))
         if valid:
-            widget.setText(font.family() + ", " + str(font.pointSize()))
+            self.font = font
+            displayValue = QtGui.QFontInfo(font)
+            widget.setText("%s, %s" % (displayValue.family(), str(displayValue.pointSize())))
             widget.setFont(QtGui.QFont(font.family(), int(font.pointSize())))
 
     def _createUiTab_history(self):
