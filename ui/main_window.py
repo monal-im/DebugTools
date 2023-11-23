@@ -152,7 +152,7 @@ class MainWindow(QtWidgets.QMainWindow):
         self.toggleUiItems(True)
         
         def loader(entry):
-            itemFont = QtGui.QFont(SettingsSingleton().getFont(), SettingsSingleton().getFontSize())
+            itemFont = QtGui.QFont(SettingsSingleton().getQFont())
             # directly warn about file corruptions when they happen to allow the user to abort the loading process
             # using the cancel button in the progressbar window
             if "__warning" in entry and entry["__warning"] == True:
@@ -329,9 +329,8 @@ class MainWindow(QtWidgets.QMainWindow):
         for colorName in SettingsSingleton().getColorNames():
             preInstance["color"][colorName] = SettingsSingleton().getQColorTuple(colorName)
         preInstance["staticLineWrap"] = SettingsSingleton()["staticLineWrap"]
-        preInstance["font"] = [SettingsSingleton().getFont(), SettingsSingleton().getFontSize()]
+        preInstance["font"] = SettingsSingleton().getQFont()
         preInstance["formatter"] = SettingsSingleton().getCurrentFormatterCode()
-
         
         self.preferencesDialog = PreferencesDialog()
         self.preferencesDialog.show()
@@ -595,7 +594,7 @@ class MainWindow(QtWidgets.QMainWindow):
                             entry["uiItem"].setBackground(bg)
 
         def rebuildFont(item):
-            item["uiItem"].setFont(QtGui.QFont(SettingsSingleton().getFont(), SettingsSingleton().getFontSize()))  
+            item["uiItem"].setFont(QtGui.QFont(SettingsSingleton().getQFont()))  
             
         rebuildCombobox(self.uiCombobox_filterInput)
         rebuildCombobox(self.uiCombobox_searchInput)
@@ -607,7 +606,7 @@ class MainWindow(QtWidgets.QMainWindow):
                 if preInstance["staticLineWrap"] != SettingsSingleton()["staticLineWrap"]:
                     for entry in range(len(self.rawlog)):
                         self.rawlog[entry]["uiItem"].setText(self.wordWrapLogline(self.rawlog[entry]["data"]["__formattedMessage"]))
-                if preInstance["font"] != [SettingsSingleton().getFont(), SettingsSingleton().getFontSize()]:
+                if preInstance["font"] != SettingsSingleton().getQFont():
                     for item in self.rawlog:
                         rebuildFont(item)
                 for entry in self.rawlog:

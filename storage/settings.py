@@ -83,7 +83,9 @@ class SettingsSingleton():
     def getFontParameterList(self, qFont):
         return qFont.toString()
     
-    def getQFont(self, fontString):
+    def getQFont(self, fontString = None):
+        if fontString == None:
+            fontString = self.data["misc"]["font"]
         font = QtGui.QFont()
         font.fromString(fontString)
         return font
@@ -106,12 +108,6 @@ class SettingsSingleton():
     
     def getTabWidth(self):
         return self.data["misc"]["tabWidth"]
-
-    def getFont(self):
-        return self.getQFont(self.data["misc"]["font"]).family()
-    
-    def getFontSize(self):
-        return self.getQFont(self.data["misc"]["font"]).pointSize()
 
     def getTupleColorLen(self, name):
         return self.data["color"][name]["len"]
