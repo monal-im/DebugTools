@@ -118,7 +118,7 @@ class PreferencesDialog(QtWidgets.QDialog):
             widget = QtWidgets.QSpinBox()
             widget.setMaximum(1024)
             widget.setValue(value)
-        elif type(value) == int:
+        elif type(value) == float:
             widget = QtWidgets.QDoubleSpinBox()
             widget.setDecimals(1)
             widget.setSingleStep(0.1)
