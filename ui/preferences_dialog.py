@@ -134,8 +134,7 @@ class PreferencesDialog(QtWidgets.QDialog):
         elif type(value) == str and miscName == "font":
             widget = QtWidgets.QPushButton()
             self.font = SettingsSingleton().getQFont(value)
-            displayValue = QtGui.QFontInfo(SettingsSingleton().getQFont(value))
-            widget.setText("%s, %s" % (displayValue.family(), str(displayValue.pointSize())))
+            widget.setText("%s, %s" % (self.font.family(), str(self.font.pointSize())))
             widget.setFont(QtGui.QFont(self.font))
             widget.clicked.connect(functools.partial(self._changeFont, widget))
         elif type(value) == bool:
@@ -150,8 +149,7 @@ class PreferencesDialog(QtWidgets.QDialog):
         font, valid = fontDialog.getFont(QtGui.QFont(self.font))
         if valid:
             self.font = font
-            displayValue = QtGui.QFontInfo(font)
-            widget.setText("%s, %s" % (displayValue.family(), str(displayValue.pointSize())))
+            widget.setText("%s, %s" % (font.family(), str(font.pointSize())))
             widget.setFont(QtGui.QFont(font))
 
     def _createUiTab_history(self):
