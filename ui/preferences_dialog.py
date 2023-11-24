@@ -135,7 +135,7 @@ class PreferencesDialog(QtWidgets.QDialog):
             widget = QtWidgets.QPushButton()
             self.font = SettingsSingleton().getQFont(value)
             widget.setText("%s, %s" % (self.font.family(), str(self.font.pointSize())))
-            widget.setFont(QtGui.QFont(self.font))
+            widget.setFont(self.font)
             widget.clicked.connect(functools.partial(self._changeFont, widget))
         elif type(value) == bool:
             widget = QtWidgets.QCheckBox()
@@ -146,11 +146,11 @@ class PreferencesDialog(QtWidgets.QDialog):
     
     def _changeFont(self, widget):
         fontDialog = QtWidgets.QFontDialog()
-        font, valid = fontDialog.getFont(QtGui.QFont(self.font))
+        font, valid = fontDialog.getFont(self.font)
         if valid:
             self.font = font
             widget.setText("%s, %s" % (font.family(), str(font.pointSize())))
-            widget.setFont(QtGui.QFont(font))
+            widget.setFont(font)
 
     def _createUiTab_history(self):
         for combobox in SettingsSingleton().getComboboxNames():

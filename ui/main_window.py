@@ -29,12 +29,7 @@ class MainWindow(QtWidgets.QMainWindow):
         self.search = None
         self.statusbar = Statusbar(self.uistatusbar_state)
 
-        #???[lower] don't use these lists but a method that decides which element to enable/disable based on current state (e.g. various self.xxx vars)
-        self.toggleUiActions = [self.uiAction_close, self.uiAction_export, self.uiAction_pushStack, 
-                         self.uiAction_popStack, self.uiAction_search, self.uiAction_save]
-        self.toggleUiButtons = [self.uiButton_previous, self.uiButton_next, self.uiButton_filterClear]
-        self.toggleUiComboboxes = [self.uiCombobox_searchInput, self.uiCombobox_filterInput]
-        self.toggleUiItems(False)
+        self.toggleUiItems()
         self.selectedCombobox = self.uiCombobox_filterInput
 
         self.uiButton_previous.setIcon(self.style().standardIcon(getattr(QStyle, "SP_ArrowBack")))
@@ -98,14 +93,22 @@ class MainWindow(QtWidgets.QMainWindow):
         super().resizeEvent(e)
         SettingsSingleton().storeDimension(self)
 
-    def toggleUiItems(self, switchBool):
-        for item in self.toggleUiActions:
-            item.setEnabled(switchBool)
-        for item in self.toggleUiButtons:
-            item.setEnabled(switchBool)
-        for item in self.toggleUiComboboxes:
-            item.setEnabled(switchBool)
-        self.setEnabled = switchBool
+    def toggleUiItems(self):
+        self.uiAction_close.setEnabled(self.file != None)
+        self.uiAction_quit.setEnabled(True)
+        self.uiAction_open.setEnabled(True)
+        self.uiAction_inspectLine.setEnabled(self.file != None)
+        self.uiAction_preferences.setEnabled(True)
+        self.uiAction_export.setEnabled(self.file != None)
+        self.uiAction_pushStack.setEnabled(self.file != None)
+        self.uiAction_popStack.setEnabled(self.file != None and len(self.stack) != 0)
+        self.uiAction_search.setEnabled(self.file != None)
+        self.uiAction_save.setEnabled(self.file != None)
+        self.uiButton_previous.setEnabled(self.file != None)
+        self.uiButton_next.setEnabled(self.file != None)
+        self.uiButton_filterClear.setEnabled(self.file != None)
+        self.uiCombobox_searchInput.setEnabled(self.file != None)
+        self.uiCombobox_filterInput.setEnabled(self.file != None)
 
     def export(self):
         if self.rawlog:
@@ -149,10 +152,9 @@ class MainWindow(QtWidgets.QMainWindow):
         self.statusbar.setText("Loading File: '%s'..." % os.path.basename(file))
         self.rawlog = Rawlog()
         self.uiWidget_listView.clear()
-        self.toggleUiItems(True)
         
         def loader(entry):
-            itemFont = QtGui.QFont(SettingsSingleton().getQFont())
+            itemFont = SettingsSingleton().getQFont()
             # directly warn about file corruptions when they happen to allow the user to abort the loading process
             # using the cancel button in the progressbar window
             if "__warning" in entry and entry["__warning"] == True:
@@ -213,6 +215,8 @@ class MainWindow(QtWidgets.QMainWindow):
 
         if len(self.uiCombobox_searchInput.currentText().strip()) != 0:
             self.searchNext()
+
+        self.toggleUiItems()
     
     def createFormatterText(self, formatter, entry):        
         try:
@@ -321,7 +325,7 @@ class MainWindow(QtWidgets.QMainWindow):
         self.uiFrame_search.hide()
         self.file = None
 
-        self.toggleUiItems(False)
+        self.toggleUiItems()
 
     @catch_exceptions(logger=logger)
     def preferences(self, *args):
@@ -513,6 +517,7 @@ class MainWindow(QtWidgets.QMainWindow):
         }
         self.stack.append(state)
         self.statusbar.showDynamicText("State saved ✓")
+        self.toggleUiItems()
 
     def popStack(self):
         if len(self.stack) < 1:
@@ -543,6 +548,7 @@ class MainWindow(QtWidgets.QMainWindow):
             self.filter()
 
         self.statusbar.showDynamicText("State loaded ✓")
+        self.toggleUiItems()
 
     def _updateStatusbar(self):
         text = ""
@@ -594,7 +600,7 @@ class MainWindow(QtWidgets.QMainWindow):
                             entry["uiItem"].setBackground(bg)
 
         def rebuildFont(item):
-            item["uiItem"].setFont(QtGui.QFont(SettingsSingleton().getQFont()))  
+            item["uiItem"].setFont(SettingsSingleton().getQFont())
             
         rebuildCombobox(self.uiCombobox_filterInput)
         rebuildCombobox(self.uiCombobox_searchInput)
