@@ -182,6 +182,7 @@ class MainWindow(QtWidgets.QMainWindow):
         if self.rawlog.load_file(file, progress_callback=updateProgressbar, custom_load_callback=loader) != True:
             self.closeFile()        # reset our ui to a sane state
             progressbar.hide()
+            self.statusbar.setText("")
             return
 
         self.statusbar.setText("Rendering File: '%s'..." % os.path.basename(file))
@@ -218,19 +219,20 @@ class MainWindow(QtWidgets.QMainWindow):
 
         self.toggleUiItems()
     
-    def createFormatterText(self, formatter, entry):        
+    def createFormatterText(self, formatter, entry, ignoreError=False):        
         try:
             # this will make sure the log formatter does not change our log entry, but it makes loading slower
             # formattedEntry = formatter({value: entry[value] for value in entry.keys()})
             return formatter(entry)
         except Exception as e:
-            logger.exception("Exception while calling log formatter")
-            QtWidgets.QMessageBox.critical(
-                self,
-                "Monal Log Viewer | ERROR", 
-                "Exception in formatter code:\n%s: %s" % (str(type(e).__name__), str(e)),
-                QtWidgets.QMessageBox.Ok
-            )
+            logger.exception("Exception while calling log formatter for: %s" % entry)
+            if not ignoreError:
+                QtWidgets.QMessageBox.critical(
+                    self,
+                    "Monal Log Viewer | ERROR", 
+                    "Exception in formatter code:\n%s: %s\n%s" % (str(type(e).__name__), str(e), entry),
+                    QtWidgets.QMessageBox.Ok
+                )
             raise AbortRawlogLoading()       # abort loading
 
     def createFormatter(self):
@@ -582,13 +584,17 @@ class MainWindow(QtWidgets.QMainWindow):
 
         def rebuildFormatter():
             formatter = self.createFormatter()
+
+            ignoreError = False
             for entry in self.rawlog:
-                formattedEntry = self.createFormatterText(formatter, entry["data"])
-                entry["data"]["__formattedMessage"] = formattedEntry
+                try:
+                    entry["data"]["__formattedMessage"] = self.createFormatterText(formatter, entry["data"], ignoreError)
+                except Exception as e:
+                    entry["data"]["__formattedMessage"] = "E R R O R"
+                    ignoreError = True
+                entry["uiItem"].setText(self.wordWrapLogline(entry["data"]["__formattedMessage"]))
                 rebuildFont(entry)
                 rebuildColor(entry)
-
-            self.rawlog[entry]["uiItem"].setText(self.wordWrapLogline(self.rawlog[entry]["data"]["__formattedMessage"]))
             
         def rebuildColor(entry):
             for colorName in preInstance["color"].keys():
