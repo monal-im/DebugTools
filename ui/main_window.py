@@ -364,9 +364,12 @@ class MainWindow(QtWidgets.QMainWindow):
         self._search(Search.previous)
 
     def _search(self, func):
-        result = self._prepareSearch()  # create search instance (to be bound below)
-        if result == None:
-            result = func(self.search)  # bind self using our (newly created) self.search
+        self._prepareSearch()  # create search instance (to be bound below)
+        
+        startIndex = 0
+        if self.search != None and len(self.uiWidget_listView.selectedIndexes()) > 0:
+            startIndex = self.uiWidget_listView.selectedIndexes()[0].row()
+        result = func(self.search, startIndex)  # bind self using our (newly created) self.search
 
         logger.info("SEARCH RESULT: %s" % str(result))
         if result != None:
@@ -379,21 +382,14 @@ class MainWindow(QtWidgets.QMainWindow):
         query = self.uiCombobox_searchInput.currentText().strip()
         if self.search != None:
             if self.search.getQuery() == query:
-                return None
+                return
         
-        startIndex = 0
-        if len(self.uiWidget_listView.selectedIndexes()) > 0:
-            startIndex = self.uiWidget_listView.selectedIndexes()[0].row()
-        
-        self.search = Search(self.rawlog, query, startIndex)
+        self.search = Search(self.rawlog, query)
         self.updateComboboxHistory(query, self.uiCombobox_searchInput)
-        
-        return self.search.getCurrentResult()
     
     @catch_exceptions(logger=logger)
     def loglineSelectionChanged(self, *args):
-        if self.search != None and len(self.uiWidget_listView.selectedIndexes()) > 0:
-            self.search.setStartIndex(self.uiWidget_listView.selectedIndexes()[0].row())
+        pass
 
     @catch_exceptions(logger=logger)
     def hideSearch(self):

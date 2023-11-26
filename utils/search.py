@@ -4,7 +4,10 @@ from .queryhelpers import QueryStatus, matchQuery
 logger = logging.getLogger(__name__)
 
 class Search:
-    def __init__(self, rawlog, query, startIndex):
+    PREVIOUS = -1
+    NEXT = 1
+
+    def __init__(self, rawlog, query):
         super().__init__()
         self.query = query
         self.filteredList = []
@@ -18,25 +21,37 @@ class Search:
                 self.status = result["status"]
         if len(self.filteredList) == 0:
             self.status = QueryStatus.QUERY_EMPTY
-        self.setStartIndex(startIndex)
+
+        self.resultStartIndex = 0
+        self.resultIndex = 0
 
     def _preSearchFilter(self, resultIndex, rawlog):
         if rawlog[resultIndex]["uiItem"].isHidden() == False:
             return True
         return False
 
-    def setStartIndex(self, startIndex):
+    def setStartIndex(self, startIndex, direction):
         self.resultIndex = 0
-        self.resultStartIndex = 0
-        for resultIndex in range(len(self.filteredList)):
-            if self.filteredList[resultIndex] >= startIndex:
+        if direction == Search.NEXT:
+            indexList = range(len(self.filteredList)-1, -1, -1)
+        elif direction == Search.PREVIOUS:
+            indexList = range(len(self.filteredList))
+        else:
+            raise RuntimeError("Unexpected search direction: %s" % str(direction))
+        for resultIndex in indexList:
+            if (Search.NEXT and self.filteredList[resultIndex] <= startIndex) or (Search.PREVIOUS and self.filteredList[resultIndex] >= startIndex):
                 self.resultIndex = resultIndex
-                self.resultStartIndex = resultIndex
                 break
 
-    def next(self):
+    def next(self, startIndex):
         if len(self.filteredList) == 0:
             return None
+        
+        logger.info("BEFORE: startIndex: %d, self.resultIndex: %d" % (startIndex, self.resultIndex))
+
+        self.setStartIndex(startIndex, Search.NEXT)
+
+        logger.info("AFTER: startIndex: %d, self.resultIndex: %d" % (startIndex, self.resultIndex))
 
         self.resultIndex += 1
         if self.resultIndex >= len(self.filteredList):
@@ -47,10 +62,12 @@ class Search:
 
         return self.getCurrentResult()
     
-    def previous(self):
+    def previous(self, startIndex):
         if len(self.filteredList) == 0:
             return None
         
+        self.setStartIndex(startIndex, Search.PREVIOUS)
+
         self.resultIndex -= 1
         if self.resultIndex < 0:
             self.resultIndex = len(self.filteredList) - 1
