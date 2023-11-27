@@ -39,7 +39,7 @@ class Search:
         else:
             raise RuntimeError("Unexpected search direction: %s" % str(direction))
         for resultIndex in indexList:
-            if (Search.NEXT and self.filteredList[resultIndex] <= startIndex) or (Search.PREVIOUS and self.filteredList[resultIndex] >= startIndex):
+            if (direction == Search.NEXT and self.filteredList[resultIndex] <= startIndex) or (direction == Search.PREVIOUS and self.filteredList[resultIndex] >= startIndex):
                 self.resultIndex = resultIndex
                 break
 
@@ -47,11 +47,7 @@ class Search:
         if len(self.filteredList) == 0:
             return None
         
-        logger.info("BEFORE: startIndex: %d, self.resultIndex: %d" % (startIndex, self.resultIndex))
-
         self.setStartIndex(startIndex, Search.NEXT)
-
-        logger.info("AFTER: startIndex: %d, self.resultIndex: %d" % (startIndex, self.resultIndex))
 
         self.resultIndex += 1
         if self.resultIndex >= len(self.filteredList):
