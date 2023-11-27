@@ -146,12 +146,11 @@ class MainWindow(QtWidgets.QMainWindow):
             self.openLogFile(file)
 
     def openLogFile(self, file):
-        formatter = self.createFormatter()
-        self.uiFrame_search.hide()
+        self.closeFile()
         
         self.statusbar.setText("Loading File: '%s'..." % os.path.basename(file))
+        formatter = self.createFormatter()
         self.rawlog = Rawlog()
-        self.uiWidget_listView.clear()
         
         def loader(entry):
             itemFont = SettingsSingleton().getQFont()
@@ -213,10 +212,6 @@ class MainWindow(QtWidgets.QMainWindow):
         self.setCompleter(self.uiCombobox_searchInput)
 
         self._updateStatusbar()
-
-        if len(self.uiCombobox_searchInput.currentText().strip()) != 0:
-            self.searchNext()
-
         self.toggleUiItems()
     
     def createFormatterText(self, formatter, entry, ignoreError=False):        
@@ -323,8 +318,8 @@ class MainWindow(QtWidgets.QMainWindow):
     def closeFile(self, *args):
         self.uiWidget_listView.clear()
         self.uiTable_characteristics.hide()
-        self.uiTable_characteristics.hide()
-        self.uiFrame_search.hide()
+        self.hideSearch()
+        self.selectedCombobox = self.uiCombobox_filterInput
         self.file = None
 
         self.toggleUiItems()
