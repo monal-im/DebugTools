@@ -364,12 +364,12 @@ class MainWindow(QtWidgets.QMainWindow):
         self._search(Search.previous)
 
     def _search(self, func):
-        self._prepareSearch()  # create search instance (to be bound below)
+        self._prepareSearch()   # create search instance (to be bound below)
         
-        startIndex = 0
+        startIndex = None       # if no logline is selected, let the search implementation continue where it left of
         if self.search != None and len(self.uiWidget_listView.selectedIndexes()) > 0:
             startIndex = self.uiWidget_listView.selectedIndexes()[0].row()
-        result = func(self.search, startIndex)  # bind self using our (newly created) self.search
+        result = func(self.search, startIndex)  # bind self (first arg) using our (newly created) self.search
 
         logger.info("SEARCH RESULT: %s" % str(result))
         if result != None:

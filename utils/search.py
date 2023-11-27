@@ -22,15 +22,15 @@ class Search:
         if len(self.filteredList) == 0:
             self.status = QueryStatus.QUERY_EMPTY
 
-        self.resultStartIndex = 0
-        self.resultIndex = 0
+        self.resultIndex = -1           # don't jump over the first result on start
+        self.resultStartIndex = 0       # the initial EOF point is the first result (e.g. result index 0)
 
     def _preSearchFilter(self, resultIndex, rawlog):
         if rawlog[resultIndex]["uiItem"].isHidden() == False:
             return True
         return False
 
-    def setStartIndex(self, startIndex, direction):
+    def _setStartIndex(self, startIndex, direction):
         self.resultIndex = 0
         if direction == Search.NEXT:
             indexList = range(len(self.filteredList)-1, -1, -1)
@@ -41,13 +41,16 @@ class Search:
         for resultIndex in indexList:
             if (direction == Search.NEXT and self.filteredList[resultIndex] <= startIndex) or (direction == Search.PREVIOUS and self.filteredList[resultIndex] >= startIndex):
                 self.resultIndex = resultIndex
+                self.resultStartIndex = resultIndex
                 break
 
-    def next(self, startIndex):
+    def next(self, startIndex=None):
         if len(self.filteredList) == 0:
             return None
         
-        self.setStartIndex(startIndex, Search.NEXT)
+        # if no (new) start index is provided, we just return the next result starting from our current result
+        if startIndex != None:
+            self._setStartIndex(startIndex, Search.NEXT)
 
         self.resultIndex += 1
         if self.resultIndex >= len(self.filteredList):
@@ -58,11 +61,13 @@ class Search:
 
         return self.getCurrentResult()
     
-    def previous(self, startIndex):
+    def previous(self, startIndex=None):
         if len(self.filteredList) == 0:
             return None
         
-        self.setStartIndex(startIndex, Search.PREVIOUS)
+        # if no (new) start index is provided, we just return the next result starting from our current result
+        if startIndex != None:
+            self._setStartIndex(startIndex, Search.PREVIOUS)
 
         self.resultIndex -= 1
         if self.resultIndex < 0:
