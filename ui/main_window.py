@@ -321,7 +321,10 @@ class MainWindow(QtWidgets.QMainWindow):
         self.hideSearch()
         self.selectedCombobox = self.uiCombobox_filterInput
         self.file = None
-
+        self.currentDetailIndex = None
+        self.currentFilterQuery = None
+        self.uiAction_inspectLine.setData(False)
+        self.uiAction_inspectLine.setChecked(False)
         self.toggleUiItems()
 
     @catch_exceptions(logger=logger)
@@ -385,12 +388,12 @@ class MainWindow(QtWidgets.QMainWindow):
     @catch_exceptions(logger=logger)
     def loglineSelectionChanged(self, *args):
         pass
-
+    
     @catch_exceptions(logger=logger)
     def hideSearch(self):
         self.uiFrame_search.hide()
         self.search = None
-
+    
     def clearFilter(self):
         self.uiCombobox_filterInput.setCurrentText("")
         self.uiCombobox_filterInput.setStyleSheet("")
@@ -401,8 +404,9 @@ class MainWindow(QtWidgets.QMainWindow):
         self.currentFilterQuery = None
         self.statusbar.showDynamicText("Filter cleared")
         self._updateStatusbar()
-
-    def filter(self):
+    
+    @catch_exceptions(logger=logger)
+    def filter(self, *args):
         if self.setEnabled == False:
             return
         
@@ -420,6 +424,7 @@ class MainWindow(QtWidgets.QMainWindow):
                 filterMapping[rawlogPosition] = not result["matching"]
             else:
                 error = result["error"]
+                filterMapping[rawlogPosition] = True            # hide all entries having filter errors
             visibleCounter += 1 if result["matching"] else 0
             update_progressbar(rawlogPosition, len(self.rawlog))
         self.checkFilterResult(error, visibleCounter)
@@ -434,7 +439,7 @@ class MainWindow(QtWidgets.QMainWindow):
         self.currentFilterQuery = query
 
         self._updateStatusbar()
-
+    
     def checkFilterResult(self, error = None, visibleCounter = 0):
         if error != None:
             QtWidgets.QMessageBox.critical(
@@ -458,7 +463,7 @@ class MainWindow(QtWidgets.QMainWindow):
         combobox.insertItem(0, query)
         combobox.setCurrentText(query)
         SettingsSingleton().setComboboxHistory(combobox, [combobox.itemText(i) for i in range(combobox.count())])
-
+    
     @catch_exceptions(logger=logger)
     def progressDialog(self, title, label, hasCancelButton=False):
         progressbar = QtWidgets.QProgressDialog(label, "Cancel", 0, 100, self)
@@ -486,6 +491,7 @@ class MainWindow(QtWidgets.QMainWindow):
         progressbar.show()
         return (progressbar, update_progressbar)
     
+    @catch_exceptions(logger=logger)
     def pushStack(self):
         selectedLine = None
         if self.uiWidget_listView.selectedIndexes():
@@ -511,7 +517,8 @@ class MainWindow(QtWidgets.QMainWindow):
         self.stack.append(state)
         self.statusbar.showDynamicText("State saved ✓")
         self.toggleUiItems()
-
+    
+    @catch_exceptions(logger=logger)
     def popStack(self):
         if len(self.stack) < 1:
             self.statusbar.showDynamicText("Unable to load state ✗")

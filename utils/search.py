@@ -41,6 +41,7 @@ class Search:
         for resultIndex in indexList:
             if (direction == Search.NEXT and self.filteredList[resultIndex] <= startIndex) or (direction == Search.PREVIOUS and self.filteredList[resultIndex] >= startIndex):
                 self.resultIndex = resultIndex
+                # TODO: only set this if the user clicked on a logline, not when jumping to next search result
                 self.resultStartIndex = resultIndex
                 break
 
