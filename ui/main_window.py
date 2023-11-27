@@ -461,7 +461,7 @@ class MainWindow(QtWidgets.QMainWindow):
         if combobox.findText(query) != -1:
             combobox.removeItem(combobox.findText(query))
         combobox.insertItem(0, query)
-        combobox.setCurrentText(query)
+        combobox.setCurrentIndex(0)
         SettingsSingleton().setComboboxHistory(combobox, [combobox.itemText(i) for i in range(combobox.count())])
     
     @catch_exceptions(logger=logger)
