@@ -17,9 +17,9 @@ class MagicLineEdit:
 
     @catch_exceptions(logger=logger)
     def focusChangedEvent(self, oldWidget, newWidget):
-        logger.debug("focusChangedEvent: oldWidget: %s, newWidget: %s" % (oldWidget, newWidget))
-        logger.debug("focusChangedEvent: self.state: %s" % str(self.state))
         if newWidget == self.combobox and self.state["length"] > 0:
+            logger.debug("focusChangedEvent: oldWidget: %s, newWidget: %s" % (oldWidget, newWidget))
+            logger.debug("focusChangedEvent: self.state: %s" % str(self.state))
             logger.debug("focusChangedEvent: Combobox matching and length in selection state > 0")
             self.combobox.lineEdit().setSelection(self.state["start"], self.state["length"])
 
