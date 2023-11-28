@@ -41,33 +41,41 @@ class Search:
         for resultIndex in indexList:
             if (direction == Search.NEXT and self.filteredList[resultIndex] <= startIndex) or (direction == Search.PREVIOUS and self.filteredList[resultIndex] >= startIndex):
                 self.resultIndex = resultIndex
-                # TODO: only set this if the user clicked on a logline, not when jumping to next search result
                 self.resultStartIndex = resultIndex
                 break
 
-    def next(self, startIndex=None):
+    def next(self, loglineClicked, startIndex=None):
         if len(self.filteredList) == 0:
             return None
-        
-        # if no (new) start index is provided, we just return the next result starting from our current result
-        if startIndex != None:
-            self._setStartIndex(startIndex, Search.NEXT)
 
-        self.resultIndex += 1
-        if self.resultIndex >= len(self.filteredList):
+        if loglineClicked != None and loglineClicked <= self.filteredList[0]:
             self.resultIndex = 0
+        else:
+            # if no (new) start index is provided, we just return the next result starting from our current result
+            if startIndex != None:
+                if loglineClicked != None:
+                    startIndex = loglineClicked
+                self._setStartIndex(startIndex, Search.NEXT)
 
-        if self.resultIndex == self.resultStartIndex:
-            self.status = QueryStatus.EOF_REACHED
+            self.resultIndex += 1
+            if self.resultIndex >= len(self.filteredList):
+                self.resultIndex = 0
+
+            if self.resultIndex == self.resultStartIndex:
+                self.status = QueryStatus.EOF_REACHED
 
         return self.getCurrentResult()
     
-    def previous(self, startIndex=None):
+    def previous(self, loglineClicked, startIndex=None):
         if len(self.filteredList) == 0:
             return None
         
+        self.loglineClicked = loglineClicked
+
         # if no (new) start index is provided, we just return the next result starting from our current result
         if startIndex != None:
+            if loglineClicked != None:
+                startIndex = loglineClicked
             self._setStartIndex(startIndex, Search.PREVIOUS)
 
         self.resultIndex -= 1
