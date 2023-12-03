@@ -167,15 +167,16 @@ class MainWindow(QtWidgets.QMainWindow):
             # return None if our formatter filtered out that entry
             if formattedEntry == None:
                 return None
-
+            
             item_with_color = self.wordWrapLogline(formattedEntry)   
-            fg, bg = tuple(SettingsSingleton().getQColorTuple(self.logflag2colorMapping[entry["flag"]]))
+            fg, bg = SettingsSingleton().getQColorTuple(self.logflag2colorMapping[entry["flag"]])
             item_with_color = QtWidgets.QListWidgetItem(item_with_color)
             item_with_color.setFont(itemFont)
             item_with_color.setForeground(fg)
-            if bg != None:
-                item_with_color.setBackground(bg)
-
+            if bg == None:
+                bg = QtGui.QBrush()     # default color (usually transparent)
+            item_with_color.setBackground(bg)
+            
             return {"uiItem": item_with_color, "data": entry}
         
         progressbar, updateProgressbar = self.progressDialog("Opening File...", "Opening File: %s" % os.path.basename(file), True)
@@ -596,13 +597,14 @@ class MainWindow(QtWidgets.QMainWindow):
                 rebuildColor(entry)
             
         def rebuildColor(entry):
-            for colorName in preInstance["color"].keys():
-                if colorName in self.logflag2colorMapping:
-                    fg, bg = tuple(SettingsSingleton().getQColorTuple(colorName))
-                    if fg != preInstance["color"][colorName][0] or bg != preInstance["color"][colorName][1]:
-                        entry["uiItem"].setForeground(fg)
-                        if bg != None:
-                            entry["uiItem"].setBackground(bg)
+            colorName = self.logflag2colorMapping[entry["data"]["flag"]]
+            fg, bg = SettingsSingleton().getQColorTuple(colorName)
+            if fg != preInstance["color"][colorName][0] or bg != preInstance["color"][colorName][1]:
+                entry["uiItem"].setForeground(fg)
+                if bg == None:
+                    bg = QtGui.QBrush()     # default color (usually transparent)
+                entry["uiItem"].setBackground(bg)
+                            
 
         def rebuildFont(item):
             item["uiItem"].setFont(SettingsSingleton().getQFont())
