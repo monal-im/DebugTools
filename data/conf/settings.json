@@ -1,0 +1,29 @@
+{
+    "color": {
+        "logline-error":    {"len": 2, "data": [[255, 0, 0], [0, 0, 0]]},
+        "logline-warning":  {"len": 2, "data": [[254, 134, 0], [0, 0, 0]]},
+        "logline-info":     {"len": 2, "data": [[0, 238, 0], null]},
+        "logline-debug":    {"len": 2, "data": [[1, 175, 255], null]},
+        "logline-verbose":  {"len": 2, "data": [[148, 149, 149], null]},
+        "logline-stderr":   {"len": 2, "data": [[255, 0, 0], null]},
+        "logline-stdout":   {"len": 2, "data": [[0, 0, 0], null]},
+        "logline-status":   {"len": 2, "data": [[255, 255, 255], [0, 0, 0]]},
+
+        "combobox-eof_reached": {"len": 1, "data": [[255, 247, 184]]},
+        "combobox-query_error": {"len": 1, "data": [[243, 152, 157]]},
+        "combobox-query_ok":    {"len": 1, "data": [[199, 222, 176]]},
+        "combobox-query_empty": {"len": 1, "data": [[212, 241, 245]]}
+    },
+    "combobox": {},
+    "dimensions": {},
+    "state": {},
+    "misc": {
+        "staticLineWrap": 140,
+        "currentFormatter": "default",
+        "tabWidth": 4,
+        "font": "Consolas,10,-1,5,50,0,0,0,0,0,Regular"
+    },
+    "formatter": {
+        "default": "def formatter(e, **g):\n\tglobals().update(g)\n\treturn \"%s %s\" % (e[\"timestamp\"], e[\"message\"])"
+    }
+}
