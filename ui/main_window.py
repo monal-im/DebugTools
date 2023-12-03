@@ -55,6 +55,9 @@ class MainWindow(QtWidgets.QMainWindow):
         MagicLineEdit(self.uiCombobox_searchInput)
         MagicLineEdit(self.uiCombobox_filterInput)
 
+        self.uiCombobox_searchInput.currentTextChanged.connect(self.uiCombobox_searchInputChanged)
+        self.uiCombobox_filterInput.currentTextChanged.connect(self.uiCombobox_filterInputChanged)
+
         self.queryStatus2colorMapping = {
             QueryStatus.EOF_REACHED:    SettingsSingleton().getCssColor("combobox-eof_reached"),
             QueryStatus.QUERY_ERROR:    SettingsSingleton().getCssColor("combobox-query_error"),
@@ -103,9 +106,9 @@ class MainWindow(QtWidgets.QMainWindow):
         self.uiAction_popStack.setEnabled(self.file != None and len(self.stack) != 0)
         self.uiAction_search.setEnabled(self.file != None)
         self.uiAction_save.setEnabled(self.file != None)
-        self.uiButton_previous.setEnabled(self.file != None)
-        self.uiButton_next.setEnabled(self.file != None)
-        self.uiButton_filterClear.setEnabled(self.file != None)
+        self.uiButton_previous.setEnabled(self.file != None and len(self.uiCombobox_searchInput.currentText().strip()) != 0)
+        self.uiButton_next.setEnabled(self.file != None and len(self.uiCombobox_searchInput.currentText().strip()) != 0)
+        self.uiButton_filterClear.setEnabled(self.file != None and len(self.uiCombobox_filterInput.currentText().strip()) != 0)
         self.uiCombobox_searchInput.setEnabled(self.file != None)
         self.uiCombobox_filterInput.setEnabled(self.file != None)
 
@@ -453,6 +456,14 @@ class MainWindow(QtWidgets.QMainWindow):
         combobox.insertItem(0, query)
         combobox.setCurrentIndex(0)
         SettingsSingleton().setComboboxHistory(combobox, [combobox.itemText(i) for i in range(combobox.count())])
+
+    @catch_exceptions(logger=logger)
+    def uiCombobox_searchInputChanged(self):
+        self.toggleUiItems()
+
+    @catch_exceptions(logger=logger)
+    def uiCombobox_filterInputChanged(self):
+        self.toggleUiItems()
     
     @catch_exceptions(logger=logger)
     def progressDialog(self, title, label, hasCancelButton=False):
