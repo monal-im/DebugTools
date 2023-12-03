@@ -1,6 +1,6 @@
 from PyQt5 import QtWidgets
 import logging
-from utils import catch_exceptions
+from shared.utils import catch_exceptions
 
 logger = logging.getLogger(__name__)
 

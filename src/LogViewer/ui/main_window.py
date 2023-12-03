@@ -7,10 +7,12 @@ from PyQt5.QtWidgets import QStyle
 import sys, os, functools
 import textwrap
 
-from storage import Rawlog, AbortRawlogLoading, SettingsSingleton
-from utils import catch_exceptions, Search, QueryStatus, matchQuery, paths
+from shared.storage import Rawlog, AbortRawlogLoading
+from storage.settings import SettingsSingleton
+from utils import Search, QueryStatus, matchQuery
+from shared.utils import catch_exceptions, paths
 from ui.utils import Completer, MagicLineEdit, Statusbar
-from utils.constants import LOGLEVELS
+from shared.utils.constants import LOGLEVELS
 from .preferences_dialog import PreferencesDialog
 
 import logging

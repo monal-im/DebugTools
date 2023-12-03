@@ -1,7 +1,7 @@
 import json
 from PyQt5 import QtGui, QtCore
 
-from utils import paths
+from shared.utils import paths
 
 import logging
 logger = logging.getLogger(__name__)

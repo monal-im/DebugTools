@@ -1,10 +1,15 @@
 #!/usr/bin/env python3
 import sys, os
 import argparse
+import signal
 from PyQt5 import QtWidgets
 
-from utils import paths
-from ui import MainWindow
+from shared.utils import paths
+from LogViewer.ui import MainWindow
+
+def sigint_handler(sig, frame):
+    logger.warning('Main thread got interrupted, shutting down...')
+    os._exit(1)
 
 # parse commandline
 parser = argparse.ArgumentParser(formatter_class=argparse.RawTextHelpFormatter, description="Monal Log Viewer")
@@ -15,6 +20,7 @@ args = parser.parse_args()
 os.makedirs(paths.user_data_dir(), exist_ok=True)
 os.makedirs(paths.user_log_dir(), exist_ok=True)
 
+signal.signal(signal.SIGINT, sigint_handler)
 import json, logging, logging.config
 try:
     with open(paths.get_conf_filepath("logger.json"), 'r') as logging_configuration_file:
