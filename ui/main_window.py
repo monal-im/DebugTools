@@ -47,7 +47,7 @@ class MainWindow(QtWidgets.QMainWindow):
         self.uiAction_inspectLine.triggered.connect(self.inspectLine)
 
         self.uiWidget_listView.doubleClicked.connect(self.inspectLine)
-        self.uiWidget_listView.itemClicked.connect(self.loglineItemClicked)
+        self.uiWidget_listView.itemSelectionChanged.connect(self.loglineSelectionChanged)
         self.uiTable_characteristics.hide()
         self.uiFrame_search.hide()
         self.uiAction_inspectLine.setData(False)
@@ -213,8 +213,6 @@ class MainWindow(QtWidgets.QMainWindow):
 
         self._updateStatusbar()
         self.toggleUiItems()
-
-        self.loglineClicked = None
     
     def createFormatterText(self, formatter, entry, ignoreError=False):        
         try:
@@ -369,8 +367,7 @@ class MainWindow(QtWidgets.QMainWindow):
         startIndex = None       # if no logline is selected, let the search implementation continue where it left of
         if self.search != None and len(self.uiWidget_listView.selectedIndexes()) > 0:
             startIndex = self.uiWidget_listView.selectedIndexes()[0].row()
-        result = func(self.search, self.loglineClicked, startIndex)  # bind self (first arg) using our (newly created) self.search
-        self.loglineClicked = None
+        result = func(self.search, startIndex)  # bind self (first arg) using our (newly created) self.search
 
         logger.info("SEARCH RESULT: %s" % str(result))
         if result != None:
@@ -387,9 +384,10 @@ class MainWindow(QtWidgets.QMainWindow):
         
         self.search = Search(self.rawlog, query)
         self.updateComboboxHistory(query, self.uiCombobox_searchInput)
-
-    def loglineItemClicked(self):
-        self.loglineClicked = self.uiWidget_listView.selectedIndexes()[0].row()
+    
+    @catch_exceptions(logger=logger)
+    def loglineSelectionChanged(self, *args):
+        pass
     
     @catch_exceptions(logger=logger)
     def hideSearch(self):
