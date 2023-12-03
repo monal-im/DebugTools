@@ -11,7 +11,6 @@ class SettingsSingleton():
 
     def __new__(cls):
         if cls._instance is None:
-            logger.error("not none")
             cls._instance = super(SettingsSingleton, cls).__new__(cls)
             cls._instance.path = paths.get_conf_filepath("settings.json")
             cls._instance.defaultPath = paths.get_default_conf_filepath("settings.json")

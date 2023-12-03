@@ -47,7 +47,6 @@ class MainWindow(QtWidgets.QMainWindow):
         self.uiAction_inspectLine.triggered.connect(self.inspectLine)
 
         self.uiWidget_listView.doubleClicked.connect(self.inspectLine)
-        self.uiWidget_listView.itemSelectionChanged.connect(self.loglineSelectionChanged)
         self.uiTable_characteristics.hide()
         self.uiFrame_search.hide()
         self.uiAction_inspectLine.setData(False)
@@ -352,8 +351,6 @@ class MainWindow(QtWidgets.QMainWindow):
         combobox.setStyleSheet("background-color: %s" % self.queryStatus2colorMapping[status])
 
     def searchNext(self):
-        if self.setEnabled == False:
-            return
         # use unbound function, self will be bound in _search() later on after the instance was created
         self._search(Search.next)
 
@@ -365,7 +362,7 @@ class MainWindow(QtWidgets.QMainWindow):
         self._prepareSearch()   # create search instance (to be bound below)
         
         startIndex = None       # if no logline is selected, let the search implementation continue where it left of
-        if self.search != None and len(self.uiWidget_listView.selectedIndexes()) > 0:
+        if len(self.uiWidget_listView.selectedIndexes()) > 0:
             startIndex = self.uiWidget_listView.selectedIndexes()[0].row()
         result = func(self.search, startIndex)  # bind self (first arg) using our (newly created) self.search
 
@@ -386,10 +383,6 @@ class MainWindow(QtWidgets.QMainWindow):
         self.updateComboboxHistory(query, self.uiCombobox_searchInput)
     
     @catch_exceptions(logger=logger)
-    def loglineSelectionChanged(self, *args):
-        pass
-    
-    @catch_exceptions(logger=logger)
     def hideSearch(self):
         self.uiFrame_search.hide()
         self.search = None
@@ -407,9 +400,6 @@ class MainWindow(QtWidgets.QMainWindow):
     
     @catch_exceptions(logger=logger)
     def filter(self, *args):
-        if self.setEnabled == False:
-            return
-        
         query = self.uiCombobox_filterInput.currentText().strip()
         if query == self.currentFilterQuery:
             return
