@@ -7,8 +7,8 @@ import io
 from queue import Queue
 import logging
 
-from utils import randread
-from utils.constants import LOGLEVELS
+from shared.utils import randread
+from shared.utils.constants import LOGLEVELS
 try:
     from .udp_server import UdpServer
     hasLogserver = True

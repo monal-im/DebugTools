@@ -5,8 +5,8 @@ import base64
 import pathlib
 import logging
 
-from .rawlog import Rawlog
-from utils import randread
+from shared.storage.rawlog import Rawlog
+from shared.utils import randread
 
 logger = logging.getLogger(__name__)
 PART_SEPARATOR_REGEX = "-------- d049d576-9bf0-47dd-839f-dee6b07c1df9 -------- (.*) -------- d049d576-9bf0-47dd-839f-dee6b07c1df9 --------"
