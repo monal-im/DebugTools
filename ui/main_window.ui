@@ -258,7 +258,7 @@
    <property name="text">
     <string>Close</string>
    </property>
-  <property name="shortcut">
+   <property name="shortcut">
     <string>Ctrl+W</string>
    </property>
   </action>
@@ -288,7 +288,10 @@
   </action>
   <action name="uiAction_pushStack">
    <property name="text">
-    <string>set Stack</string>
+    <string>push Stack</string>
+   </property>
+   <property name="iconText">
+    <string>push Stack</string>
    </property>
    <property name="shortcut">
     <string>Ctrl++</string>
