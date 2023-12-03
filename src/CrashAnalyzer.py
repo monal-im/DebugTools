@@ -5,7 +5,7 @@ import os
 import signal
 import argparse
 from PyQt5 import QtWidgets
-from ui import MainWindow
+from CrashAnalyzer.ui import MainWindow
 
 def sigint_handler(sig, frame):
     logger.warning('Main thread got interrupted, shutting down...')
