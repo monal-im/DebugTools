@@ -9,11 +9,12 @@ class Paths:
     def set_personality(file):
         basename = os.path.splitext(os.path.basename(file))[0]
         Paths.PLATFORM_ARGS = (basename, "monal-im")
-        Paths.BASEDIR = os.path.join(os.path.dirname(os.path.abspath(file)), basename)
+        if getattr(sys, 'frozen', False) and hasattr(sys, '_MEIPASS'):
+            Paths.BASEDIR = os.path.join(sys._MEIPASS, basename)
+        else:
+            Paths.BASEDIR = os.path.join(os.path.dirname(os.path.abspath(file)), basename)
     
     def get_basedir_path():
-        if getattr(sys, 'frozen', False) and hasattr(sys, '_MEIPASS'):
-            return sys._MEIPASS
         return os.path.abspath(Paths.BASEDIR)
 
     def get_ui_filepath(filename):

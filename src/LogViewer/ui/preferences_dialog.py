@@ -1,11 +1,11 @@
 from PyQt5 import QtWidgets, uic, QtGui, QtCore
 from LogViewer.storage import SettingsSingleton
-from LogViewer.ui.utils import PythonHighlighter, DeletableQListWidget
+from .utils import PythonHighlighter, DeletableQListWidget
 from shared.utils import catch_exceptions
 import functools
 import sys, os 
 
-from utils import Paths
+from shared.utils import Paths
 
 import logging
 logger = logging.getLogger(__name__)

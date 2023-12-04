@@ -9,8 +9,8 @@ import textwrap
 
 from LogViewer.storage import SettingsSingleton
 from LogViewer.utils import Search, QueryStatus, matchQuery
-from LogViewer.ui.utils import Completer, MagicLineEdit, Statusbar
-from LogViewer.ui import PreferencesDialog
+from .utils import Completer, MagicLineEdit, Statusbar
+from .preferences_dialog import PreferencesDialog
 from shared.utils import catch_exceptions, Paths
 from shared.utils.constants import LOGLEVELS
 from shared.storage import Rawlog, AbortRawlogLoading
@@ -372,7 +372,7 @@ class MainWindow(QtWidgets.QMainWindow):
             startIndex = self.uiWidget_listView.selectedIndexes()[0].row()
         result = func(self.search, startIndex)  # bind self (first arg) using our (newly created) self.search
 
-        logger.info("SEARCH RESULT: %s" % str(result))
+        logger.info("Current search result in line: %s" % str(result))
         if result != None:
             self.uiWidget_listView.setCurrentRow(result)
         self.setComboboxStatusColor(self.uiCombobox_searchInput, self.search.getStatus())
@@ -461,11 +461,11 @@ class MainWindow(QtWidgets.QMainWindow):
         SettingsSingleton().setComboboxHistory(combobox, [combobox.itemText(i) for i in range(combobox.count())])
 
     @catch_exceptions(logger=logger)
-    def uiCombobox_searchInputChanged(self):
+    def uiCombobox_searchInputChanged(self, *args):
         self.toggleUiItems()
 
     @catch_exceptions(logger=logger)
-    def uiCombobox_filterInputChanged(self):
+    def uiCombobox_filterInputChanged(self, *args):
         self.toggleUiItems()
     
     @catch_exceptions(logger=logger)
