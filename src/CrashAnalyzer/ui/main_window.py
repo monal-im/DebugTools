@@ -1,21 +1,17 @@
 import sys
 import os
-import logging
 from PyQt5 import QtWidgets, uic
 
 from CrashAnalyzer.storage import CrashReport
 from shared.utils import catch_exceptions
+from shared.ui.utils import UiAutoloader
 
+import logging
 logger = logging.getLogger(__name__)
 
+@UiAutoloader
 class MainWindow(QtWidgets.QMainWindow):
     def __init__(self):
-        super().__init__()
-        
-        # load qt ui definition file from same directory and named exactly like this file, but having extension ".ui"
-        uic.loadUi(os.path.join(os.path.dirname(__file__), os.path.splitext(__file__)[0]+".ui"), self)
-        #self.setWindowIcon(QtGui.QIcon(os.path.join(os.path.dirname(sys.argv[0]), "monal_log_viewer.png")))
-        
         # initialize ui parts and instance vars
         self.reset_ui()
         

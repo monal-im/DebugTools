@@ -1,21 +1,19 @@
+import sys
+import os 
+import functools
 from PyQt5 import QtWidgets, uic, QtGui, QtCore
+
 from LogViewer.storage import SettingsSingleton
 from .utils import PythonHighlighter, DeletableQListWidget
-from shared.utils import catch_exceptions
-import functools
-import sys, os 
-
-from shared.utils import Paths
+from shared.utils import catch_exceptions, Paths
+from shared.ui.utils import UiAutoloader
 
 import logging
 logger = logging.getLogger(__name__)
 
+@UiAutoloader
 class PreferencesDialog(QtWidgets.QDialog):
     def __init__(self):
-        super().__init__()
-        uic.loadUi(Paths.get_ui_filepath("preferences_dialog.ui"), self)
-        self.setWindowIcon(QtGui.QIcon(Paths.get_art_filepath("monal_log_viewer.png")))
-
         self.colors = {}
         for colorName in SettingsSingleton().getColorNames():
             self.colors[colorName] = SettingsSingleton().getQColorTuple(colorName)
