@@ -1,10 +1,10 @@
 import sys
 import os
 import logging
-from PyQt5 import QtWidgets, uic, QtGui, QtCore
+from PyQt5 import QtWidgets, uic
 
 from CrashAnalyzer.storage import CrashReport
-from shared.utils import catch_exceptions, LambdaValueContainer
+from shared.utils import catch_exceptions
 
 logger = logging.getLogger(__name__)
 

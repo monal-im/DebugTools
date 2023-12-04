@@ -10,7 +10,7 @@ import textwrap
 from LogViewer.storage import SettingsSingleton
 from LogViewer.utils import Search, QueryStatus, matchQuery
 from LogViewer.ui.utils import Completer, MagicLineEdit, Statusbar
-from LogViewer import PreferencesDialog
+from LogViewer.ui import PreferencesDialog
 from shared.utils import catch_exceptions, Paths
 from shared.utils.constants import LOGLEVELS
 from shared.storage import Rawlog, AbortRawlogLoading
