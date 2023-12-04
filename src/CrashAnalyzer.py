@@ -6,7 +6,7 @@ import signal
 import argparse
 from PyQt5 import QtWidgets
 from CrashAnalyzer.ui import MainWindow
-from shared.utils.paths import Paths
+from shared.utils import Paths
 
 def sigint_handler(sig, frame):
     logger.warning('Main thread got interrupted, shutting down...')
@@ -24,7 +24,7 @@ os.makedirs(Paths.user_log_dir(), exist_ok=True)
 
 import json, logging, logging.config
 try:
-    with open(Paths.get_conf_filepath("logger.json"), 'r') as logging_configuration_file:
+    with open(Paths.get_conf_filepath("logger.json"), "r") as logging_configuration_file:
         logger_config = json.load(logging_configuration_file)
 except:
     print(Paths.get_default_conf_filepath("logger.json"))
@@ -35,7 +35,7 @@ except:
 logger_config["handlers"]["stderr"]["level"] = args.log
 logging.config.dictConfig(logger_config)
 logger = logging.getLogger(__name__)
-logger.info('Logger configured...')
+logger.info("Logger configured (%s)..." % Paths.get_conf_filepath("logger.json"))
 
 signal.signal(signal.SIGINT, sigint_handler)
 try:
