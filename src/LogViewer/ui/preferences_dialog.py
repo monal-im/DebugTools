@@ -1,6 +1,6 @@
 from PyQt5 import QtWidgets, uic, QtGui, QtCore
-from storage import SettingsSingleton
-from ui.utils import PythonHighlighter, DeletableQListWidget
+from LogViewer.storage import SettingsSingleton
+from LogViewer.ui.utils import PythonHighlighter, DeletableQListWidget
 from shared.utils import catch_exceptions
 import functools
 import sys, os 

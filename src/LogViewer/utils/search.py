@@ -1,5 +1,5 @@
 import logging
-from .queryhelpers import QueryStatus, matchQuery
+from LogViewer.utils.queryhelpers import QueryStatus, matchQuery
 
 logger = logging.getLogger(__name__)
 
