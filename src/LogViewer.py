@@ -21,7 +21,6 @@ Paths.set_personality(__file__)
 os.makedirs(Paths.user_data_dir(), exist_ok=True)
 os.makedirs(Paths.user_log_dir(), exist_ok=True)
 
-signal.signal(signal.SIGINT, sigint_handler)
 import json, logging, logging.config
 try:
     with open(Paths.get_conf_filepath("logger.json"), 'r') as logging_configuration_file:
@@ -37,9 +36,13 @@ logger = logging.getLogger(__name__)
 logger.info('Logger configured...')
 
 # display GUI
-application = QtWidgets.QApplication(sys.argv)
-main_window = MainWindow()
-main_window.show()
-if args.file != None:
-    main_window.openLogFile(args.file)
-application.exec_()
+signal.signal(signal.SIGINT, sigint_handler)
+try:
+    application = QtWidgets.QApplication(sys.argv)
+    main_window = MainWindow()
+    main_window.show()
+    if args.file != None:
+        main_window.openLogFile(args.file)
+    application.exec_()
+except:
+    logger.exception("Catched top level exception!")
