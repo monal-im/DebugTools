@@ -7,13 +7,13 @@ from PyQt5.QtWidgets import QStyle
 import sys, os, functools
 import textwrap
 
-from shared.storage import Rawlog, AbortRawlogLoading
 from storage.settings import SettingsSingleton
 from utils import Search, QueryStatus, matchQuery
-from shared.utils import catch_exceptions, paths
 from ui.utils import Completer, MagicLineEdit, Statusbar
-from shared.utils.constants import LOGLEVELS
 from .preferences_dialog import PreferencesDialog
+from shared.utils import catch_exceptions, Paths
+from shared.utils.constants import LOGLEVELS
+from shared.storage import Rawlog, AbortRawlogLoading
 
 import logging
 logger = logging.getLogger(__name__)
@@ -22,8 +22,8 @@ class MainWindow(QtWidgets.QMainWindow):
     def __init__(self):
         super().__init__()
 
-        uic.loadUi(paths.get_ui_filepath("main_window.ui"), self)
-        self.setWindowIcon(QtGui.QIcon(paths.get_art_filepath("monal_log_viewer.png")))
+        uic.loadUi(Paths.get_ui_filepath("main_window.ui"), self)
+        self.setWindowIcon(QtGui.QIcon(Paths.get_art_filepath("monal_log_viewer.png")))
         SettingsSingleton().loadDimensions(self)
         self.rawlog = Rawlog()
         self.file = None

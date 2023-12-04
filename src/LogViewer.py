@@ -4,7 +4,7 @@ import argparse
 import signal
 from PyQt5 import QtWidgets
 
-from shared.utils import paths
+from shared.utils import Paths
 from LogViewer.ui import MainWindow
 
 def sigint_handler(sig, frame):
@@ -17,18 +17,19 @@ parser.add_argument("file", type=str, help="Directly load given file", nargs="?"
 parser.add_argument("--log", metavar='LOGLEVEL', help="Loglevel to log", default="DEBUG")
 args = parser.parse_args()
 
-os.makedirs(paths.user_data_dir(), exist_ok=True)
-os.makedirs(paths.user_log_dir(), exist_ok=True)
+Paths.set_personality(__file__)
+os.makedirs(Paths.user_data_dir(), exist_ok=True)
+os.makedirs(Paths.user_log_dir(), exist_ok=True)
 
 signal.signal(signal.SIGINT, sigint_handler)
 import json, logging, logging.config
 try:
-    with open(paths.get_conf_filepath("logger.json"), 'r') as logging_configuration_file:
+    with open(Paths.get_conf_filepath("logger.json"), 'r') as logging_configuration_file:
         logger_config = json.load(logging_configuration_file)
 except:
-    with open(paths.get_default_conf_filepath("logger.json"), 'rb') as fp:
+    with open(Paths.get_default_conf_filepath("logger.json"), 'rb') as fp:
         logger_config = json.load(fp)
-    with open(paths.get_conf_filepath("logger.json"), 'w+') as fp:
+    with open(Paths.get_conf_filepath("logger.json"), 'w+') as fp:
         json.dump(logger_config, fp)
 logger_config["handlers"]["stderr"]["level"] = args.log
 logging.config.dictConfig(logger_config)

@@ -1,11 +1,11 @@
 from PyQt5 import QtWidgets, uic, QtGui, QtCore
 from storage import SettingsSingleton
 from ui.utils import PythonHighlighter, DeletableQListWidget
-from utils import catch_exceptions
+from shared.utils import catch_exceptions
 import functools
 import sys, os 
 
-from utils import paths
+from utils import Paths
 
 import logging
 logger = logging.getLogger(__name__)
@@ -13,8 +13,8 @@ logger = logging.getLogger(__name__)
 class PreferencesDialog(QtWidgets.QDialog):
     def __init__(self):
         super().__init__()
-        uic.loadUi(paths.get_ui_filepath("preferences_dialog.ui"), self)
-        self.setWindowIcon(QtGui.QIcon(paths.get_art_filepath("monal_log_viewer.png")))
+        uic.loadUi(Paths.get_ui_filepath("preferences_dialog.ui"), self)
+        self.setWindowIcon(QtGui.QIcon(Paths.get_art_filepath("monal_log_viewer.png")))
 
         self.colors = {}
         for colorName in SettingsSingleton().getColorNames():
@@ -250,7 +250,7 @@ class PreferencesDialog(QtWidgets.QDialog):
             QtWidgets.QMessageBox.Yes | QtWidgets.QMessageBox.No
         )
         def deleteSettings():
-            os.remove(paths.get_conf_filepath("settings.json"))
+            os.remove(Paths.get_conf_filepath("settings.json"))
             sys.exit()
         if msgBox == QtWidgets.QMessageBox.Yes:
             deleteSettings()
