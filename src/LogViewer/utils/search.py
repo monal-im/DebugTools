@@ -20,7 +20,7 @@ class Search:
                 self.resultList.append(index)
             if result["status"] == QueryStatus.QUERY_ERROR:
                 self.status = result["status"]
-            if(update_progressbar != None)
+            if update_progressbar != None:
                 update_progressbar(index, len(rawlog))
         if len(self.resultList) == 0:
             self.status = QueryStatus.QUERY_EMPTY
