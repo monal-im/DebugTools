@@ -396,9 +396,11 @@ class MainWindow(QtWidgets.QMainWindow):
         self.uiCombobox_filterInput.setCurrentText("")
         self.uiCombobox_filterInput.setStyleSheet("")
 
+        progressbar, update_progressbar = self.progressDialog("Clearing filter...", "")
         for index in range(len(self.rawlog)):
             self.rawlog[index]["uiItem"].setHidden(False)
-
+            update_progressbar(index, len(self.rawlog))
+        progressbar.hide()
         self.currentFilterQuery = None
         self.statusbar.showDynamicText("Filter cleared")
         self._updateStatusbar()
