@@ -7,7 +7,7 @@ class Search:
     PREVIOUS = -1
     NEXT = 1
 
-    def __init__(self, rawlog, query, update_progressbar):
+    def __init__(self, rawlog, query, update_progressbar=None):
         super().__init__()
         self.query = query
         self.resultList = []
@@ -20,7 +20,8 @@ class Search:
                 self.resultList.append(index)
             if result["status"] == QueryStatus.QUERY_ERROR:
                 self.status = result["status"]
-            update_progressbar(index, len(rawlog))
+            if(update_progressbar != None)
+                update_progressbar(index, len(rawlog))
         if len(self.resultList) == 0:
             self.status = QueryStatus.QUERY_EMPTY
 
