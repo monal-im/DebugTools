@@ -252,4 +252,4 @@ class PreferencesDialog(QtWidgets.QDialog):
             sys.exit()
         if msgBox == QtWidgets.QMessageBox.Yes:
             deleteSettings()
-        msgBox.show()
+            
