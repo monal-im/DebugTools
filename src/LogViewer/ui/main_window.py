@@ -382,8 +382,9 @@ class MainWindow(QtWidgets.QMainWindow):
         if self.search != None:
             if self.search.getQuery() == query:
                 return
-        
-        self.search = Search(self.rawlog, query)
+        progressbar, update_progressbar = self.progressDialog("Searching...", query)
+        self.search = Search(self.rawlog, query, update_progressbar)
+        progressbar.hide()
         self.updateComboboxHistory(query, self.uiCombobox_searchInput)
     
     @catch_exceptions(logger=logger)

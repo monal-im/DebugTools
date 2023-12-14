@@ -7,11 +7,12 @@ class Search:
     PREVIOUS = -1
     NEXT = 1
 
-    def __init__(self, rawlog, query):
+    def __init__(self, rawlog, query, update_progressbar):
         super().__init__()
         self.query = query
         self.resultList = []
         self.status = QueryStatus.QUERY_OK
+
         for index in range(len(rawlog)):
             # Presearch filter is expecting a finished rawlog loading
             result = matchQuery(query, rawlog, index, preSearchFilter=self._preSearchFilter)
@@ -19,6 +20,7 @@ class Search:
                 self.resultList.append(index)
             if result["status"] == QueryStatus.QUERY_ERROR:
                 self.status = result["status"]
+            update_progressbar(index, len(rawlog))
         if len(self.resultList) == 0:
             self.status = QueryStatus.QUERY_EMPTY
 
@@ -111,3 +113,4 @@ class Search:
 
     def getPosition(self):
         return self.resultIndex + 1
+    
