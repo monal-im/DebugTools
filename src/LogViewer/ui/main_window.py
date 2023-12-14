@@ -494,7 +494,7 @@ class MainWindow(QtWidgets.QMainWindow):
         return (progressbar, update_progressbar)
     
     @catch_exceptions(logger=logger)
-    def pushStack(self):
+    def pushStack(self, *args):
         selectedLine = None
         if self.uiWidget_listView.selectedIndexes():
             selectedLine = self.uiWidget_listView.selectedIndexes()[0].row()
@@ -521,7 +521,7 @@ class MainWindow(QtWidgets.QMainWindow):
         self.toggleUiItems()
     
     @catch_exceptions(logger=logger)
-    def popStack(self):
+    def popStack(self, *args):
         if len(self.stack) < 1:
             self.statusbar.showDynamicText("Unable to load state ✗")
             return
