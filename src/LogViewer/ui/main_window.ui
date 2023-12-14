@@ -187,10 +187,10 @@
        <attribute name="verticalHeaderCascadingSectionResizes">
         <bool>false</bool>
        </attribute>
-       <attribute name="verticalHeaderDefaultSectionSize">
-        <number>26</number>
-       </attribute>
        <attribute name="verticalHeaderMinimumSectionSize">
+        <number>800</number>
+       </attribute>
+       <attribute name="verticalHeaderDefaultSectionSize">
         <number>800</number>
        </attribute>
        <attribute name="verticalHeaderShowSortIndicator" stdset="0">
@@ -206,13 +206,13 @@
     </item>
    </layout>
   </widget>
-  <widget class="QMenuBar" name="menuBar">
+  <widget class="QMenuBar" name="uiMenuBar_main">
    <property name="geometry">
     <rect>
      <x>0</x>
      <y>0</y>
      <width>451</width>
-     <height>18</height>
+     <height>27</height>
     </rect>
    </property>
    <widget class="QMenu" name="menuFile">
@@ -240,10 +240,13 @@
    <addaction name="menuFile"/>
    <addaction name="menuEdit"/>
   </widget>
-  <widget class="QStatusBar" name="uistatusbar_state"/>
+  <widget class="QStatusBar" name="uiStatusbar_main"/>
   <action name="uiAction_open">
    <property name="text">
     <string>Open</string>
+   </property>
+   <property name="statusTip">
+    <string>Open rawlog file</string>
    </property>
    <property name="shortcut">
     <string>Ctrl+O</string>
@@ -253,10 +256,16 @@
    <property name="text">
     <string>Quit</string>
    </property>
+   <property name="statusTip">
+    <string>Quit Whole LogViewer</string>
+   </property>
   </action>
   <action name="uiAction_close">
    <property name="text">
     <string>Close</string>
+   </property>
+   <property name="statusTip">
+    <string>Close currently open file</string>
    </property>
    <property name="shortcut">
     <string>Ctrl+W</string>
@@ -266,6 +275,9 @@
    <property name="text">
     <string>Preferences</string>
    </property>
+   <property name="statusTip">
+    <string>Open preferences</string>
+   </property>
    <property name="shortcut">
     <string>Ctrl+P</string>
    </property>
@@ -274,6 +286,9 @@
    <property name="text">
     <string>Search</string>
    </property>
+   <property name="statusTip">
+    <string>Search using python code</string>
+   </property>
    <property name="shortcut">
     <string>Ctrl+F</string>
    </property>
@@ -281,6 +296,9 @@
   <action name="uiAction_export">
    <property name="text">
     <string>Export</string>
+   </property>
+   <property name="statusTip">
+    <string>Export currently visible entries as text file</string>
    </property>
    <property name="shortcut">
     <string>Ctrl+E</string>
@@ -293,6 +311,9 @@
    <property name="iconText">
     <string>push Stack</string>
    </property>
+   <property name="statusTip">
+    <string>Push current view (including filter, current search and scroll position) onto internal stack</string>
+   </property>
    <property name="shortcut">
     <string>Ctrl++</string>
    </property>
@@ -301,6 +322,9 @@
    <property name="text">
     <string>pop Stack</string>
    </property>
+   <property name="statusTip">
+    <string>Pop last pushed view off internal stack</string>
+   </property>
    <property name="shortcut">
     <string>Ctrl+-</string>
    </property>
@@ -308,6 +332,9 @@
   <action name="uiAction_save">
    <property name="text">
     <string>Save</string>
+   </property>
+   <property name="statusTip">
+    <string>Save currently visible entries as rawlog</string>
    </property>
    <property name="shortcut">
     <string>Ctrl+S</string>
@@ -321,7 +348,10 @@
     <bool>true</bool>
    </property>
    <property name="text">
-    <string>Inspect Line</string>
+    <string>Show details</string>
+   </property>
+   <property name="statusTip">
+    <string>Open of all structured logging details for the currently selected log entry</string>
    </property>
    <property name="shortcut">
     <string>Ctrl+D</string>

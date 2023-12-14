@@ -27,7 +27,7 @@ class MainWindow(QtWidgets.QMainWindow):
         self.file = None
 
         self.search = None
-        self.statusbar = Statusbar(self.uistatusbar_state)
+        self.statusbar = Statusbar(self.uiStatusbar_main, self.uiMenuBar_main)
 
         self.toggleUiItems()
         self.selectedCombobox = self.uiCombobox_filterInput
