@@ -11,11 +11,12 @@ from LogViewer.storage import SettingsSingleton
 from LogViewer.utils import Search, QueryStatus, matchQuery
 from .utils import Completer, MagicLineEdit, Statusbar
 from .preferences_dialog import PreferencesDialog
+from .about_window import AboutDialog
 from shared.utils import catch_exceptions, Paths
 from shared.utils.constants import LOGLEVELS
 from shared.storage import Rawlog, AbortRawlogLoading
 from shared.ui.utils import UiAutoloader
-
+                
 import logging
 logger = logging.getLogger(__name__)
 
@@ -45,6 +46,7 @@ class MainWindow(QtWidgets.QMainWindow):
         self.uiAction_export.triggered.connect(self.export)
         self.uiAction_save.triggered.connect(self.save)
         self.uiAction_inspectLine.triggered.connect(self.inspectLine)
+        self.uiAction_about.triggered.connect(self.action_about)
 
         self.uiWidget_listView.doubleClicked.connect(self.inspectLine)
         self.uiTable_characteristics.hide()
@@ -90,6 +92,13 @@ class MainWindow(QtWidgets.QMainWindow):
 
     def closeEvent(self, event):
         sys.exit()
+
+    @catch_exceptions(logger=logger)
+    def action_about(self, *args):
+        logger.info("Showing About Dialog...")
+        self.about = AboutDialog()
+        self.about.show()
+        result = self.about.exec_()
 
     def resizeEvent(self, e: QtGui.QResizeEvent):
         super().resizeEvent(e)

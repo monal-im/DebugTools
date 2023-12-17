@@ -237,8 +237,15 @@
     <addaction name="uiAction_pushStack"/>
     <addaction name="uiAction_popStack"/>
    </widget>
+   <widget class="QMenu" name="menuHelp">
+    <property name="title">
+     <string>Help</string>
+    </property>
+    <addaction name="uiAction_about"/>
+   </widget>
    <addaction name="menuFile"/>
    <addaction name="menuEdit"/>
+   <addaction name="menuHelp"/>
   </widget>
   <widget class="QStatusBar" name="uiStatusbar_main"/>
   <action name="uiAction_open">
@@ -355,6 +362,14 @@
    </property>
    <property name="shortcut">
     <string>Ctrl+D</string>
+   </property>
+  </action>
+  <action name="uiAction_about">
+   <property name="text">
+    <string>about</string>
+   </property>
+   <property name="shortcut">
+    <string>Ctrl+H</string>
    </property>
   </action>
  </widget>
