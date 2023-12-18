@@ -592,9 +592,16 @@ class MainWindow(QtWidgets.QMainWindow):
     def rebuildUi(self, preInstance):
         def rebuildCombobox(combobox):
             if len(SettingsSingleton().getComboboxHistory(combobox)) != len([combobox.itemText(i) for i in range(combobox.count())]):
+                currentText = combobox.lineEdit().text()
                 combobox.clear()
                 combobox.addItems(SettingsSingleton().getComboboxHistory(combobox))
-                combobox.lineEdit().setText("")
+                combobox.lineEdit().setText(currentText)
+
+                if currentText not in SettingsSingleton().getComboboxHistory(combobox):
+                    combobox.insertItem(0, currentText)
+                    comboboxHistory = SettingsSingleton().getComboboxHistory(combobox)
+                    comboboxHistory.append(currentText)
+                    SettingsSingleton().setComboboxHistory(combobox, comboboxHistory)
 
         def rebuildFormatter():
             formatter = self.createFormatter()
