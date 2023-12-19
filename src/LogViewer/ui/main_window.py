@@ -11,7 +11,7 @@ from LogViewer.storage import SettingsSingleton
 from LogViewer.utils import Search, QueryStatus, matchQuery
 from .utils import Completer, MagicLineEdit, Statusbar
 from .preferences_dialog import PreferencesDialog
-from .about_window import AboutDialog
+from .about_dialog import AboutDialog
 from shared.utils import catch_exceptions, Paths
 from shared.utils.constants import LOGLEVELS
 from shared.storage import Rawlog, AbortRawlogLoading
