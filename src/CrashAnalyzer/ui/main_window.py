@@ -3,7 +3,7 @@ import os
 from PyQt5 import QtWidgets, uic
 
 from CrashAnalyzer.storage import CrashReport
-from .about_window import AboutDialog
+from .about_dialog import AboutDialog
 from shared.utils import catch_exceptions
 from shared.ui.utils import UiAutoloader
 

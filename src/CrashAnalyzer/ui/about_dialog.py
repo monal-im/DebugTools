@@ -1,5 +1,5 @@
 from PyQt5 import QtWidgets, QtGui
-from LogViewer.utils.version import VERSION
+from CrashAnalyzer.utils.version import VERSION
 from shared.utils import catch_exceptions, Paths
 from shared.ui.utils import UiAutoloader
 
