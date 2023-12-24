@@ -9,13 +9,14 @@ import textwrap
 
 from LogViewer.storage import SettingsSingleton
 from LogViewer.utils import Search, QueryStatus, matchQuery
+from LogViewer.utils.version import VERSION
 from .utils import Completer, MagicLineEdit, Statusbar
 from .preferences_dialog import PreferencesDialog
-from .about_dialog import AboutDialog
+from shared.storage import Rawlog, AbortRawlogLoading
+from shared.ui.about_dialog import AboutDialog
+from shared.ui.utils import UiAutoloader
 from shared.utils import catch_exceptions, Paths
 from shared.utils.constants import LOGLEVELS
-from shared.storage import Rawlog, AbortRawlogLoading
-from shared.ui.utils import UiAutoloader
                 
 import logging
 logger = logging.getLogger(__name__)
@@ -96,7 +97,7 @@ class MainWindow(QtWidgets.QMainWindow):
     @catch_exceptions(logger=logger)
     def action_about(self, *args):
         logger.info("Showing About Dialog...")
-        self.about = AboutDialog()
+        self.about = AboutDialog(VERSION)
         self.about.show()
         result = self.about.exec_()
 

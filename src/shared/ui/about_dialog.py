@@ -1,5 +1,5 @@
 from PyQt5 import QtWidgets, QtGui
-from CrashAnalyzer.utils.version import VERSION
+
 from shared.utils import catch_exceptions, Paths
 from shared.ui.utils import UiAutoloader
 
@@ -9,7 +9,7 @@ logger = logging.getLogger(__name__)
 @UiAutoloader
 class AboutDialog(QtWidgets.QDialog):
     @catch_exceptions(logger=logger)
-    def __init__(self):
+    def __init__(self, VERSION):
         self.uiLabel_version.setText(VERSION)
         self.uiLabel_configDir.setText(Paths.user_data_dir())
         self.uiLabel_loggerDir.setText(Paths.user_log_dir())

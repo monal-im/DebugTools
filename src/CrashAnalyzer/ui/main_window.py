@@ -3,7 +3,8 @@ import os
 from PyQt5 import QtWidgets, uic
 
 from CrashAnalyzer.storage import CrashReport
-from .about_dialog import AboutDialog
+from CrashAnalyzer.utils.version import VERSION
+from shared.ui.about_dialog import AboutDialog
 from shared.utils import catch_exceptions
 from shared.ui.utils import UiAutoloader
 
@@ -33,7 +34,7 @@ class MainWindow(QtWidgets.QMainWindow):
     @catch_exceptions(logger=logger)
     def action_about(self, *args):
         logger.info("Showing About Dialog...")
-        self.about = AboutDialog()
+        self.about = AboutDialog(VERSION)
         self.about.show()
         result = self.about.exec_()
     
