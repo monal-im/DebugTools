@@ -292,6 +292,7 @@ class MainWindow(QtWidgets.QMainWindow):
                 self.uiTable_characteristics.setHorizontalHeaderLabels(["Name", "Value"])
                 self.uiTable_characteristics.horizontalHeader().setDefaultAlignment(QtCore.Qt.AlignLeft  | QtCore.Qt.Alignment(QtCore.Qt.TextWordWrap))
                 self.uiTable_characteristics.horizontalHeader().setSectionResizeMode(QtWidgets.QHeaderView.ResizeToContents)
+                self.uiTable_characteristics.verticalHeader().setSectionResizeMode(QtWidgets.QHeaderView.ResizeToContents)
                 self.uiTable_characteristics.horizontalHeader().setStretchLastSection(True)
                 self.uiTable_characteristics.setRowCount(len(details_table_data))
                 

@@ -187,11 +187,14 @@
        <attribute name="verticalHeaderCascadingSectionResizes">
         <bool>false</bool>
        </attribute>
+       <attribute name="verticalHeaderMinimumSectionSize">
+        <number>10</number>
+       </attribute>
        <attribute name="verticalHeaderDefaultSectionSize">
         <number>800</number>
        </attribute>
-       <attribute name="verticalHeaderMinimumSectionSize">
-        <number>800</number>
+       <attribute name="verticalHeaderHighlightSections">
+        <bool>true</bool>
        </attribute>
        <attribute name="verticalHeaderShowSortIndicator" stdset="0">
         <bool>false</bool>
@@ -212,7 +215,7 @@
      <x>0</x>
      <y>0</y>
      <width>451</width>
-     <height>18</height>
+     <height>24</height>
     </rect>
    </property>
    <widget class="QMenu" name="menuFile">
