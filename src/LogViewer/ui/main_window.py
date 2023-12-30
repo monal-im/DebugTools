@@ -10,7 +10,7 @@ import textwrap
 from LogViewer.storage import SettingsSingleton
 from LogViewer.utils import Search, QueryStatus, matchQuery
 from LogViewer.utils.version import VERSION
-from .utils import Completer, MagicLineEdit, Statusbar
+from .utils import Completer, MagicLineEdit, Statusbar, setStyle
 from .preferences_dialog import PreferencesDialog
 from shared.storage import Rawlog, AbortRawlogLoading
 from shared.ui.about_dialog import AboutDialog
@@ -87,6 +87,8 @@ class MainWindow(QtWidgets.QMainWindow):
 
         self.currentDetailIndex = None
         self.currentFilterQuery = None
+
+        setStyle(self)
     
     def quit(self):
         sys.exit()
@@ -343,7 +345,7 @@ class MainWindow(QtWidgets.QMainWindow):
 
     @catch_exceptions(logger=logger)
     def preferences(self, *args):
-        preInstance = {"color": {}, "staticLineWrap": None, "font": None, "formatter": None}
+        preInstance = {"color": {}, "staticLineWrap": None, "font": None, "formatter": None, "style": SettingsSingleton().getCurrentStyle()}
         for colorName in SettingsSingleton().getColorNames():
             preInstance["color"][colorName] = SettingsSingleton().getQColorTuple(colorName)
         preInstance["staticLineWrap"] = SettingsSingleton()["staticLineWrap"]
@@ -632,6 +634,9 @@ class MainWindow(QtWidgets.QMainWindow):
             
         rebuildCombobox(self.uiCombobox_filterInput)
         rebuildCombobox(self.uiCombobox_searchInput)
+
+        if preInstance["style"] != SettingsSingleton().getCurrentStyle():
+            setStyle(self)
 
         if self.file != None:
             if preInstance["formatter"] != SettingsSingleton().getCurrentFormatterCode():

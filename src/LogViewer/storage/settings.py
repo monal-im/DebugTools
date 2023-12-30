@@ -168,6 +168,21 @@ class SettingsSingleton():
                 self.data["color"][name]["data"].append(None)
         self._store()
 
+    def getStyles(self):
+        return list(self.data["misc"]["style"].keys())
+
+    def getCurrentStyle(self):
+        for style in self.data["misc"]["style"].keys():
+            if self.data["misc"]["style"][style] == True:
+                return style
+            
+    def setCurrentStyle(self, styleName):
+        for style in self.data["misc"]["style"].keys():
+            self.data["misc"]["style"][style] = True
+            if style != styleName:
+                self.data["misc"]["style"][style] = False
+        self._store()
+
     # see https://stackoverflow.com/a/3943023
     def getCssContrastColor(self, r, g, b):
         colors = []

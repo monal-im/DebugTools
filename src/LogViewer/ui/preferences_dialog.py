@@ -4,7 +4,7 @@ import functools
 from PyQt5 import QtWidgets, uic, QtGui, QtCore
 
 from LogViewer.storage import SettingsSingleton
-from .utils import PythonHighlighter, DeletableQListWidget
+from .utils import PythonHighlighter, DeletableQListWidget, setStyle
 from shared.utils import catch_exceptions, Paths
 from shared.ui.utils import UiAutoloader
 
@@ -30,6 +30,8 @@ class PreferencesDialog(QtWidgets.QDialog):
         self.buttonBox.button(QtWidgets.QDialogButtonBox.Discard).clicked.connect(self.reject)
         self.buttonBox.button(QtWidgets.QDialogButtonBox.Apply).clicked.connect(self.accept)
 
+        setStyle(self)
+
     def accept(self, *args):
         for colorName in self.colors:
             SettingsSingleton().setQColorTuple(colorName, self.colors[colorName])
@@ -37,7 +39,10 @@ class PreferencesDialog(QtWidgets.QDialog):
             data = [self.history[comboboxName].item(item).text() for item in range(self.history[comboboxName].count())]
             SettingsSingleton().setComboboxHistoryByName(comboboxName, data)
         for miscName in self.misc:
-            SettingsSingleton()[miscName] = self._getMiscWidgetValue(self.misc[miscName])
+            if miscName == "style":
+                SettingsSingleton().setCurrentStyle(self._getMiscWidgetValue(self.misc[miscName]))
+            else:
+                SettingsSingleton()[miscName] = self._getMiscWidgetValue(self.misc[miscName])
         SettingsSingleton().clearAllFormatters()
         for formatterNameLineEdit in self.formatter:
             SettingsSingleton().setFormatter(formatterNameLineEdit.text(), self.formatter[formatterNameLineEdit].toPlainText())
@@ -128,7 +133,7 @@ class PreferencesDialog(QtWidgets.QDialog):
             widget = QtWidgets.QComboBox()
             widget.addItems(SettingsSingleton().getFormatterNames())
             widget.setCurrentText(value)
-            self.currrentFormatter = widget
+            self.currentFormatter = widget
         elif type(value) == str and miscName == "font":
             widget = QtWidgets.QPushButton()
             self.font = SettingsSingleton().getQFont(value)
@@ -138,6 +143,10 @@ class PreferencesDialog(QtWidgets.QDialog):
         elif type(value) == bool:
             widget = QtWidgets.QCheckBox()
             widget.setChecked(value)
+        elif type(value) == dict:
+            widget = QtWidgets.QComboBox()
+            widget.addItems(value.keys())
+            widget.setCurrentText(SettingsSingleton().getCurrentStyle())
         else:
             raise RuntimeError("Misc value type not implemented yet: %s" % str(type(value)))
         return widget
@@ -194,14 +203,14 @@ class PreferencesDialog(QtWidgets.QDialog):
     def _deleteFormat(self, lineEdit, code, button):
         if len(self.formatter) >= 2:
             del self.formatter[lineEdit]
-            self.currrentFormatter.removeItem(self.currrentFormatter.findText(lineEdit.text()))
+            self.currentFormatter.removeItem(self.currentFormatter.findText(lineEdit.text()))
             lineEdit.hide()
             code.hide()
             button.hide()
 
     def _addFormatter(self, lineEdit, code, button):
         if lineEdit.text() != "" and code.toPlainText() != "":
-            self.currrentFormatter.addItem(lineEdit.text())
+            self.currentFormatter.addItem(lineEdit.text())
             self.formatter[lineEdit] = code
             self.syntaxHighlighters[lineEdit.text()] = PythonHighlighter(code.document())
             button.disconnect()
