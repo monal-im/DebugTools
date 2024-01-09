@@ -17,9 +17,13 @@ class Statusbar(QtCore.QObject):
             self.menu.installEventFilter(self)
     
     def __del__(self):
-        if self.menu != None:
-            self.menu.removeEventFilter(self)
-        self.dynamic_timer.stop()
+        # ignore all errors
+        try:
+            if self.menu != None:
+                self.menu.removeEventFilter(self)
+            self.dynamic_timer.stop()
+        except:
+            pass
     
     def setText(self, text):
         self.statusbarText["static"] = str(text)
