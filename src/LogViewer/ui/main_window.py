@@ -405,19 +405,18 @@ class MainWindow(QtWidgets.QMainWindow):
         self.search = None
     
     def clearFilter(self):
-        if self.currentFilterQuery != None and len(self.currentFilterQuery) != 0:
-            self.uiCombobox_filterInput.setCurrentText("")
-            self.uiCombobox_filterInput.setStyleSheet("")
+        self.uiCombobox_filterInput.setCurrentText("")
+        self.uiCombobox_filterInput.setStyleSheet("")
 
-            progressbar, update_progressbar = self.progressDialog("Clearing filter...", "")
-            for index in range(len(self.rawlog)):
-                if self.rawlog[index]["uiItem"].isHidden():
-                    self.rawlog[index]["uiItem"].setHidden(False)
-                update_progressbar(index, len(self.rawlog))
-            progressbar.hide()
-            self.currentFilterQuery = None
-            self.statusbar.showDynamicText("Filter cleared")
-            self._updateStatusbar()
+        progressbar, update_progressbar = self.progressDialog("Clearing filter...", "")
+        for index in range(len(self.rawlog)):
+            if self.rawlog[index]["uiItem"].isHidden():
+                self.rawlog[index]["uiItem"].setHidden(False)
+            update_progressbar(index, len(self.rawlog))
+        progressbar.hide()
+        self.currentFilterQuery = None
+        self.statusbar.showDynamicText("Filter cleared")
+        self._updateStatusbar()
     
     @catch_exceptions(logger=logger)
     def filter(self, *args):
