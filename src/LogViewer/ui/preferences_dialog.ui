@@ -21,7 +21,7 @@
      </property>
      <widget class="QWidget" name="uiTab_color">
       <attribute name="title">
-       <string>Colors</string>
+       <string>&amp;Colors</string>
       </attribute>
       <layout class="QGridLayout" name="gridLayout_2">
        <item row="0" column="0">
@@ -29,19 +29,9 @@
        </item>
       </layout>
      </widget>
-     <widget class="QWidget" name="uiTab_history">
-      <attribute name="title">
-       <string>History</string>
-      </attribute>
-      <layout class="QVBoxLayout" name="verticalLayout_3">
-       <item>
-        <layout class="QVBoxLayout" name="uiVLayout_historyTab"/>
-       </item>
-      </layout>
-     </widget>
      <widget class="QWidget" name="uiTab_misc">
       <attribute name="title">
-       <string>Misc</string>
+       <string>&amp;Misc</string>
       </attribute>
       <layout class="QGridLayout" name="gridLayout_3">
        <item row="0" column="0">
@@ -55,11 +45,21 @@
      </widget>
      <widget class="QWidget" name="uiTab_formatTabs">
       <attribute name="title">
-       <string>Log formatters</string>
+       <string>&amp;Log formatters</string>
       </attribute>
       <layout class="QVBoxLayout" name="verticalLayout_4">
        <item>
         <layout class="QVBoxLayout" name="uiVLayout_formatTabs"/>
+       </item>
+      </layout>
+     </widget>
+     <widget class="QWidget" name="uiTab_history">
+      <attribute name="title">
+       <string>&amp;History</string>
+      </attribute>
+      <layout class="QVBoxLayout" name="verticalLayout_3">
+       <item>
+        <layout class="QVBoxLayout" name="uiVLayout_historyTab"/>
        </item>
       </layout>
      </widget>
