@@ -169,7 +169,13 @@ class SettingsSingleton():
         self._store()
 
     # see https://stackoverflow.com/a/3943023
-    def getCssContrastColor(self, r, g, b):
+    def getCssContrastColor(self, *args):
+        if len(args) == 1 and (type(args[0]) == list or type(args[0]) == tuple):
+            r, g, b = args[0]
+        elif len(args) == 3:
+            r, g, b = args
+        else:
+            raise RuntimeError("Unexpected arguments: %s" % str(args))
         colors = []
         for c in (r, g, b):
             c = c / 255.0
