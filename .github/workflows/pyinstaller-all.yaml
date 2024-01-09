@@ -22,7 +22,7 @@ jobs:
             #--volicon "Hello World.icns" \
             # for the dmg stuff, see https://www.pythonguis.com/tutorials/packaging-pyqt5-applications-pyinstaller-macos-dmg/
             CMD_BUILD: >
-                pyinstaller --clean --log-level DEBUG --name "LogViewer" --add-data "src/LogViewer/data:LogViewer/data" --add-data "src/shared/ui/*.ui:shared/ui" --add-data "src/LogViewer/ui/*.ui:LogViewer/ui" --specpath src --windowed --icon src/LogViewer/data/art/icon.png --onefile --debug bootloader --argv-emulation src/LogViewer.py &&        
+                pyinstaller --clean --log-level DEBUG --name "LogViewer" --add-data "LogViewer/data:LogViewer/data" --add-data "shared/ui/*.ui:shared/ui" --add-data "LogViewer/ui/*.ui:LogViewer/ui" --specpath src --windowed --icon LogViewer/data/art/icon.png --onefile --debug bootloader --argv-emulation src/LogViewer.py &&        
                 cd dist/ &&
                 zip -r9 LogViewer LogViewer.app/ &&
                 brew install create-dmg &&
@@ -34,7 +34,7 @@ jobs:
           - os: windows-latest
             TARGET: windows
             CMD_BUILD: >
-                pyinstaller --clean --log-level DEBUG --name "LogViewer" --add-data "src/LogViewer/data;LogViewer/data" --add-data "src/shared/ui/*.ui;shared/ui" --add-data "src/LogViewer/ui/*.ui;LogViewer/ui" --specpath src --windowed --icon src/LogViewer/data/art/icon.png --onefile --debug bootloader src/LogViewer.py
+                pyinstaller --clean --log-level DEBUG --name "LogViewer" --add-data "LogViewer/data;LogViewer/data" --add-data "shared/ui/*.ui;shared/ui" --add-data "LogViewer/ui/*.ui;LogViewer/ui" --specpath src --windowed --icon LogViewer/data/art/icon.png --onefile --debug bootloader src/LogViewer.py
             OUT_FILE_NAME: LogViewer.exe
             ASSET_MIME: application/vnd.microsoft.portable-executable
           - os: ubuntu-latest
@@ -44,7 +44,7 @@ jobs:
                 #--add-binary "/usr/lib/x86_64-linux-gnu/qt5/plugins/platformthemes/KDEPlasmaPlatformTheme.so:PyQt5/Qt5/plugins/platformthemes"
                 #--add-binary "/lib/x86_64-linux-gnu/libz.so.1:."
             CMD_BUILD: >
-                pyinstaller --clean --log-level DEBUG --name "LogViewer" --add-data "src/LogViewer/data:LogViewer/data" --add-data "src/shared/ui/*.ui:shared/ui" --add-data "src/LogViewer/ui/*.ui:LogViewer/ui" --specpath src --windowed --icon src/LogViewer/data/art/icon.png --onefile src/LogViewer.py
+                pyinstaller --clean --log-level DEBUG --name "LogViewer" --add-data "LogViewer/data:LogViewer/data" --add-data "shared/ui/*.ui:shared/ui" --add-data "LogViewer/ui/*.ui:LogViewer/ui" --specpath src --windowed --icon LogViewer/data/art/icon.png --onefile src/LogViewer.py
             OUT_FILE_NAME: LogViewer
             ASSET_MIME: application/x-executable
     steps:
