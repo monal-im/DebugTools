@@ -51,9 +51,7 @@ class MainWindow(QtWidgets.QMainWindow):
         self.uiAction_about.triggered.connect(self.action_about)
 
         self.uiWidget_listView.doubleClicked.connect(self.inspectLine)
-        self.uiTable_characteristics.hide()
         self.uiFrame_search.hide()
-        self.uiAction_inspectLine.setData(False)
 
         self.uiTable_characteristics.doubleClicked.connect(self.pasteDetailItem)
         MagicLineEdit(self.uiCombobox_searchInput)
@@ -85,9 +83,10 @@ class MainWindow(QtWidgets.QMainWindow):
         self.uiAction_pushStack.triggered.connect(self.pushStack)
         self.uiAction_popStack.triggered.connect(self.popStack)
         self.stack = []
-
-        self.currentDetailIndex = None
+   
         self.currentFilterQuery = None
+
+        self.hideInspectLine()
 
     def quit(self):
         sys.exit()
@@ -309,10 +308,14 @@ class MainWindow(QtWidgets.QMainWindow):
                 self.uiAction_inspectLine.setData(True)
                 self.uiAction_inspectLine.setChecked(True)
             else:
-                self.currentDetailIndex = None
-                self.uiTable_characteristics.hide()
-                self.uiAction_inspectLine.setData(False)
-                self.uiAction_inspectLine.setChecked(False)
+                self.hideInspectLine()
+    
+    @catch_exceptions(logger=logger)
+    def hideInspectLine(self, *args):
+        self.currentDetailIndex = None
+        self.uiTable_characteristics.hide()
+        self.uiAction_inspectLine.setData(False)
+        self.uiAction_inspectLine.setChecked(False)
 
     @catch_exceptions(logger=logger)
     def focusChangedEvent(self, oldWidget, newWidget):
@@ -332,15 +335,12 @@ class MainWindow(QtWidgets.QMainWindow):
     @catch_exceptions(logger=logger)
     def closeFile(self, *args):
         self.uiWidget_listView.clear()
-        self.uiTable_characteristics.hide()
         self.hideSearch()
         self.selectedCombobox = self.uiCombobox_filterInput
         self.file = None
-        self.currentDetailIndex = None
         self.currentFilterQuery = None
-        self.uiAction_inspectLine.setData(False)
-        self.uiAction_inspectLine.setChecked(False)
         self.toggleUiItems()
+        self.hideInspectLine()
 
     @catch_exceptions(logger=logger)
     def preferences(self, *args):
@@ -444,12 +444,10 @@ class MainWindow(QtWidgets.QMainWindow):
         QtWidgets.QApplication.processEvents()
         for rawlogPosition in range(len(self.rawlog)):
             self.rawlog[rawlogPosition]["uiItem"].setHidden(filterMapping[rawlogPosition])
-            
-        if self.rawlog[self.currentDetailIndex]["uiItem"].isHidden():
-            self.currentDetailIndex = None
-            self.uiTable_characteristics.hide()
-            self.uiAction_inspectLine.setData(False)
-            self.uiAction_inspectLine.setChecked(False)
+
+        
+        if self.currentDetailIndex != None and self.rawlog[self.currentDetailIndex]["uiItem"].isHidden():
+            self.hideInspectLine()
 
         progressbar.hide()
         
