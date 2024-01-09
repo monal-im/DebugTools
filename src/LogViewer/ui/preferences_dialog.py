@@ -4,7 +4,7 @@ import functools
 from PyQt5 import QtWidgets, uic, QtGui, QtCore
 
 from LogViewer.storage import SettingsSingleton
-from .utils import PythonHighlighter, DeletableQListWidget, setStyle
+from .utils import PythonHighlighter, DeletableQListWidget, StyleManager
 from shared.utils import catch_exceptions, Paths
 from shared.ui.utils import UiAutoloader
 
@@ -12,6 +12,7 @@ import logging
 logger = logging.getLogger(__name__)
 
 @UiAutoloader
+@StyleManager.styleDecorator
 class PreferencesDialog(QtWidgets.QDialog):
     def __init__(self):
         self.colors = {}
@@ -30,8 +31,6 @@ class PreferencesDialog(QtWidgets.QDialog):
         self.buttonBox.button(QtWidgets.QDialogButtonBox.Discard).clicked.connect(self.reject)
         self.buttonBox.button(QtWidgets.QDialogButtonBox.Apply).clicked.connect(self.accept)
 
-        setStyle(self)
-
     def accept(self, *args):
         for colorName in self.colors:
             SettingsSingleton().setQColorTuple(colorName, self.colors[colorName])
@@ -39,10 +38,7 @@ class PreferencesDialog(QtWidgets.QDialog):
             data = [self.history[comboboxName].item(item).text() for item in range(self.history[comboboxName].count())]
             SettingsSingleton().setComboboxHistoryByName(comboboxName, data)
         for miscName in self.misc:
-            if miscName == "style":
-                SettingsSingleton().setCurrentStyle(self._getMiscWidgetValue(self.misc[miscName]))
-            else:
-                SettingsSingleton()[miscName] = self._getMiscWidgetValue(self.misc[miscName])
+            SettingsSingleton()[miscName] = self._getMiscWidgetValue(self.misc[miscName])
         SettingsSingleton().clearAllFormatters()
         for formatterNameLineEdit in self.formatter:
             SettingsSingleton().setFormatter(formatterNameLineEdit.text(), self.formatter[formatterNameLineEdit].toPlainText())
@@ -126,27 +122,28 @@ class PreferencesDialog(QtWidgets.QDialog):
             widget.setDecimals(1)
             widget.setSingleStep(0.1)
             widget.setValue(value)
-        elif type(value) == str and miscName != "currentFormatter" and miscName != "font":
-            widget = QtWidgets.QLineEdit()
-            widget.setText(value)
-        elif type(value) == str and miscName == "currentFormatter":
-            widget = QtWidgets.QComboBox()
-            widget.addItems(SettingsSingleton().getFormatterNames())
-            widget.setCurrentText(value)
-            self.currentFormatter = widget
-        elif type(value) == str and miscName == "font":
-            widget = QtWidgets.QPushButton()
-            self.font = SettingsSingleton().getQFont(value)
-            widget.setText("%s, %s" % (self.font.family(), str(self.font.pointSize())))
-            widget.setFont(self.font)
-            widget.clicked.connect(functools.partial(self._changeFont, widget))
         elif type(value) == bool:
             widget = QtWidgets.QCheckBox()
             widget.setChecked(value)
-        elif type(value) == dict:
-            widget = QtWidgets.QComboBox()
-            widget.addItems(value.keys())
-            widget.setCurrentText(SettingsSingleton().getCurrentStyle())
+        elif type(value) == str:
+            if miscName == "currentFormatter":
+                widget = QtWidgets.QComboBox()
+                widget.addItems(SettingsSingleton().getFormatterNames())
+                widget.setCurrentText(value)
+                self.currentFormatter = widget
+            elif miscName == "font":
+                widget = QtWidgets.QPushButton()
+                self.font = SettingsSingleton().getQFont(value)
+                widget.setText("%s, %s" % (self.font.family(), str(self.font.pointSize())))
+                widget.setFont(self.font)
+                widget.clicked.connect(functools.partial(self._changeFont, widget))
+            elif miscName == "uiStyle":
+                widget = QtWidgets.QComboBox()
+                widget.addItems(StyleManager.getAvailableStyles())
+                widget.setCurrentText(SettingsSingleton()["uiStyle"])
+            else:
+                widget = QtWidgets.QLineEdit()
+                widget.setText(value)
         else:
             raise RuntimeError("Misc value type not implemented yet: %s" % str(type(value)))
         return widget

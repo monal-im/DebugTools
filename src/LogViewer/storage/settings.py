@@ -168,21 +168,6 @@ class SettingsSingleton():
                 self.data["color"][name]["data"].append(None)
         self._store()
 
-    def getStyles(self):
-        return list(self.data["misc"]["style"].keys())
-
-    def getCurrentStyle(self):
-        for style in self.data["misc"]["style"].keys():
-            if self.data["misc"]["style"][style] == True:
-                return style
-            
-    def setCurrentStyle(self, styleName):
-        for style in self.data["misc"]["style"].keys():
-            self.data["misc"]["style"][style] = True
-            if style != styleName:
-                self.data["misc"]["style"][style] = False
-        self._store()
-
     # see https://stackoverflow.com/a/3943023
     def getCssContrastColor(self, r, g, b):
         colors = []
@@ -219,8 +204,10 @@ class SettingsSingleton():
             for section in defaults:
                 for key in defaults[section]:
                     if section not in self.data:
+                        logger.debug("Adding whole new settings section '%s'..." % section)
                         self.data[section] = defaults[section]
                     elif key not in self.data[section]:
+                        logger.debug("Adding settings key '%s' in section '%s'..." % (key, section))
                         self.data[section][key] = defaults[section][key]
             
             # remove settings not specified in defaults
