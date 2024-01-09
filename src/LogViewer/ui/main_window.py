@@ -444,6 +444,13 @@ class MainWindow(QtWidgets.QMainWindow):
         QtWidgets.QApplication.processEvents()
         for rawlogPosition in range(len(self.rawlog)):
             self.rawlog[rawlogPosition]["uiItem"].setHidden(filterMapping[rawlogPosition])
+            
+        if self.rawlog[self.currentDetailIndex]["uiItem"].isHidden():
+            self.currentDetailIndex = None
+            self.uiTable_characteristics.hide()
+            self.uiAction_inspectLine.setData(False)
+            self.uiAction_inspectLine.setChecked(False)
+
         progressbar.hide()
         
         self.updateComboboxHistory(query, self.uiCombobox_filterInput)
