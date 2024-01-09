@@ -409,10 +409,13 @@ class MainWindow(QtWidgets.QMainWindow):
         self.uiCombobox_filterInput.setStyleSheet("")
 
         progressbar, update_progressbar = self.progressDialog("Clearing filter...", "")
+        self._updateStatusbar()
+        QtWidgets.QApplication.processEvents()
         for index in range(len(self.rawlog)):
             if self.rawlog[index]["uiItem"].isHidden():
                 self.rawlog[index]["uiItem"].setHidden(False)
-            update_progressbar(index, len(self.rawlog))
+            # this slows down significantly
+            #update_progressbar(index, len(self.rawlog))
         progressbar.hide()
         self.currentFilterQuery = None
         self.statusbar.showDynamicText("Filter cleared")
