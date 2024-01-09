@@ -4,7 +4,7 @@ name: Build
 on:
   push:
     tags:
-      - '[MLV] v*' # Push events to matching v*, i.e. v1.0, v20.15.10
+      - 'MLV-v*' # Push events to matching v*, i.e. v1.0, v20.15.10
   workflow_dispatch:
 
 jobs:
@@ -34,7 +34,7 @@ jobs:
           - os: windows-latest
             TARGET: windows
             CMD_BUILD: >
-            	pyinstaller --clean --log-level DEBUG --name "LogViewer" --add-data "src/LogViewer/data;LogViewer/data" --add-data "src/shared/ui/*.ui;shared/ui" --add-data "src/LogViewer/ui/*.ui;LogViewer/ui" --specpath src --windowed --icon src/LogViewer/data/art/icon.png --onefile --debug bootloader src/LogViewer.py
+                pyinstaller --clean --log-level DEBUG --name "LogViewer" --add-data "src/LogViewer/data;LogViewer/data" --add-data "src/shared/ui/*.ui;shared/ui" --add-data "src/LogViewer/ui/*.ui;LogViewer/ui" --specpath src --windowed --icon src/LogViewer/data/art/icon.png --onefile --debug bootloader src/LogViewer.py
             OUT_FILE_NAME: LogViewer.exe
             ASSET_MIME: application/vnd.microsoft.portable-executable
           - os: ubuntu-latest
