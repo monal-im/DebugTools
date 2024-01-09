@@ -22,7 +22,9 @@
         "currentFormatter": "default",
         "tabWidth": 4,
         "font": "Consolas,10,-1,5,50,0,0,0,0,0,Regular",
-        "uiStyle": "default"
+        "uiStyle": "default",
+        "usePythonFilter": true,
+        "usePythonSearch": true
     },
     "formatter": {
         "default": "def formatter(e, **g):\n\tglobals().update(g)\n\treturn \"%s %s\" % (e[\"timestamp\"], e[\"message\"])",

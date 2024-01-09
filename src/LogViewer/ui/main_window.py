@@ -207,7 +207,7 @@ class MainWindow(QtWidgets.QMainWindow):
         for index in range(len(self.rawlog)):
             self.uiWidget_listView.addItem(self.rawlog[index]["uiItem"])
             if len(filterQuery) != 0:
-                result = matchQuery(filterQuery, self.rawlog, index)
+                result = matchQuery(filterQuery, self.rawlog, index, usePython=SettingsSingleton()["usePythonFilter"])
                 if result["status"] != QueryStatus.QUERY_ERROR:
                     self.rawlog[index]["uiItem"].setHidden(not result["matching"])
                 else:
@@ -429,7 +429,7 @@ class MainWindow(QtWidgets.QMainWindow):
         visibleCounter = 0
         filterMapping = {}
         for rawlogPosition in range(len(self.rawlog)):
-            result = matchQuery(query, self.rawlog, rawlogPosition)
+            result = matchQuery(query, self.rawlog, rawlogPosition, usePython=SettingsSingleton()["usePythonFilter"])
             if result["status"] == QueryStatus.QUERY_OK:
                 filterMapping[rawlogPosition] = not result["matching"]
             else:

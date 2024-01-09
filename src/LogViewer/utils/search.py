@@ -1,6 +1,7 @@
-import logging
+from LogViewer.storage import SettingsSingleton
 from LogViewer.utils.queryhelpers import QueryStatus, matchQuery
 
+import logging
 logger = logging.getLogger(__name__)
 
 class Search:
@@ -15,7 +16,7 @@ class Search:
 
         for index in range(len(rawlog)):
             # Presearch filter is expecting a finished rawlog loading
-            result = matchQuery(query, rawlog, index, preSearchFilter=self._preSearchFilter)
+            result = matchQuery(query, rawlog, index, preSearchFilter=self._preSearchFilter, usePython=SettingsSingleton()["usePythonSearch"])
             if result["matching"]:
                 self.resultList.append(index)
             if result["status"] == QueryStatus.QUERY_ERROR:
