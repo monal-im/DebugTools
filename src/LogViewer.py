@@ -5,6 +5,7 @@ import signal
 from PyQt5 import QtWidgets
 
 from shared.utils import Paths
+from LogViewer.storage import SettingsSingleton
 from LogViewer.ui import MainWindow
 
 def sigint_handler(sig, frame):
@@ -42,6 +43,7 @@ try:
     main_window = MainWindow()
     main_window.show()
     if args.file != None:
+        SettingsSingleton()["lastDir"] = os.path.dirname(os.path.abspath(args.file))
         main_window.openLogFile(args.file)
     application.exec_()
 except:

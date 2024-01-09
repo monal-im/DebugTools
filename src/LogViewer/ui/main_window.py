@@ -124,8 +124,9 @@ class MainWindow(QtWidgets.QMainWindow):
 
     def export(self):
         if self.rawlog:
-            file, check = QtWidgets.QFileDialog.getSaveFileName(None, "Choose where to save this text logfile", "", "Compressed logfile (*.log.gz)(*.log.gz);;Logfile (*.log)(*.log);;All files (*)")
+            file, check = QtWidgets.QFileDialog.getSaveFileName(None, "Choose where to save this text logfile", SettingsSingleton().getLastPath(), "Compressed logfile (*.log.gz)(*.log.gz);;Logfile (*.log)(*.log);;All files (*)")
             if check:
+                SettingsSingleton().setLastPath(os.path.dirname(os.path.abspath(file)))
                 status = self.rawlog.export_file(file, custom_store_callback = lambda entry: entry["data"] if not entry["uiItem"].isHidden() else None)
                 if status:
                     self.statusbar.showDynamicText(str("Done ✓ | Log export was successful"))
@@ -134,8 +135,9 @@ class MainWindow(QtWidgets.QMainWindow):
 
     def save(self):
         if self.rawlog:
-            file, check = QtWidgets.QFileDialog.getSaveFileName(None, "Choose where to save this rawlog logfile", "", "Compressed Monal rawlog (*.rawlog.gz)(*.rawlog.gz);;Monal rawlog (*.rawlog)(*.rawlog);;All files (*)")
+            file, check = QtWidgets.QFileDialog.getSaveFileName(None, "Choose where to save this rawlog logfile", SettingsSingleton().getLastPath(), "Compressed Monal rawlog (*.rawlog.gz)(*.rawlog.gz);;Monal rawlog (*.rawlog)(*.rawlog);;All files (*)")
             if check:
+                SettingsSingleton().setLastPath(os.path.dirname(os.path.abspath(file)))
                 status = self.rawlog.store_file(file, custom_store_callback = lambda entry: entry["data"] if not entry["uiItem"].isHidden() else None)
                 if status:
                     self.statusbar.showDynamicText(str("Done ✓ | Rawlog saved successfully"))
@@ -153,8 +155,9 @@ class MainWindow(QtWidgets.QMainWindow):
 
     @catch_exceptions(logger=logger)
     def openFileBrowser(self, *args):
-        file, check = QtWidgets.QFileDialog.getOpenFileName(None, "Open rawlog logfile", "", "Monal rawlog (*.rawlog.gz *.rawlog)(*.rawlog.gz *.rawlog);;All files (*)")
+        file, check = QtWidgets.QFileDialog.getOpenFileName(None, "Open rawlog logfile", SettingsSingleton().getLastPath(), "Monal rawlog (*.rawlog.gz *.rawlog)(*.rawlog.gz *.rawlog);;All files (*)")
         if check:
+            SettingsSingleton().setLastPath(os.path.dirname(os.path.abspath(file)))
             self.openLogFile(file)
 
     def openLogFile(self, file):

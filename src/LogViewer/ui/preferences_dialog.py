@@ -38,23 +38,29 @@ class PreferencesDialog(QtWidgets.QDialog):
             data = [self.history[comboboxName].item(item).text() for item in range(self.history[comboboxName].count())]
             SettingsSingleton().setComboboxHistoryByName(comboboxName, data)
         for miscName in self.misc:
-            SettingsSingleton()[miscName] = self._getMiscWidgetValue(self.misc[miscName])
+            SettingsSingleton()[miscName] = self._getMiscWidgetValue(miscName)
         SettingsSingleton().clearAllFormatters()
         for formatterNameLineEdit in self.formatter:
             SettingsSingleton().setFormatter(formatterNameLineEdit.text(), self.formatter[formatterNameLineEdit].toPlainText())
         super().accept()
 
-    def _getMiscWidgetValue(self, widget):
+    def _getMiscWidgetValue(self, miscName):
+        widget = self.misc[miscName]
         if isinstance(widget, QtWidgets.QSpinBox):
             return widget.value()
-        if isinstance(widget, QtWidgets.QLineEdit):
+        elif isinstance(widget, QtWidgets.QLineEdit):
             return widget.text()
-        if isinstance(widget, QtWidgets.QComboBox):
+        elif isinstance(widget, QtWidgets.QComboBox):
             return widget.currentText()
-        if isinstance(widget, QtWidgets.QCheckBox):
+        elif isinstance(widget, QtWidgets.QCheckBox):
             return widget.isChecked()
-        if isinstance(widget, QtWidgets.QPushButton):
-            return SettingsSingleton().getFontParameterList(self.font)
+        elif isinstance(widget, QtWidgets.QPushButton):
+            if miscName == "font":
+                return self.font.toString()
+            else:
+                return self.lastPath
+        else:
+            raise RuntimeError("Unknown misc widget type: %s" % str(widget))
 
     def _createUiTab_color(self):
         colorNames = SettingsSingleton().getColorNames()
@@ -103,14 +109,14 @@ class PreferencesDialog(QtWidgets.QDialog):
         button.setText("Add")
     
     def _createUiTab_misc(self):
+        miscSection = QtWidgets.QFormLayout()
         for miscName, miscValue in SettingsSingleton().items():
-            miscSection = QtWidgets.QHBoxLayout()
-            miscSection.addWidget(QtWidgets.QLabel(miscName, self))
-            widget = self._createMiscWidget(miscValue, miscName)
-            miscSection.addWidget(widget)
-            self.uiGridLayout_miscTab.setAlignment(QtCore.Qt.AlignTop)
-            self.uiGridLayout_miscTab.addLayout(miscSection)
-            self.misc[miscName] = widget
+            self.misc[miscName] = self._createMiscWidget(miscValue, miscName)
+            miscSection.addRow(QtWidgets.QLabel(miscName, self), self.misc[miscName])
+        miscSection.setFieldGrowthPolicy(QtWidgets.QFormLayout.AllNonFixedFieldsGrow)
+        miscSection.setLabelAlignment(QtCore.Qt.AlignRight)
+        self.uiGridLayout_miscTab.setAlignment(QtCore.Qt.AlignTop)
+        self.uiGridLayout_miscTab.addLayout(miscSection)
                 
     def _createMiscWidget(self, value, miscName):
         if type(value) == int:
@@ -133,14 +139,24 @@ class PreferencesDialog(QtWidgets.QDialog):
                 self.currentFormatter = widget
             elif miscName == "font":
                 widget = QtWidgets.QPushButton()
-                self.font = SettingsSingleton().getQFont(value)
+                self.font = SettingsSingleton().getQFont()
                 widget.setText("%s, %s" % (self.font.family(), str(self.font.pointSize())))
                 widget.setFont(self.font)
                 widget.clicked.connect(functools.partial(self._changeFont, widget))
             elif miscName == "uiStyle":
                 widget = QtWidgets.QComboBox()
                 widget.addItems(StyleManager.getAvailableStyles())
-                widget.setCurrentText(SettingsSingleton()["uiStyle"])
+                widget.setCurrentText(value)
+            elif miscName == "lastPath":
+                self.lastPath = SettingsSingleton().getLastPath()
+                widget = QtWidgets.QPushButton()
+                widget.setText(self.lastPath)
+                def openLastDirDialog():
+                    dirname = QtWidgets.QFileDialog.getExistingDirectory(self, "MLV | Choose default directory", self.lastPath)
+                    if dirname != None and dirname != "":
+                        self.lastPath = dirname
+                        widget.setText(dirname)
+                widget.clicked.connect(openLastDirDialog)
             else:
                 widget = QtWidgets.QLineEdit()
                 widget.setText(value)

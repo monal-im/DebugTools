@@ -79,15 +79,23 @@ class SettingsSingleton():
         if self._widgetName(widget) in self.data["state"]:
             widget.restoreState(QtCore.QByteArray.fromBase64(bytes(self.data["state"][self._widgetName(widget)], "UTF-8")))
 
-    def getFontParameterList(self, qFont):
-        return qFont.toString()
-    
-    def getQFont(self, fontString = None):
-        if fontString == None:
-            fontString = self.data["misc"]["font"]
+    def setQFont(self, font, miscKey="font"):
+        self[miscKey] = font.toString()
+        self._store()
+
+    def getQFont(self, miscKey="font"):
         font = QtGui.QFont()
-        font.fromString(fontString)
+        font.fromString(self[miscKey])
         return font
+
+    def getLastPath(self):
+        if self["lastPath"] == None or len(self["lastPath"]) == 0:
+            logger.debug("Returning default last dir: %s" % Paths.get_user_documents_dir())
+            return Paths.get_user_documents_dir()
+        return self["lastPath"]
+
+    def setLastPath(self, lastPath):
+        self["lastPath"] = lastPath
 
     def clearAllFormatters(self):
         self.data["formatter"].clear()
