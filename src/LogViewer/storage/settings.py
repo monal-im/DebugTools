@@ -222,6 +222,18 @@ class SettingsSingleton():
                         self.data[section] = defaults[section]
                     elif key not in self.data[section]:
                         self.data[section][key] = defaults[section][key]
+            
+            # remove settings not specified in defaults
+            for section in list(self.data.keys()):
+                if section not in defaults:
+                    logger.debug("Removing whole settings section '%s'..." % section)
+                    del self.data[section]
+                # we don't want to delete settings keys in other sections because only misc values have a default value
+                if section == "misc":
+                    for key in list(self.data[section].keys()):
+                        if key not in defaults[section]:
+                            logger.debug("Removing settings key '%s' in section '%s'..." % (key, section))
+                            del self.data[section][key]
         except:
             logger.info("File not loadable or does not exist: '%s', loading default config." % self.path)
             self.data = defaults
