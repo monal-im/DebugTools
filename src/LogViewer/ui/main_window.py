@@ -221,6 +221,9 @@ class MainWindow(QtWidgets.QMainWindow):
         QtWidgets.QApplication.processEvents()
         progressbar.hide()
 
+        if self.file != file:
+            self.stack.clear()
+
         self.file = file
         self.statusbar.showDynamicText(str("Done ✓ | file opened: " + os.path.basename(file)))
 
