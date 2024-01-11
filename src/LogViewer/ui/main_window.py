@@ -225,6 +225,12 @@ class MainWindow(QtWidgets.QMainWindow):
             self.stack.clear()
 
         self.file = file
+
+        if self.search != None and len(self.uiCombobox_searchInput.currentText().strip()) != 0:
+            self.search = None
+            self.uiFrame_search.show()
+            self.searchNext()
+
         self.statusbar.showDynamicText(str("Done ✓ | file opened: " + os.path.basename(file)))
 
         self.setCompleter(self.uiCombobox_filterInput)
@@ -408,7 +414,6 @@ class MainWindow(QtWidgets.QMainWindow):
     @catch_exceptions(logger=logger)
     def hideSearch(self):
         self.uiFrame_search.hide()
-        self.search = None
     
     def clearFilter(self):
         if (self.currentFilterQuery != None and len(self.currentFilterQuery) != 0) or self.uiCombobox_filterInput.currentText().strip() != "":
