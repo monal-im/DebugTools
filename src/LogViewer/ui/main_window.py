@@ -416,7 +416,7 @@ class MainWindow(QtWidgets.QMainWindow):
         self.uiFrame_search.hide()
     
     def clearFilter(self):
-        if (self.currentFilterQuery != None and len(self.currentFilterQuery) != 0) or self.uiCombobox_filterInput.currentText().strip() != "":
+        if (self.currentFilterQuery != None and len(self.currentFilterQuery) != 0) or len(self.uiCombobox_filterInput.currentText().strip()) != 0:
             self.uiCombobox_filterInput.setCurrentText("")
             self.uiCombobox_filterInput.setStyleSheet("")
 
