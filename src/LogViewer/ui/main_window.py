@@ -166,6 +166,7 @@ class MainWindow(QtWidgets.QMainWindow):
         self.statusbar.setText("Loading File: '%s'..." % os.path.basename(file))
         formatter = self.createFormatter()
         self.rawlog = Rawlog()
+        self.search = None
         
         def loader(entry):
             itemFont = SettingsSingleton().getQFont()
@@ -227,9 +228,13 @@ class MainWindow(QtWidgets.QMainWindow):
         self.file = file
 
         if self.search != None and len(self.uiCombobox_searchInput.currentText().strip()) != 0:
-            self.search = None
+            # set self.search to None here to specify the ability to check whether a search was active 
+            # before opening a file or not
+            self.search = None 
             self.uiFrame_search.show()
             self.searchNext()
+        else:
+            self.search = None
 
         self.statusbar.showDynamicText(str("Done ✓ | file opened: " + os.path.basename(file)))
 
