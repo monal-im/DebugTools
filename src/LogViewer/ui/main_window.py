@@ -540,6 +540,10 @@ class MainWindow(QtWidgets.QMainWindow):
         if self.uiWidget_listView.selectedIndexes():
             selectedLine = self.uiWidget_listView.selectedIndexes()[0].row()
 
+        currentSearchResult = None
+        if self.search:
+            currentSearchResult = self.search.getCurrentResult()
+
         state = {
             "selectedLine": selectedLine, 
             "detail": {
@@ -551,6 +555,7 @@ class MainWindow(QtWidgets.QMainWindow):
                 "isOpen": not self.uiFrame_search.isHidden(), 
                 "instance": self.search, 
                 "currentText": self.uiCombobox_searchInput.currentText(), 
+                "currentLine": currentSearchResult,
             },
             "filter": {
                 "currentFilterQuery": self.currentFilterQuery, 
@@ -569,7 +574,22 @@ class MainWindow(QtWidgets.QMainWindow):
         
         stack = self.stack.pop()
 
-        #unpacking details
+        # unpacking filter
+        self.uiCombobox_filterInput.setCurrentText(stack["filter"]["currentText"])
+        if stack["filter"]["currentFilterQuery"]:
+            self.filter()
+
+        # unpacking search
+        if stack["search"]["isOpen"]:
+            self.uiCombobox_searchInput.setCurrentText(stack["search"]["currentText"])
+            if stack["search"]["instance"]:
+                # Before continuing the search, we set the row so that the search starts at the correct index
+                self.uiWidget_listView.setCurrentRow(stack["search"]["currentLine"])
+                self.search = stack["search"]["instance"]
+                self.search.next()
+                self.search.previous()
+                
+        # unpacking details
         if stack["detail"]["isOpen"]:
             self.uiWidget_listView.setCurrentRow(stack["detail"]["currentDetailIndex"])
             self.inspectLine()
@@ -577,18 +597,9 @@ class MainWindow(QtWidgets.QMainWindow):
             if stack["detail"]["size"] == 0:
                 self.uiTable_characteristics.setFixedHeight(800)
 
-        #unpacking search
-        if stack["search"]["isOpen"]:
-            self.uiCombobox_searchInput.setCurrentText(stack["search"]["currentText"])
-            if stack["search"]["instance"]:
-                self.search = stack["search"]["instance"]
-                self.searchNext()
-                self.searchPrevious()
-
-        #unpacking filter
-        self.uiCombobox_filterInput.setCurrentText(stack["filter"]["currentText"])
-        if stack["filter"]["currentFilterQuery"]:
-            self.filter()
+        # unpacking scroll position
+        if stack["selectedLine"]:
+            self.uiWidget_listView.scrollToItem(self.rawlog[stack["selectedLine"]]["uiItem"], QtWidgets.QAbstractItemView.PositionAtCenter)
 
         self.statusbar.showDynamicText("State loaded ✓")
         self.toggleUiItems()
