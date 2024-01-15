@@ -183,7 +183,7 @@ class PreferencesDialog(QtWidgets.QDialog):
             addSection = QtWidgets.QHBoxLayout()
             lineEdit = QtWidgets.QLineEdit()
             button = QtWidgets.QPushButton()
-            button.clicked.connect(functools.partial(self._addComboboxItem, deletableQListWidget, lineEdit))
+            button.clicked.connect(functools.partial(self._addComboboxItem, deletableQListWidget, lineEdit, combobox))
             button.setText("Add")
             addSection.addWidget(button)
             addSection.addWidget(lineEdit) 
@@ -193,8 +193,8 @@ class PreferencesDialog(QtWidgets.QDialog):
             self.uiVLayout_historyTab.addLayout(historySection)
             self.history[combobox] = deletableQListWidget
 
-    def _addComboboxItem(self, listWidget, lineEdit):
-        if lineEdit.text() != None:
+    def _addComboboxItem(self, listWidget, lineEdit, combobox):
+        if lineEdit.text() != None and lineEdit.text() not in [self.history[combobox].item(item).text() for item in range(self.history[combobox].count())]:
             listWidget.addItem(QtWidgets.QListWidgetItem(lineEdit.text()))
 
     def _createUiTab_formatter(self):
