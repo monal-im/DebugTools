@@ -178,7 +178,8 @@ class PreferencesDialog(QtWidgets.QDialog):
             deletableQListWidget = DeletableQListWidget()
             deletableQListWidget.setDragDropMode(QtWidgets.QAbstractItemView.InternalMove)
             for item in SettingsSingleton().getComboboxHistoryByName(combobox):
-                deletableQListWidget.addItem(QtWidgets.QListWidgetItem(item))
+                if item.strip() != "":
+                    deletableQListWidget.addItem(QtWidgets.QListWidgetItem(item))
 
             addSection = QtWidgets.QHBoxLayout()
             lineEdit = QtWidgets.QLineEdit()
