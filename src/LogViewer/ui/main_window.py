@@ -376,8 +376,11 @@ class MainWindow(QtWidgets.QMainWindow):
 
     @catch_exceptions(logger=logger)
     def openSearchwidget(self, *args):
-        self.uiFrame_search.show()
-        self.uiCombobox_searchInput.setFocus()  
+        if self.uiFrame_search.isHidden():
+            self.uiFrame_search.show()
+            self.uiCombobox_searchInput.setFocus()
+            return
+        self.uiCombobox_searchInput.lineEdit().selectAll()
 
     @catch_exceptions(logger=logger)
     def setComboboxStatusColor(self, combobox, status):
