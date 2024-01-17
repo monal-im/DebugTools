@@ -421,6 +421,10 @@ class MainWindow(QtWidgets.QMainWindow):
         self.uiFrame_search.hide()
     
     def clearFilter(self):
+        currentSelectetLine = None
+        if len(self.uiWidget_listView.selectedIndexes()) != 0:
+            currentSelectetLine = self.uiWidget_listView.selectedIndexes()[0].row()
+
         if (self.currentFilterQuery != None and len(self.currentFilterQuery) != 0) or len(self.uiCombobox_filterInput.currentText().strip()) != 0:
             self.uiCombobox_filterInput.setCurrentText("")
             self.uiCombobox_filterInput.setStyleSheet("")
@@ -437,6 +441,9 @@ class MainWindow(QtWidgets.QMainWindow):
             self.currentFilterQuery = None
             self.statusbar.showDynamicText("Filter cleared")
             self._updateStatusbar()
+
+            if currentSelectetLine:
+                self.uiWidget_listView.scrollToItem(self.rawlog[currentSelectetLine]["uiItem"], QtWidgets.QAbstractItemView.PositionAtCenter)
     
     @catch_exceptions(logger=logger)
     def filter(self, *args):
