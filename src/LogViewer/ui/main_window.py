@@ -473,7 +473,6 @@ class MainWindow(QtWidgets.QMainWindow):
         QtWidgets.QApplication.processEvents()
         for rawlogPosition in range(len(self.rawlog)):
             self.rawlog[rawlogPosition]["uiItem"].setHidden(filterMapping[rawlogPosition])
-
         
         if self.currentDetailIndex != None and self.rawlog[self.currentDetailIndex]["uiItem"].isHidden():
             self.hideInspectLine()
@@ -482,6 +481,9 @@ class MainWindow(QtWidgets.QMainWindow):
         
         self.updateComboboxHistory(query, self.uiCombobox_filterInput)
         self.currentFilterQuery = query
+
+        if len(self.uiWidget_listView.selectedIndexes()) != 0:
+            self.uiWidget_listView.scrollToItem(self.rawlog[self.uiWidget_listView.selectedIndexes()[0].row()]["uiItem"], QtWidgets.QAbstractItemView.PositionAtCenter)
 
         self._updateStatusbar()
     
