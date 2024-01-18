@@ -558,6 +558,7 @@ class MainWindow(QtWidgets.QMainWindow):
 
         state = {
             "selectedLine": selectedLine, 
+            "selectedCombobox": self.selectedCombobox,
             "detail": {
                 "isOpen": not self.uiTable_characteristics.isHidden(), 
                 "size": self.uiTable_characteristics.height(), 
@@ -612,6 +613,9 @@ class MainWindow(QtWidgets.QMainWindow):
         # unpacking scroll position
         if stack["selectedLine"]:
             self.uiWidget_listView.scrollToItem(self.rawlog[stack["selectedLine"]]["uiItem"], QtWidgets.QAbstractItemView.PositionAtCenter)
+
+        if stack["selectedCombobox"]:
+            stack["selectedCombobox"].lineEdit().setFocus()
 
         self.statusbar.showDynamicText("State loaded ✓")
         self.toggleUiItems()
