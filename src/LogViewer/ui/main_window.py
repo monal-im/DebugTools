@@ -32,6 +32,8 @@ class MainWindow(QtWidgets.QMainWindow):
         self.search = None
         self.statusbar = Statusbar(self.uiStatusbar_main, self.uiMenuBar_main)
 
+        self.currentFilterQuery = None
+
         self.toggleUiItems()
         self.selectedCombobox = self.uiCombobox_filterInput
 
@@ -83,8 +85,6 @@ class MainWindow(QtWidgets.QMainWindow):
         self.uiAction_pushStack.triggered.connect(self.pushStack)
         self.uiAction_popStack.triggered.connect(self.popStack)
         self.stack = []
-   
-        self.currentFilterQuery = None
 
         self.hideInspectLine()
 
@@ -118,7 +118,7 @@ class MainWindow(QtWidgets.QMainWindow):
         self.uiAction_save.setEnabled(self.file != None)
         self.uiButton_previous.setEnabled(self.file != None and len(self.uiCombobox_searchInput.currentText().strip()) != 0)
         self.uiButton_next.setEnabled(self.file != None and len(self.uiCombobox_searchInput.currentText().strip()) != 0)
-        self.uiButton_filterClear.setEnabled(self.file != None and len(self.uiCombobox_filterInput.currentText().strip()) != 0)
+        self.uiButton_filterClear.setEnabled(self.file != None and self.currentFilterQuery != None)
         self.uiCombobox_searchInput.setEnabled(self.file != None)
         self.uiCombobox_filterInput.setEnabled(self.file != None)
 
@@ -447,6 +447,8 @@ class MainWindow(QtWidgets.QMainWindow):
 
             if currentSelectetLine:
                 self.uiWidget_listView.scrollToItem(self.rawlog[currentSelectetLine]["uiItem"], QtWidgets.QAbstractItemView.PositionAtCenter)
+
+            self.toggleUiItems()
     
     @catch_exceptions(logger=logger)
     def filter(self, *args):
@@ -454,6 +456,9 @@ class MainWindow(QtWidgets.QMainWindow):
         if query == self.currentFilterQuery:
             return
         
+        if len(self.uiWidget_listView.selectedIndexes()) != 0:
+            selectedLine = self.uiWidget_listView.selectedIndexes()[0].row()
+
         progressbar, update_progressbar = self.progressDialog("Filtering...", query)
         error = None
         visibleCounter = 0
@@ -482,8 +487,18 @@ class MainWindow(QtWidgets.QMainWindow):
         self.updateComboboxHistory(query, self.uiCombobox_filterInput)
         self.currentFilterQuery = query
 
-        if len(self.uiWidget_listView.selectedIndexes()) != 0:
-            self.uiWidget_listView.scrollToItem(self.rawlog[self.uiWidget_listView.selectedIndexes()[0].row()]["uiItem"], QtWidgets.QAbstractItemView.PositionAtCenter)
+        self.toggleUiItems()
+
+        if selectedLine != None:
+            if self.rawlog[selectedLine]["uiItem"].isHidden():
+                shift = 1
+                while True:
+                    if self.rawlog[selectedLine + shift]["uiItem"].isHidden() == False:
+                        self.uiWidget_listView.scrollToItem(self.rawlog[selectedLine+shift]["uiItem"], QtWidgets.QAbstractItemView.PositionAtCenter)
+                        break 
+                    shift += 1
+            else:
+                self.uiWidget_listView.scrollToItem(self.rawlog[selectedLine]["uiItem"], QtWidgets.QAbstractItemView.PositionAtCenter)
 
         self._updateStatusbar()
     
