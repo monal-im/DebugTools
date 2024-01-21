@@ -455,7 +455,8 @@ class MainWindow(QtWidgets.QMainWindow):
         query = self.uiCombobox_filterInput.currentText().strip()
         if query == self.currentFilterQuery:
             return
-        
+
+        selectedLine = None
         if len(self.uiWidget_listView.selectedIndexes()) != 0:
             selectedLine = self.uiWidget_listView.selectedIndexes()[0].row()
 
