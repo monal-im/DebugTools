@@ -410,6 +410,10 @@ class MainWindow(QtWidgets.QMainWindow):
                 return
         progressbar, update_progressbar = self.progressDialog("Searching...", query)
         self.search = Search(self.rawlog, query, update_progressbar)
+
+        if self.search.getStatus() == QueryStatus.QUERY_ERROR:
+            self.checkResult(self.search.getResult()["error"], 0, self.uiCombobox_searchInput)
+
         progressbar.hide()
         self.updateComboboxHistory(query, self.uiCombobox_searchInput)
     
@@ -467,7 +471,7 @@ class MainWindow(QtWidgets.QMainWindow):
                 filterMapping[rawlogPosition] = True            # hide all entries having filter errors
             visibleCounter += 1 if result["matching"] else 0
             update_progressbar(rawlogPosition, len(self.rawlog))
-        self.checkFilterResult(error, visibleCounter)
+        self.checkResult(error, visibleCounter, self.uiCombobox_filterInput)
         
         progressbar.setLabelText("Rendering Filter...")
         QtWidgets.QApplication.processEvents()
@@ -488,28 +492,31 @@ class MainWindow(QtWidgets.QMainWindow):
             if self.rawlog[selectedLine]["uiItem"].isHidden():
                 shift = 1
                 while True:
-                    if self.rawlog[selectedLine + shift]["uiItem"].isHidden() == False:
-                        self.uiWidget_listView.scrollToItem(self.rawlog[selectedLine+shift]["uiItem"], QtWidgets.QAbstractItemView.PositionAtCenter)
-                        break 
-                    shift += 1
+                    if len(self.rawlog) < selectedLine + shift:
+                        if self.rawlog[selectedLine + shift]["uiItem"].isHidden() == False:
+                            self.uiWidget_listView.scrollToItem(self.rawlog[selectedLine+shift]["uiItem"], QtWidgets.QAbstractItemView.PositionAtCenter)
+                            break 
+                        shift += 1
+                    else: 
+                        break
             else:
                 self.uiWidget_listView.scrollToItem(self.rawlog[selectedLine]["uiItem"], QtWidgets.QAbstractItemView.PositionAtCenter)
 
         self._updateStatusbar()
     
-    def checkFilterResult(self, error = None, visibleCounter = 0):
+    def checkResult(self, error = None, visibleCounter = 0, combobox=None):
         if error != None:
             QtWidgets.QMessageBox.critical(
                 self,
                 "Monal Log Viewer | ERROR", 
-                "Exception in filter:\n%s: %s" % (str(type(error).__name__), str(error)),
+                "Exception in query:\n%s: %s" % (str(type(error).__name__), str(error)),
                 QtWidgets.QMessageBox.Ok
             )
-            self.setComboboxStatusColor(self.uiCombobox_filterInput, QueryStatus.QUERY_ERROR)
+            self.setComboboxStatusColor(combobox, QueryStatus.QUERY_ERROR)
         elif visibleCounter == 0:
-            self.setComboboxStatusColor(self.uiCombobox_filterInput, QueryStatus.QUERY_EMPTY)
+            self.setComboboxStatusColor(combobox, QueryStatus.QUERY_EMPTY)
         else:
-            self.setComboboxStatusColor(self.uiCombobox_filterInput, QueryStatus.QUERY_OK)
+            self.setComboboxStatusColor(combobox, QueryStatus.QUERY_OK)
 
     def updateComboboxHistory(self, query, combobox):
         if query.strip() == "":

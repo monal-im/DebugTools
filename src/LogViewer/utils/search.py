@@ -23,9 +23,10 @@ class Search:
                 self.status = result["status"]
             if update_progressbar != None:
                 update_progressbar(index, len(rawlog))
-        if len(self.resultList) == 0:
+        if len(self.resultList) == 0 and self.status != QueryStatus.QUERY_ERROR:
             self.status = QueryStatus.QUERY_EMPTY
 
+        self.result = result
         self.resultIndex = -1           # don't jump over the first result on start
         self.resultStartIndex = 0       # the initial EOF point is the first result (e.g. result index 0)
 
@@ -98,6 +99,9 @@ class Search:
             self.status = QueryStatus.EOF_REACHED
 
         return self.getCurrentResult()
+
+    def getResult(self):
+        return self.result
 
     def getStatus(self):
         return self.status
