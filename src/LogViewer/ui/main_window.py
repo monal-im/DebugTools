@@ -372,10 +372,8 @@ class MainWindow(QtWidgets.QMainWindow):
 
     @catch_exceptions(logger=logger)
     def openSearchwidget(self, *args):
-        if self.uiFrame_search.isHidden():
-            self.uiFrame_search.show()
-            self.uiCombobox_searchInput.setFocus()
-            return
+        self.uiFrame_search.show()
+        self.uiCombobox_searchInput.setFocus()
         self.uiCombobox_searchInput.lineEdit().selectAll()
 
     @catch_exceptions(logger=logger)
@@ -568,6 +566,9 @@ class MainWindow(QtWidgets.QMainWindow):
         if self.search:
             currentSearchResult = self.search.getCurrentResult()
 
+        searchSelectionStart = self.uiCombobox_searchInput.lineEdit().selectionStart()
+        searchSelectionLenght = self.uiCombobox_searchInput.lineEdit().selectionLength()
+
         state = {
             "selectedLine": selectedLine,
             "scrollPosVertical": self.uiWidget_listView.verticalScrollBar().value(),
@@ -583,6 +584,7 @@ class MainWindow(QtWidgets.QMainWindow):
                 "instance": self.search, 
                 "currentText": self.uiCombobox_searchInput.currentText(), 
                 "currentLine": currentSearchResult,
+                "selection": {"start": searchSelectionStart, "length": searchSelectionLenght},
             },
             "filter": {
                 "currentFilterQuery": self.currentFilterQuery, 
