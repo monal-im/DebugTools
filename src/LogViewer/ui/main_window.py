@@ -1,7 +1,3 @@
-#!/usr/bin/python3
-
-# file created at 25.06.2023
-
 from PyQt5 import QtWidgets, uic, QtGui, QtCore
 from PyQt5.QtWidgets import QStyle
 import sys, os, functools
@@ -573,7 +569,9 @@ class MainWindow(QtWidgets.QMainWindow):
             currentSearchResult = self.search.getCurrentResult()
 
         state = {
-            "selectedLine": selectedLine, 
+            "selectedLine": selectedLine,
+            "scrollPosVertical": self.uiWidget_listView.verticalScrollBar().value(),
+            "scrollPosHorizontal": self.uiWidget_listView.horizontalScrollBar().value(),
             "selectedCombobox": self.selectedCombobox,
             "detail": {
                 "isOpen": not self.uiTable_characteristics.isHidden(), 
@@ -626,9 +624,11 @@ class MainWindow(QtWidgets.QMainWindow):
             if stack["detail"]["size"] == 0:
                 self.uiTable_characteristics.setFixedHeight(800)
 
-        # unpacking scroll position
+        # unpacking selected items and scroll position
         if stack["selectedLine"]:
             self.uiWidget_listView.scrollToItem(self.rawlog[stack["selectedLine"]]["uiItem"], QtWidgets.QAbstractItemView.PositionAtCenter)
+        self.uiWidget_listView.verticalScrollBar().setValue(stack["scrollPosVertical"])
+        self.uiWidget_listView.horizontalScrollBar().setValue(stack["scrollPosHorizontal"])
 
         if stack["selectedCombobox"]:
             stack["selectedCombobox"].lineEdit().setFocus()
