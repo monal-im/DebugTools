@@ -403,6 +403,9 @@ class MainWindow(QtWidgets.QMainWindow):
 
         self._updateStatusbar()
 
+        if SettingsSingleton()["uiStyle"] == "dark":
+            self.uiCombobox_searchInput.setStyleSheet("color: #efefef")
+
     def _prepareSearch(self):
         query = self.uiCombobox_searchInput.currentText().strip()
         if self.search != None:
@@ -501,6 +504,9 @@ class MainWindow(QtWidgets.QMainWindow):
                         break
             else:
                 self.uiWidget_listView.scrollToItem(self.rawlog[selectedLine]["uiItem"], QtWidgets.QAbstractItemView.PositionAtCenter)
+
+        if SettingsSingleton()["uiStyle"] == "dark":
+            self.uiCombobox_filterInput.setStyleSheet("color: #efefef")
 
         self._updateStatusbar()
     
