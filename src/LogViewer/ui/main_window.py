@@ -606,6 +606,8 @@ class MainWindow(QtWidgets.QMainWindow):
 
         searchSelectionStart = self.uiCombobox_searchInput.lineEdit().selectionStart()
         searchSelectionLenght = self.uiCombobox_searchInput.lineEdit().selectionLength()
+        filterSelectionStart = self.uiCombobox_filterInput.lineEdit().selectionStart()
+        filterSelectionLenght = self.uiCombobox_filterInput.lineEdit().selectionLength()
 
         state = {
             "selectedLine": selectedLine,
@@ -622,11 +624,12 @@ class MainWindow(QtWidgets.QMainWindow):
                 "instance": self.search, 
                 "currentText": self.uiCombobox_searchInput.currentText(), 
                 "currentLine": currentSearchResult,
-                "selection": {"start": searchSelectionStart, "length": searchSelectionLenght},
+                "selection": {"start": searchSelectionStart, "lenght": searchSelectionLenght},
             },
             "filter": {
                 "currentFilterQuery": self.currentFilterQuery, 
-                "currentText": self.uiCombobox_filterInput.currentText()
+                "currentText": self.uiCombobox_filterInput.currentText(),
+                "selection": {"start": filterSelectionStart, "lenght": filterSelectionLenght},
             }
         }
         self.stack.append(state)
@@ -643,12 +646,14 @@ class MainWindow(QtWidgets.QMainWindow):
 
         # unpacking filter
         self.uiCombobox_filterInput.setCurrentText(stack["filter"]["currentText"])
+        self.uiCombobox_filterInput.lineEdit().setSelection(stack["filter"]["selection"]["start"], stack["filter"]["selection"]["lenght"])
         if stack["filter"]["currentFilterQuery"]:
             self.filter()
 
         # unpacking search
         if stack["search"]["isOpen"]:
             self.uiCombobox_searchInput.setCurrentText(stack["search"]["currentText"])
+            self.uiCombobox_searchInput.lineEdit().setSelection(stack["search"]["selection"]["start"], stack["search"]["selection"]["lenght"])
             if stack["search"]["instance"]:
                 # Before continuing the search, we set the row so that the search starts at the correct index
                 self.uiWidget_listView.setCurrentRow(stack["search"]["currentLine"])
