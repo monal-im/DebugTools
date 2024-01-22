@@ -134,9 +134,6 @@
        <property name="horizontalScrollMode">
         <enum>QAbstractItemView::ScrollPerPixel</enum>
        </property>
-       <property name="movement">
-        <enum>QListView::Free</enum>
-       </property>
        <property name="layoutMode">
         <enum>QListView::SinglePass</enum>
        </property>
