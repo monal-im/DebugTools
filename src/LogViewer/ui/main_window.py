@@ -189,7 +189,7 @@ class MainWindow(QtWidgets.QMainWindow):
             
             return {"uiItem": item_with_color, "data": entry}
         
-        progressbar, updateProgressbar = self.progressDialog("Opening File...", "Opening File: %s" % os.path.basename(file), True)
+        progressbar, updateProgressbar = self.progressDialog("Opening File...", "Opening File: %s" % os.path.basename(file), True, "file")
         # don't pretend something was loaded if the loading was aborted
         if self.rawlog.load_file(file, progress_callback=updateProgressbar, custom_load_callback=loader) != True:
             self.closeFile()        # reset our ui to a sane state
@@ -394,12 +394,16 @@ class MainWindow(QtWidgets.QMainWindow):
         startIndex = None       # if no logline is selected, let the search implementation continue where it left of
         if len(self.uiWidget_listView.selectedIndexes()) > 0:
             startIndex = self.uiWidget_listView.selectedIndexes()[0].row()
-        result = func(self.search, startIndex)  # bind self (first arg) using our (newly created) self.search
+        result = None
+        if self.search != None:
+            result = func(self.search, startIndex)  # bind self (first arg) using our (newly created) self.search
 
-        logger.info("Current search result in line: %s" % str(result))
+            logger.info("Current search result in line: %s" % str(result))
+
+            self.setComboboxStatusColor(self.uiCombobox_searchInput, self.search.getStatus())
+
         if result != None:
             self.uiWidget_listView.setCurrentRow(result)
-        self.setComboboxStatusColor(self.uiCombobox_searchInput, self.search.getStatus())
 
         self._updateStatusbar()
 
@@ -411,11 +415,14 @@ class MainWindow(QtWidgets.QMainWindow):
         if self.search != None:
             if self.search.getQuery() == query:
                 return
-        progressbar, update_progressbar = self.progressDialog("Searching...", query)
-        self.search = Search(self.rawlog, query, update_progressbar)
+        progressbar, update_progressbar = self.progressDialog("Searching...", query, True, "search")
+        try:
+            self.search = Search(self.rawlog, query, update_progressbar)
 
-        if self.search.getStatus() == QueryStatus.QUERY_ERROR:
-            self.checkResult(self.search.getResult()["error"], 0, self.uiCombobox_searchInput)
+            if self.search.getStatus() == QueryStatus.QUERY_ERROR:
+                self.checkResult(self.search.getResult()["error"], 0, self.uiCombobox_searchInput)
+        except Exception as e:
+            self.search = None
 
         progressbar.hide()
         self.updateComboboxHistory(query, self.uiCombobox_searchInput)
@@ -436,11 +443,9 @@ class MainWindow(QtWidgets.QMainWindow):
             progressbar, update_progressbar = self.progressDialog("Clearing filter...", "")
             self._updateStatusbar()
             QtWidgets.QApplication.processEvents()
-            for index in range(len(self.rawlog)):
-                if self.rawlog[index]["uiItem"].isHidden():
-                    self.rawlog[index]["uiItem"].setHidden(False)
-                # this slows down significantly
-                #update_progressbar(index, len(self.rawlog))
+
+            self.cancelFilter()
+
             progressbar.hide()
             self.currentFilterQuery = None
             self.statusbar.showDynamicText("Filter cleared")
@@ -461,7 +466,7 @@ class MainWindow(QtWidgets.QMainWindow):
         if len(self.uiWidget_listView.selectedIndexes()) != 0:
             selectedLine = self.uiWidget_listView.selectedIndexes()[0].row()
 
-        progressbar, update_progressbar = self.progressDialog("Filtering...", query)
+        progressbar, update_progressbar = self.progressDialog("Filtering...", query, True, "filter")
         error = None
         visibleCounter = 0
         filterMapping = {}
@@ -473,13 +478,17 @@ class MainWindow(QtWidgets.QMainWindow):
                 error = result["error"]
                 filterMapping[rawlogPosition] = True            # hide all entries having filter errors
             visibleCounter += 1 if result["matching"] else 0
-            update_progressbar(rawlogPosition, len(self.rawlog))
+            self.rawlog[rawlogPosition]["uiItem"].setHidden(filterMapping[rawlogPosition])
+            try:
+                update_progressbar(rawlogPosition, len(self.rawlog))
+            except Exception as e:
+                query = None
+                break
+
         self.checkResult(error, visibleCounter, self.uiCombobox_filterInput)
         
         progressbar.setLabelText("Rendering Filter...")
         QtWidgets.QApplication.processEvents()
-        for rawlogPosition in range(len(self.rawlog)):
-            self.rawlog[rawlogPosition]["uiItem"].setHidden(filterMapping[rawlogPosition])
         
         if self.currentDetailIndex != None and self.rawlog[self.currentDetailIndex]["uiItem"].isHidden():
             self.hideInspectLine()
@@ -525,7 +534,7 @@ class MainWindow(QtWidgets.QMainWindow):
             self.setComboboxStatusColor(combobox, QueryStatus.QUERY_OK)
 
     def updateComboboxHistory(self, query, combobox):
-        if query.strip() == "":
+        if query == None or query.strip() == "":
             return
 
         if combobox.findText(query) != -1:
@@ -543,7 +552,7 @@ class MainWindow(QtWidgets.QMainWindow):
         self.toggleUiItems()
     
     @catch_exceptions(logger=logger)
-    def progressDialog(self, title, label, hasCancelButton=False):
+    def progressDialog(self, title, label, hasCancelButton=False, action = None):
         progressbar = QtWidgets.QProgressDialog(label, "Cancel", 0, 100, self)
         progressbar.setWindowTitle(title)
         progressbar.setGeometry(200, 200, 650, 100)
@@ -558,6 +567,14 @@ class MainWindow(QtWidgets.QMainWindow):
         def update_progressbar(pos, total):
             # cancel loading if the progress dialog was canceled
             if progressbar.wasCanceled():
+                if action != None:
+                    if action == "filter":
+                        self.cancelFilter()
+                        raise "filter was canceled"
+                    if action == "search":
+                        raise "search was canceled"
+                    if action == "file":
+                        self.closeFile()
                 return True
             
             currentpercentage = int(pos/total*100)
@@ -568,6 +585,14 @@ class MainWindow(QtWidgets.QMainWindow):
 
         progressbar.show()
         return (progressbar, update_progressbar)
+    
+    def cancelFilter(self):
+        for index in range(len(self.rawlog)):
+            if self.rawlog[index]["uiItem"].isHidden():
+                self.rawlog[index]["uiItem"].setHidden(False)
+            # this slows down significantly
+            #update_progressbar(index, len(self.rawlog))
+        self.currentFilterQuery = None
     
     @catch_exceptions(logger=logger)
     def pushStack(self, *args):
