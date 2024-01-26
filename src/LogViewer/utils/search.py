@@ -4,6 +4,10 @@ from LogViewer.utils.queryhelpers import QueryStatus, matchQuery
 import logging
 logger = logging.getLogger(__name__)
 
+# own exception to allow our __init__ to communicate an abort condition
+class AbortSearch(RuntimeError):
+    pass
+
 class Search:
     PREVIOUS = -1
     NEXT = 1
@@ -13,6 +17,7 @@ class Search:
         self.query = query
         self.resultList = []
         self.status = QueryStatus.QUERY_OK
+        self.error = None
 
         for index in range(len(rawlog)):
             # Presearch filter is expecting a finished rawlog loading
@@ -21,12 +26,13 @@ class Search:
                 self.resultList.append(index)
             if result["status"] == QueryStatus.QUERY_ERROR:
                 self.status = result["status"]
+                self.error = result["error"]
             if update_progressbar != None:
-                update_progressbar(index, len(rawlog))
+                if update_progressbar(index, len(rawlog)) == True:
+                    raise AbortSearch()
         if len(self.resultList) == 0 and self.status != QueryStatus.QUERY_ERROR:
             self.status = QueryStatus.QUERY_EMPTY
 
-        self.result = result
         self.resultIndex = -1           # don't jump over the first result on start
         self.resultStartIndex = 0       # the initial EOF point is the first result (e.g. result index 0)
 
@@ -39,7 +45,7 @@ class Search:
         # TODO: only set this if the user clicked on a logline, not when jumping to next search result
         self.resultStartIndex = self.resultIndex
     
-    def _setStartIndex(self, startIndex, direction):
+    def setStartIndex(self, startIndex, direction):
         if direction == Search.NEXT:
             resultIndexList = range(len(self.resultList)-1, -1, -1)
         elif direction == Search.PREVIOUS:
@@ -100,11 +106,11 @@ class Search:
 
         return self.getCurrentResult()
 
-    def getResult(self):
-        return self.result
-
     def getStatus(self):
         return self.status
+    
+    def getError(self):
+        return self.error
     
     def getQuery(self):
         return self.query

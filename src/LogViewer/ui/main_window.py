@@ -4,7 +4,7 @@ import sys, os, functools
 import textwrap
 
 from LogViewer.storage import SettingsSingleton
-from LogViewer.utils import Search, QueryStatus, matchQuery
+from LogViewer.utils import Search, AbortSearch, QueryStatus, matchQuery
 from LogViewer.utils.version import VERSION
 from .utils import Completer, MagicLineEdit, Statusbar, StyleManager
 from .preferences_dialog import PreferencesDialog
@@ -24,14 +24,21 @@ class MainWindow(QtWidgets.QMainWindow):
         SettingsSingleton().loadDimensions(self)
         self.rawlog = Rawlog()
         self.file = None
-
         self.search = None
         self.statusbar = Statusbar(self.uiStatusbar_main, self.uiMenuBar_main)
-
         self.currentFilterQuery = None
+        self.stack = []
+        self.selectedCombobox = self.uiCombobox_filterInput
+        
+        self.queryStatus2colorMapping = {
+            QueryStatus.EOF_REACHED:    SettingsSingleton().getColor("combobox-eof_reached"),
+            QueryStatus.QUERY_ERROR:    SettingsSingleton().getColor("combobox-query_error"),
+            QueryStatus.QUERY_OK:       SettingsSingleton().getColor("combobox-query_ok"),
+            QueryStatus.QUERY_EMPTY:    SettingsSingleton().getColor("combobox-query_empty"),
+        }
+        self.logflag2colorMapping = {v: "logline-%s" % k.lower() for k, v in LOGLEVELS.items()}
 
         self.toggleUiItems()
-        self.selectedCombobox = self.uiCombobox_filterInput
 
         self.uiButton_previous.setIcon(self.style().standardIcon(getattr(QStyle, "SP_ArrowBack")))
         self.uiButton_previous.clicked.connect(self.searchPrevious)
@@ -42,11 +49,13 @@ class MainWindow(QtWidgets.QMainWindow):
         self.uiAction_close.triggered.connect(self.closeFile)
         self.uiAction_quit.triggered.connect(self.quit)
         self.uiAction_preferences.triggered.connect(self.preferences)
-        self.uiAction_search.triggered.connect(self.openSearchwidget)
+        self.uiAction_search.triggered.connect(self.openSearchWidget)
         self.uiAction_export.triggered.connect(self.export)
         self.uiAction_save.triggered.connect(self.save)
         self.uiAction_inspectLine.triggered.connect(self.inspectLine)
         self.uiAction_about.triggered.connect(self.action_about)
+        self.uiAction_pushStack.triggered.connect(self.pushStack)
+        self.uiAction_popStack.triggered.connect(self.popStack)
 
         self.uiWidget_listView.doubleClicked.connect(self.inspectLine)
         self.uiFrame_search.hide()
@@ -57,14 +66,6 @@ class MainWindow(QtWidgets.QMainWindow):
 
         self.uiCombobox_searchInput.currentTextChanged.connect(self.uiCombobox_searchInputChanged)
         self.uiCombobox_filterInput.currentTextChanged.connect(self.uiCombobox_filterInputChanged)
-
-        self.queryStatus2colorMapping = {
-            QueryStatus.EOF_REACHED:    SettingsSingleton().getCssColor("combobox-eof_reached"),
-            QueryStatus.QUERY_ERROR:    SettingsSingleton().getCssColor("combobox-query_error"),
-            QueryStatus.QUERY_OK:       SettingsSingleton().getCssColor("combobox-query_ok"),
-            QueryStatus.QUERY_EMPTY:    SettingsSingleton().getCssColor("combobox-query_empty"),
-        }
-        self.logflag2colorMapping = {v: "logline-%s" % k.lower() for k, v in LOGLEVELS.items()}
 
         self.loadComboboxHistory(self.uiCombobox_searchInput)
         QtWidgets.QShortcut(QtGui.QKeySequence("ESC"), self).activated.connect(self.hideSearch)
@@ -77,10 +78,6 @@ class MainWindow(QtWidgets.QMainWindow):
         QtWidgets.QApplication.instance().focusChanged.connect(self.focusChangedEvent)
         self.uiSplitter_inspectLine.splitterMoved.connect(functools.partial(SettingsSingleton().storeState, self.uiSplitter_inspectLine))
         SettingsSingleton().loadState(self.uiSplitter_inspectLine)
-
-        self.uiAction_pushStack.triggered.connect(self.pushStack)
-        self.uiAction_popStack.triggered.connect(self.popStack)
-        self.stack = []
 
         self.hideInspectLine()
 
@@ -141,15 +138,6 @@ class MainWindow(QtWidgets.QMainWindow):
                 else:
                     self.statusbar.showDynamicText(str("Error ✗ | Could not save warlow"))   
 
-    def setCompleter(self, combobox):
-        wordlist = self.rawlog.getCompleterList(lambda entry: entry["data"])
-        wordlist += ["True", "False", "true", "false", "__index", "__rawlog"] + list(LOGLEVELS.keys())
-
-        completer = Completer(wordlist, self)
-        completer.setCompletionMode(Completer.PopupCompletion)
-        completer.setCaseSensitivity(QtCore.Qt.CaseInsensitive)
-        combobox.setCompleter(completer)
-
     @catch_exceptions(logger=logger)
     def openFileBrowser(self, *args):
         file, check = QtWidgets.QFileDialog.getOpenFileName(None, "Open rawlog logfile", SettingsSingleton().getLastPath(), "Monal rawlog (*.rawlog.gz *.rawlog)(*.rawlog.gz *.rawlog);;All files (*)")
@@ -190,7 +178,7 @@ class MainWindow(QtWidgets.QMainWindow):
             
             return {"uiItem": item_with_color, "data": entry}
         
-        progressbar, updateProgressbar = self.progressDialog("Opening File...", "Opening File: %s" % os.path.basename(file), True, "file")
+        progressbar, updateProgressbar = self.progressDialog("Opening File...", "Opening File: %s" % os.path.basename(file), True)
         # don't pretend something was loaded if the loading was aborted
         if self.rawlog.load_file(file, progress_callback=updateProgressbar, custom_load_callback=loader) != True:
             self.closeFile()        # reset our ui to a sane state
@@ -224,14 +212,15 @@ class MainWindow(QtWidgets.QMainWindow):
 
         self.file = file
 
-        if self.search != None and len(self.uiCombobox_searchInput.currentText().strip()) != 0:
-            # set self.search to None here to specify the ability to check whether a search was active 
-            # before opening a file or not
+        # abort our current search if we have an active search but no search query in our input box
+        if len(self.uiCombobox_searchInput.currentText().strip()) != 0:
+            self.search = None
+        
+        if self.search != None:
+            # set self.search to None to retrigger a new search using the new rawlog (new file) rather than the old one
             self.search = None 
             self.uiFrame_search.show()
             self.searchNext()
-        else:
-            self.search = None
 
         self.statusbar.showDynamicText(str("Done ✓ | file opened: " + os.path.basename(file)))
 
@@ -240,6 +229,15 @@ class MainWindow(QtWidgets.QMainWindow):
 
         self._updateStatusbar()
         self.toggleUiItems()
+    
+    def setCompleter(self, combobox):
+        wordlist = self.rawlog.getCompleterList(lambda entry: entry["data"])
+        wordlist += ["True", "False", "true", "false"] + list(LOGLEVELS.keys())
+
+        completer = Completer(wordlist, self)
+        completer.setCompletionMode(Completer.PopupCompletion)
+        completer.setCaseSensitivity(QtCore.Qt.CaseInsensitive)
+        combobox.setCompleter(completer)
     
     def createFormatterText(self, formatter, entry, ignoreError=False):        
         try:
@@ -358,12 +356,15 @@ class MainWindow(QtWidgets.QMainWindow):
 
     @catch_exceptions(logger=logger)
     def preferences(self, *args):
-        preInstance = {"color": {}, "staticLineWrap": None, "font": None, "formatter": None, "style": SettingsSingleton()["uiStyle"]}
+        preInstance = {
+            "color": {},
+            "staticLineWrap": SettingsSingleton()["staticLineWrap"],
+            "font": SettingsSingleton().getQFont(),
+            "formatter": SettingsSingleton().getCurrentFormatterCode(),
+            "style": SettingsSingleton()["uiStyle"]
+        }
         for colorName in SettingsSingleton().getColorNames():
             preInstance["color"][colorName] = SettingsSingleton().getQColorTuple(colorName)
-        preInstance["staticLineWrap"] = SettingsSingleton()["staticLineWrap"]
-        preInstance["font"] = SettingsSingleton().getQFont()
-        preInstance["formatter"] = SettingsSingleton().getCurrentFormatterCode()
         
         self.preferencesDialog = PreferencesDialog()
         self.preferencesDialog.show()
@@ -372,14 +373,17 @@ class MainWindow(QtWidgets.QMainWindow):
             self.rebuildUi(preInstance)
 
     @catch_exceptions(logger=logger)
-    def openSearchwidget(self, *args):
+    def openSearchWidget(self, *args):
         self.uiFrame_search.show()
         self.uiCombobox_searchInput.setFocus()
         self.uiCombobox_searchInput.lineEdit().selectAll()
 
     @catch_exceptions(logger=logger)
     def setComboboxStatusColor(self, combobox, status):
-        combobox.setStyleSheet("background-color: %s" % self.queryStatus2colorMapping[status])
+        combobox.setStyleSheet("background-color: rgb(%s); color: %s;" % (
+            ", ".join([str(x) for x in self.queryStatus2colorMapping[status]]),
+            SettingsSingleton().getCssContrastColor(self.queryStatus2colorMapping[status])
+        ))
 
     def searchNext(self):
         # use unbound function, self will be bound in _search() later on after the instance was created
@@ -408,21 +412,17 @@ class MainWindow(QtWidgets.QMainWindow):
 
         self._updateStatusbar()
 
-        if SettingsSingleton()["uiStyle"] == "dark":
-            self.uiCombobox_searchInput.setStyleSheet("color: #efefef")
-
     def _prepareSearch(self):
         query = self.uiCombobox_searchInput.currentText().strip()
         if self.search != None:
             if self.search.getQuery() == query:
                 return
-        progressbar, update_progressbar = self.progressDialog("Searching...", query, True, "search")
+        progressbar, update_progressbar = self.progressDialog("Searching...", query, True)
         try:
             self.search = Search(self.rawlog, query, update_progressbar)
-
             if self.search.getStatus() == QueryStatus.QUERY_ERROR:
-                self.checkResult(self.search.getResult()["error"], 0, self.uiCombobox_searchInput)
-        except Exception as e:
+                self.checkQueryResult(self.search.getError(), 0, self.uiCombobox_searchInput)
+        except AbortSearch:
             self.search = None
 
         progressbar.hide()
@@ -432,6 +432,7 @@ class MainWindow(QtWidgets.QMainWindow):
     def hideSearch(self):
         self.uiFrame_search.hide()
     
+    @catch_exceptions(logger=logger)
     def clearFilter(self):
         currentSelectetLine = None
         if len(self.uiWidget_listView.selectedIndexes()) != 0:
@@ -462,12 +463,14 @@ class MainWindow(QtWidgets.QMainWindow):
         query = self.uiCombobox_filterInput.currentText().strip()
         if query == self.currentFilterQuery:
             return
+        self.updateComboboxHistory(query, self.uiCombobox_filterInput)
+        self.currentFilterQuery = query
 
         selectedLine = None
         if len(self.uiWidget_listView.selectedIndexes()) != 0:
             selectedLine = self.uiWidget_listView.selectedIndexes()[0].row()
 
-        progressbar, update_progressbar = self.progressDialog("Filtering...", query, True, "filter")
+        progressbar, update_progressbar = self.progressDialog("Filtering...", query, True)
         error = None
         visibleCounter = 0
         filterMapping = {}
@@ -480,13 +483,10 @@ class MainWindow(QtWidgets.QMainWindow):
                 filterMapping[rawlogPosition] = True            # hide all entries having filter errors
             visibleCounter += 1 if result["matching"] else 0
             self.rawlog[rawlogPosition]["uiItem"].setHidden(filterMapping[rawlogPosition])
-            try:
-                update_progressbar(rawlogPosition, len(self.rawlog))
-            except Exception as e:
-                query = None
+            if update_progressbar(rawlogPosition, len(self.rawlog)) == True:
+                self.cancelFilter()
                 break
-
-        self.checkResult(error, visibleCounter, self.uiCombobox_filterInput)
+        self.checkQueryResult(error, visibleCounter, self.uiCombobox_filterInput)
         
         progressbar.setLabelText("Rendering Filter...")
         QtWidgets.QApplication.processEvents()
@@ -495,32 +495,30 @@ class MainWindow(QtWidgets.QMainWindow):
             self.hideInspectLine()
 
         progressbar.hide()
-        
-        self.updateComboboxHistory(query, self.uiCombobox_filterInput)
-        self.currentFilterQuery = query
 
         self.toggleUiItems()
 
+        # scroll to selected line, if still visible or to next visible line, if not
+        # (if there is no next visible line, scroll to previous visible line)
         if selectedLine != None:
-            if self.rawlog[selectedLine]["uiItem"].isHidden():
-                shift = 1
-                while True:
-                    if len(self.rawlog) < selectedLine + shift:
-                        if self.rawlog[selectedLine + shift]["uiItem"].isHidden() == False:
-                            self.uiWidget_listView.scrollToItem(self.rawlog[selectedLine+shift]["uiItem"], QtWidgets.QAbstractItemView.PositionAtCenter)
-                            break 
-                        shift += 1
-                    else: 
-                        break
-            else:
-                self.uiWidget_listView.scrollToItem(self.rawlog[selectedLine]["uiItem"], QtWidgets.QAbstractItemView.PositionAtCenter)
-
-        if SettingsSingleton()["uiStyle"] == "dark":
-            self.uiCombobox_filterInput.setStyleSheet("color: #efefef")
+            found = False
+            for index in range(selectedLine, len(self.rawlog), 1):
+                if self.rawlog[index]["uiItem"].isHidden() == False:
+                    self.uiWidget_listView.scrollToItem(self.rawlog[index]["uiItem"], QtWidgets.QAbstractItemView.PositionAtCenter)
+                    found = True
+                    break 
+            if not found:
+                for index in range(len(self.rawlog)-1, selectedLine, -1):
+                    if self.rawlog[index]["uiItem"].isHidden() == False:
+                        self.uiWidget_listView.scrollToItem(self.rawlog[index]["uiItem"], QtWidgets.QAbstractItemView.PositionAtCenter)
+                        found = True
+                        break 
+            if not found:
+                logger.debug("No visible line to scroll to!")
 
         self._updateStatusbar()
     
-    def checkResult(self, error = None, visibleCounter = 0, combobox=None):
+    def checkQueryResult(self, error = None, visibleCounter = 0, combobox=None):
         if error != None:
             QtWidgets.QMessageBox.critical(
                 self,
@@ -553,7 +551,7 @@ class MainWindow(QtWidgets.QMainWindow):
         self.toggleUiItems()
     
     @catch_exceptions(logger=logger)
-    def progressDialog(self, title, label, hasCancelButton=False, action = None):
+    def progressDialog(self, title, label, hasCancelButton=False):
         progressbar = QtWidgets.QProgressDialog(label, "Cancel", 0, 100, self)
         progressbar.setWindowTitle(title)
         progressbar.setGeometry(200, 200, 650, 100)
@@ -568,14 +566,6 @@ class MainWindow(QtWidgets.QMainWindow):
         def update_progressbar(pos, total):
             # cancel loading if the progress dialog was canceled
             if progressbar.wasCanceled():
-                if action != None:
-                    if action == "filter":
-                        self.cancelFilter()
-                        raise "filter was canceled"
-                    if action == "search":
-                        raise "search was canceled"
-                    if action == "file":
-                        self.closeFile()
                 return True
             
             currentpercentage = int(pos/total*100)
@@ -696,7 +686,7 @@ class MainWindow(QtWidgets.QMainWindow):
         else:
             text += " %d" % len(self.rawlog)
             
-        if self.search != None:
+        if self.search != None and len(self.uiCombobox_searchInput.currentText().strip()) > 0:
             if len(self.search) != 0:
                 text += ", search: %d/%d" % (self.search.getPosition(), len(self.search))
             else:

@@ -1,2 +1,2 @@
-from .search import Search
+from .search import Search, AbortSearch
 from .queryhelpers import QueryStatus, matchQuery 
