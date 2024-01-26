@@ -58,6 +58,7 @@ class MainWindow(QtWidgets.QMainWindow):
         self.uiAction_popStack.triggered.connect(self.popStack)
 
         self.uiWidget_listView.doubleClicked.connect(self.inspectLine)
+        self.uiWidget_listView.clicked.connect(self.listViewClicked)
         self.uiFrame_search.hide()
 
         self.uiTable_characteristics.doubleClicked.connect(self.pasteDetailItem)
@@ -81,9 +82,11 @@ class MainWindow(QtWidgets.QMainWindow):
 
         self.hideInspectLine()
 
+    @catch_exceptions(logger=logger)
     def quit(self):
         sys.exit()
 
+    @catch_exceptions(logger=logger)
     def closeEvent(self, event):
         sys.exit()
 
@@ -94,10 +97,11 @@ class MainWindow(QtWidgets.QMainWindow):
         self.about.show()
         result = self.about.exec_()
 
+    @catch_exceptions(logger=logger)
     def resizeEvent(self, e: QtGui.QResizeEvent):
         super().resizeEvent(e)
         SettingsSingleton().storeDimension(self)
-
+    
     def toggleUiItems(self):
         self.uiAction_close.setEnabled(self.file != None)
         self.uiAction_quit.setEnabled(True)
@@ -385,6 +389,14 @@ class MainWindow(QtWidgets.QMainWindow):
             SettingsSingleton().getCssContrastColor(self.queryStatus2colorMapping[status])
         ))
 
+    @catch_exceptions(logger=logger)
+    def listViewClicked(self, *args):
+        if self.search == None:
+            return
+        # if no logline is selected, let the search implementation continue where it left of
+        if len(self.uiWidget_listView.selectedIndexes()) > 0:
+            self.search.resetStartIndex()
+    
     def searchNext(self):
         # use unbound function, self will be bound in _search() later on after the instance was created
         self._search(Search.next)
@@ -396,20 +408,16 @@ class MainWindow(QtWidgets.QMainWindow):
     def _search(self, func):
         self._prepareSearch()   # create search instance (to be bound below)
         
-        startIndex = None       # if no logline is selected, let the search implementation continue where it left of
-        if len(self.uiWidget_listView.selectedIndexes()) > 0:
-            startIndex = self.uiWidget_listView.selectedIndexes()[0].row()
         result = None
         if self.search != None:
-            result = func(self.search, startIndex)  # bind self (first arg) using our (newly created) self.search
-
-            logger.info("Current search result in line: %s" % str(result))
-
+            result = func(self.search)  # bind self (first arg) using our (newly created) self.search
+            logger.info("Current search result in line (%s): %s" % (str(self.search.getStatus()), str(result)))
             self.setComboboxStatusColor(self.uiCombobox_searchInput, self.search.getStatus())
 
         if result != None:
             self.uiWidget_listView.setCurrentRow(result)
-
+            self.uiWidget_listView.setFocus()
+        
         self._updateStatusbar()
 
     def _prepareSearch(self):
@@ -419,7 +427,11 @@ class MainWindow(QtWidgets.QMainWindow):
                 return
         progressbar, update_progressbar = self.progressDialog("Searching...", query, True)
         try:
-            self.search = Search(self.rawlog, query, update_progressbar)
+            # let our new search begin at the currently selected line (if any)
+            startIndex = 0       # if no logline is selected, let the search implementation begin at our list start
+            if len(self.uiWidget_listView.selectedIndexes()) > 0:
+                startIndex = self.uiWidget_listView.selectedIndexes()[0].row()
+            self.search = Search(self.rawlog, query, startIndex, update_progressbar)
             if self.search.getStatus() == QueryStatus.QUERY_ERROR:
                 self.checkQueryResult(self.search.getError(), 0, self.uiCombobox_searchInput)
         except AbortSearch:
