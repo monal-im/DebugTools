@@ -445,7 +445,7 @@ class MainWindow(QtWidgets.QMainWindow):
         self.uiFrame_search.hide()
     
     @catch_exceptions(logger=logger)
-    def clearFilter(self):
+    def clearFilter(self, *args):
         currentSelectetLine = None
         if len(self.uiWidget_listView.selectedIndexes()) != 0:
             currentSelectetLine = self.uiWidget_listView.selectedIndexes()[0].row()
