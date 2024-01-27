@@ -494,7 +494,6 @@ class MainWindow(QtWidgets.QMainWindow):
                 error = result["error"]
                 filterMapping[rawlogPosition] = True            # hide all entries having filter errors
             visibleCounter += 1 if result["matching"] else 0
-            self.rawlog[rawlogPosition]["uiItem"].setHidden(filterMapping[rawlogPosition])
             if update_progressbar(rawlogPosition, len(self.rawlog)) == True:
                 self.cancelFilter()
                 break
@@ -502,6 +501,10 @@ class MainWindow(QtWidgets.QMainWindow):
         
         progressbar.setLabelText("Rendering Filter...")
         QtWidgets.QApplication.processEvents()
+        
+        # this has to be done outside of our filter loop above, to not slow down our filter process significantly
+        for rawlogPosition, hidden in filterMapping.items():
+            self.rawlog[rawlogPosition]["uiItem"].setHidden(hidden)
         
         if self.currentDetailIndex != None and self.rawlog[self.currentDetailIndex]["uiItem"].isHidden():
             self.hideInspectLine()
