@@ -455,7 +455,6 @@ class MainWindow(QtWidgets.QMainWindow):
             self.uiCombobox_filterInput.setStyleSheet("")
 
             progressbar, update_progressbar = self.progressDialog("Clearing filter...", "")
-            self._updateStatusbar()
             QtWidgets.QApplication.processEvents()
 
             self.cancelFilter()
@@ -639,6 +638,7 @@ class MainWindow(QtWidgets.QMainWindow):
             }
         }
         self.stack.append(state)
+        self._updateStatusbar()
         self.statusbar.showDynamicText("State saved ✓")
         self.toggleUiItems()
     
@@ -684,10 +684,12 @@ class MainWindow(QtWidgets.QMainWindow):
         if stack["selectedCombobox"]:
             stack["selectedCombobox"].lineEdit().setFocus()
 
+        self._updateStatusbar()
         self.statusbar.showDynamicText("State loaded ✓")
         self.toggleUiItems()
 
-    def _updateStatusbar(self):
+    @catch_exceptions(logger=logger)
+    def _updateStatusbar(self, *args):
         text = ""
 
         if len(self.rawlog) > 0:
@@ -706,6 +708,9 @@ class MainWindow(QtWidgets.QMainWindow):
                 text += ", search: %d/%d" % (self.search.getPosition(), len(self.search))
             else:
                 text += ", search: no result!"
+
+        if len(self.stack) != 0:
+            text += ", stack: %d" % len(self.stack)
 
         self.statusbar.setText(text)
 
