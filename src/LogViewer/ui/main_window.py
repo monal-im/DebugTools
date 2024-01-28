@@ -677,7 +677,7 @@ class MainWindow(QtWidgets.QMainWindow):
 
         # unpacking selected items and scroll position
         if stack["selectedLine"]:
-            self.uiWidget_listView.scrollToItem(self.rawlog[stack["selectedLine"]]["uiItem"], QtWidgets.QAbstractItemView.PositionAtCenter)
+            self.uiWidget_listView.setCurrentRow(stack["selectedLine"])
         self.uiWidget_listView.verticalScrollBar().setValue(stack["scrollPosVertical"])
         self.uiWidget_listView.horizontalScrollBar().setValue(stack["scrollPosHorizontal"])
 
