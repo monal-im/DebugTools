@@ -67,6 +67,8 @@ class Search:
                 retval = 0
             else:
                 raise RuntimeError("Unexpected search direction: %s" % str(direction))
+            
+        logger.debug("Start index %dRI is at %dSI in direction %s" % (startIndex, retval, "NEXT" if direction == Search.NEXT else "PREVIOUS"))
         return retval
 
     def _handleEof(self):
@@ -77,7 +79,7 @@ class Search:
             self.eofIndex = self.resultIndex
             self.updateStartIndex = False
             self.status = QueryStatus.QUERY_OK
-            logger.debug("Set eofIndex to %d..." % self.eofIndex)
+            logger.debug("Set eofIndex to %dSI..." % self.eofIndex)
         elif self.resultIndex == self.eofIndex:
             self.status = QueryStatus.EOF_REACHED
             logger.debug("Detected eof...")
@@ -85,9 +87,10 @@ class Search:
             self.status = QueryStatus.QUERY_OK
             logger.debug("Neither eof detected nor eofIndex updated...")
     
-    def resetStartIndex(self):
-        logger.debug("Resetting start index on next search...")
+    def resetStartIndex(self, startIndex):
+        logger.debug("Resetting start index to %dRI on next search..." % startIndex)
         self.updateStartIndex = True
+        self.startIndex = startIndex
     
     def next(self):
         if len(self.resultList) == 0:

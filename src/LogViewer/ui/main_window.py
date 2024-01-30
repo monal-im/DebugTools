@@ -395,7 +395,7 @@ class MainWindow(QtWidgets.QMainWindow):
             return
         # if no logline is selected, let the search implementation continue where it left of
         if len(self.uiWidget_listView.selectedIndexes()) > 0:
-            self.search.resetStartIndex()
+            self.search.resetStartIndex(self.uiWidget_listView.selectedIndexes()[0].row())
     
     def searchNext(self):
         # use unbound function, self will be bound in _search() later on after the instance was created
