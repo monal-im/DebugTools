@@ -1,4 +1,4 @@
-from PyQt5 import QtWidgets, uic, QtGui, QtCore
+from PyQt5 import QtWidgets, QtGui, QtCore
 from PyQt5.QtWidgets import QStyle
 import sys, os, functools
 import textwrap
@@ -9,9 +9,8 @@ from LogViewer.utils.version import VERSION
 from .utils import Completer, MagicLineEdit, Statusbar, StyleManager
 from .preferences_dialog import PreferencesDialog
 from shared.storage import Rawlog, AbortRawlogLoading
-from shared.ui.about_dialog import AboutDialog
 from shared.ui.utils import UiAutoloader
-from shared.utils import catch_exceptions, Paths
+from shared.utils import catch_exceptions, SharedHelpers
 from shared.utils.constants import LOGLEVELS
                 
 import logging
@@ -29,6 +28,9 @@ class MainWindow(QtWidgets.QMainWindow):
         self.currentFilterQuery = None
         self.stack = []
         self.selectedCombobox = self.uiCombobox_filterInput
+
+        # initialize sharedHelpers
+        self.sharedHelpers = SharedHelpers()
         
         self.queryStatus2colorMapping = {
             QueryStatus.EOF_REACHED:    SettingsSingleton().getColor("combobox-eof_reached"),
@@ -53,7 +55,7 @@ class MainWindow(QtWidgets.QMainWindow):
         self.uiAction_export.triggered.connect(self.export)
         self.uiAction_save.triggered.connect(self.save)
         self.uiAction_inspectLine.triggered.connect(self.inspectLine)
-        self.uiAction_about.triggered.connect(self.action_about)
+        self.uiAction_about.triggered.connect(functools.partial(self.sharedHelpers.action_about, VERSION))
         self.uiAction_pushStack.triggered.connect(self.pushStack)
         self.uiAction_popStack.triggered.connect(self.popStack)
         self.uiAction_goToRow.triggered.connect(self.openGoToRowWidget)
@@ -93,13 +95,6 @@ class MainWindow(QtWidgets.QMainWindow):
     @catch_exceptions(logger=logger)
     def closeEvent(self, event):
         sys.exit()
-
-    @catch_exceptions(logger=logger)
-    def action_about(self, *args):
-        logger.info("Showing About Dialog...")
-        self.about = AboutDialog(VERSION)
-        self.about.show()
-        result = self.about.exec_()
 
     @catch_exceptions(logger=logger)
     def resizeEvent(self, e: QtGui.QResizeEvent):

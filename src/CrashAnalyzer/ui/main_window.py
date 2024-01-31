@@ -1,11 +1,9 @@
-import sys
-import os
-from PyQt5 import QtWidgets, uic
+import functools
+from PyQt5 import QtWidgets
 
 from CrashAnalyzer.storage import CrashReport
 from CrashAnalyzer.utils.version import VERSION
-from shared.ui.about_dialog import AboutDialog
-from shared.utils import catch_exceptions
+from shared.utils import catch_exceptions, SharedHelpers
 from shared.ui.utils import UiAutoloader
 
 import logging
@@ -16,6 +14,9 @@ class MainWindow(QtWidgets.QMainWindow):
     def __init__(self):
         # initialize ui parts and instance vars
         self.reset_ui()
+
+        # initialize sharedHelpers
+        self.sharedHelpers = SharedHelpers()
         
         # connect ui element signals
         self.uiAction_openCrashreport.triggered.connect(self.open_crashreport)
@@ -24,19 +25,12 @@ class MainWindow(QtWidgets.QMainWindow):
         self.uiList_parts.itemDoubleClicked.connect(self.export_part)
         self.uiList_parts.currentItemChanged.connect(self.switch_part)
         self.uiAction_close.triggered.connect(self.close)
-        self.uiAction_about.triggered.connect(self.action_about)
+        self.uiAction_about.triggered.connect(functools.partial(self.sharedHelpers.action_about, VERSION))
     
     @catch_exceptions(logger=logger)
     def close(self, _):
         logger.info("Closing application...")
         QtWidgets.QApplication.quit()
-    
-    @catch_exceptions(logger=logger)
-    def action_about(self, *args):
-        logger.info("Showing About Dialog...")
-        self.about = AboutDialog(VERSION)
-        self.about.show()
-        result = self.about.exec_()
     
     @catch_exceptions(logger=logger)
     def switch_part(self, toItem, _):
