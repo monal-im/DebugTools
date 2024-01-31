@@ -1,10 +1,9 @@
 from PyQt5 import QtWidgets, QtGui, QtCore
 from PyQt5.QtWidgets import QStyle
 import sys, os, functools
-import textwrap
 
 from LogViewer.storage import SettingsSingleton
-from LogViewer.utils import Search, AbortSearch, QueryStatus, matchQuery
+from LogViewer.utils import Search, AbortSearch, QueryStatus, matchQuery, Helpers
 from LogViewer.utils.version import VERSION
 from .utils import Completer, MagicLineEdit, Statusbar, StyleManager
 from .preferences_dialog import PreferencesDialog
@@ -29,8 +28,9 @@ class MainWindow(QtWidgets.QMainWindow):
         self.stack = []
         self.selectedCombobox = self.uiCombobox_filterInput
 
-        # initialize sharedHelpers
+        # initialize helpers
         self.sharedHelpers = SharedHelpers()
+        self.helpers = Helpers()
         
         self.queryStatus2colorMapping = {
             QueryStatus.EOF_REACHED:    SettingsSingleton().getColor("combobox-eof_reached"),
@@ -173,7 +173,7 @@ class MainWindow(QtWidgets.QMainWindow):
             if formattedEntry == None:
                 return None
             
-            item_with_color = self.wordWrapLogline(formattedEntry)   
+            item_with_color = self.helpers.wordWrapLogline(formattedEntry)   
             fg, bg = SettingsSingleton().getQColorTuple(self.logflag2colorMapping[entry["flag"]])
             item_with_color = QtWidgets.QListWidgetItem(item_with_color)
             item_with_color.setFont(itemFont)
@@ -299,8 +299,8 @@ class MainWindow(QtWidgets.QMainWindow):
                             retval += splitter(value, path)
                         else:
                             retval.append({
-                                "name": path[0] + "".join(map(lambda value: "[%s]" % self.pythonize(value), path[1:])),
-                                "value": self.pythonize(value)
+                                "name": path[0] + "".join(map(lambda value: "[%s]" % self.helpers.pythonize(value), path[1:])),
+                                "value": self.helpers.pythonize(value)
                             })
                         path.pop(-1)
                     return retval
@@ -341,11 +341,6 @@ class MainWindow(QtWidgets.QMainWindow):
     def focusChangedEvent(self, oldWidget, newWidget):
         if type(oldWidget) == QtWidgets.QComboBox:
             self.selectedCombobox = oldWidget
-
-    def pythonize(self, value):
-        if type(value) == int or type(value) == float or type(value) == bool:
-            return str(value)
-        return "'%s'" % str(value)
     
     @catch_exceptions(logger=logger)
     def pasteDetailItem(self, *args):
@@ -766,7 +761,7 @@ class MainWindow(QtWidgets.QMainWindow):
                 except Exception as e:
                     entry["data"]["__formattedMessage"] = "E R R O R"
                     ignoreError = True
-                entry["uiItem"].setText(self.wordWrapLogline(entry["data"]["__formattedMessage"]))
+                entry["uiItem"].setText(self.helpers.wordWrapLogline(entry["data"]["__formattedMessage"]))
                 rebuildFont(entry)
                 rebuildColor(entry)
             
@@ -795,23 +790,12 @@ class MainWindow(QtWidgets.QMainWindow):
             else:
                 if preInstance["staticLineWrap"] != SettingsSingleton()["staticLineWrap"]:
                     for entry in range(len(self.rawlog)):
-                        self.rawlog[entry]["uiItem"].setText(self.wordWrapLogline(self.rawlog[entry]["data"]["__formattedMessage"]))
+                        self.rawlog[entry]["uiItem"].setText(self.helpers.wordWrapLogline(self.rawlog[entry]["data"]["__formattedMessage"]))
                 if preInstance["font"] != SettingsSingleton().getQFont():
                     for item in self.rawlog:
                         rebuildFont(item)
                 for entry in self.rawlog:
                     rebuildColor(entry)
-
-    def wordWrapLogline(self, formattedMessage):
-        uiItem = "\n".join([textwrap.fill(line, SettingsSingleton()["staticLineWrap"],
-            expand_tabs=False,
-            replace_whitespace=False,
-            drop_whitespace=False,
-            break_long_words=True,
-            break_on_hyphens=True,
-            max_lines=None
-        ) if len(line) > SettingsSingleton()["staticLineWrap"]  else line for line in formattedMessage.strip().splitlines(keepends=False)])
-        return uiItem
     
     def loadComboboxHistory(self, combobox):
         combobox.clear()
