@@ -56,10 +56,14 @@ class MainWindow(QtWidgets.QMainWindow):
         self.uiAction_about.triggered.connect(self.action_about)
         self.uiAction_pushStack.triggered.connect(self.pushStack)
         self.uiAction_popStack.triggered.connect(self.popStack)
+        self.uiAction_goToRow.triggered.connect(self.openGoToRowWidget)
 
         self.uiWidget_listView.doubleClicked.connect(self.inspectLine)
         self.uiWidget_listView.clicked.connect(self.listViewClicked)
         self.uiFrame_search.hide()
+
+        self.uiButton_goToRow.clicked.connect(self.goToRow)
+        self.uiFrame_goToRow.hide()
 
         self.uiTable_characteristics.doubleClicked.connect(self.pasteDetailItem)
         MagicLineEdit(self.uiCombobox_searchInput)
@@ -113,9 +117,12 @@ class MainWindow(QtWidgets.QMainWindow):
         self.uiAction_popStack.setEnabled(self.file != None and len(self.stack) != 0)
         self.uiAction_search.setEnabled(self.file != None)
         self.uiAction_save.setEnabled(self.file != None)
+        self.uiAction_goToRow.setEnabled(self.file != None)
         self.uiButton_previous.setEnabled(self.file != None and len(self.uiCombobox_searchInput.currentText().strip()) != 0)
         self.uiButton_next.setEnabled(self.file != None and len(self.uiCombobox_searchInput.currentText().strip()) != 0)
         self.uiButton_filterClear.setEnabled(self.file != None and self.currentFilterQuery != None)
+        self.uiButton_goToRow.setEnabled(self.file != None)
+        self.uiSpinBox_goToRow.setEnabled(self.file != None)
         self.uiCombobox_searchInput.setEnabled(self.file != None)
         self.uiCombobox_filterInput.setEnabled(self.file != None)
 
@@ -230,6 +237,8 @@ class MainWindow(QtWidgets.QMainWindow):
 
         self.setCompleter(self.uiCombobox_filterInput)
         self.setCompleter(self.uiCombobox_searchInput)
+
+        self.uiSpinBox_goToRow.setMaximum(len(self.rawlog))
 
         self._updateStatusbar()
         self.toggleUiItems()
@@ -531,6 +540,22 @@ class MainWindow(QtWidgets.QMainWindow):
                 logger.debug("No visible line to scroll to!")
 
         self._updateStatusbar()
+
+    @catch_exceptions(logger=logger)
+    def openGoToRowWidget(self, *args):
+        if self.uiFrame_goToRow.isHidden():
+            self.uiFrame_goToRow.show()
+        else:
+            self.uiFrame_goToRow.hide()
+
+    @catch_exceptions(logger=logger)
+    def goToRow(self, *args):
+        rowIndex = self.uiSpinBox_goToRow.value()
+
+        # prevent switching to row if that row is already selected
+        if len(self.uiWidget_listView.selectedIndexes()) == 0 or rowIndex != self.uiWidget_listView.selectedIndexes()[0].row():
+            self.uiWidget_listView.setCurrentRow(rowIndex)
+            self.statusbar.showDynamicText(str("Done ✓ | Switched to row: %d" % rowIndex))
     
     def checkQueryResult(self, error = None, visibleCounter = 0, combobox=None):
         if error != None:
@@ -635,6 +660,10 @@ class MainWindow(QtWidgets.QMainWindow):
                 "currentFilterQuery": self.currentFilterQuery, 
                 "currentText": self.uiCombobox_filterInput.currentText(),
                 "selection": {"start": filterSelectionStart, "length": filterSelectionLength},
+            },
+            "goToRow": {
+                "isOpen": not self.uiFrame_goToRow.isHidden(),
+                "currentInt": self.uiSpinBox_goToRow.value(),
             }
         }
         self.stack.append(state)
@@ -666,6 +695,11 @@ class MainWindow(QtWidgets.QMainWindow):
                 self.search = stack["search"]["instance"]
                 self.search.next()
                 self.search.previous()
+
+        # unpacking goToRow
+        if stack["goToRow"]["isOpen"]:
+            self.uiFrame_goToRow.show()
+            self.uiSpinBox_goToRow.setValue(stack["goToRow"]["currentInt"])
                 
         # unpacking details
         if stack["detail"]["isOpen"]:
