@@ -207,7 +207,7 @@ class MainWindow(QtWidgets.QMainWindow):
                     error = result["error"]
                 visibleCounter += 1 if result["matching"] else 0
         if len(filterQuery) != 0:
-            self.checkFilterResult(error, visibleCounter)
+            self.checkQueryResult(error, visibleCounter, self.uiCombobox_filterInput)
         QtWidgets.QApplication.processEvents()
         progressbar.hide()
 
