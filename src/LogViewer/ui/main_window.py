@@ -59,6 +59,8 @@ class MainWindow(QtWidgets.QMainWindow):
         self.uiAction_pushStack.triggered.connect(self.pushStack)
         self.uiAction_popStack.triggered.connect(self.popStack)
         self.uiAction_goToRow.triggered.connect(self.openGoToRowWidget)
+        self.uiAction_firstRow.triggered.connect(self.goToFirstRow)
+        self.uiAction_lastRow.triggered.connect(self.goToLastRow)
 
         self.uiWidget_listView.doubleClicked.connect(self.inspectLine)
         self.uiWidget_listView.clicked.connect(self.listViewClicked)
@@ -113,6 +115,8 @@ class MainWindow(QtWidgets.QMainWindow):
         self.uiAction_search.setEnabled(self.file != None)
         self.uiAction_save.setEnabled(self.file != None)
         self.uiAction_goToRow.setEnabled(self.file != None)
+        self.uiAction_firstRow.setEnabled(self.file != None)
+        self.uiAction_lastRow.setEnabled(self.file != None)
         self.uiButton_previous.setEnabled(self.file != None and len(self.uiCombobox_searchInput.currentText().strip()) != 0)
         self.uiButton_next.setEnabled(self.file != None and len(self.uiCombobox_searchInput.currentText().strip()) != 0)
         self.uiButton_filterClear.setEnabled(self.file != None and self.currentFilterQuery != None)
@@ -607,6 +611,23 @@ class MainWindow(QtWidgets.QMainWindow):
 
         progressbar.show()
         return (progressbar, update_progressbar)
+    
+    @catch_exceptions(logger=logger)
+    def goToFirstRow(self, *args):
+        # set first row as current row
+        for index in range(len(self.rawlog)):
+            if not self.rawlog[index]["uiItem"].isHidden():
+                self.uiWidget_listView.setCurrentRow(index)
+                self.statusbar.showDynamicText(str("Done ✓ | Switched to first row: %d" % index))
+                break
+
+    @catch_exceptions(logger=logger)
+    def goToLastRow(self, *args):
+        # set last row as current row 
+        for index in range(len(self.rawlog)-1, -1, -1):
+            self.uiWidget_listView.setCurrentRow(index)
+            self.statusbar.showDynamicText(str("Done ✓ | Switched to last row: %d" % index))
+            break
     
     def cancelFilter(self):
         for index in range(len(self.rawlog)):

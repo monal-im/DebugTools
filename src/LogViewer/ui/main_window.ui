@@ -112,14 +112,14 @@
        <attribute name="verticalHeaderCascadingSectionResizes">
         <bool>false</bool>
        </attribute>
+       <attribute name="verticalHeaderMinimumSectionSize">
+        <number>10</number>
+       </attribute>
        <attribute name="verticalHeaderDefaultSectionSize">
         <number>800</number>
        </attribute>
        <attribute name="verticalHeaderHighlightSections">
         <bool>true</bool>
-       </attribute>
-       <attribute name="verticalHeaderMinimumSectionSize">
-        <number>10</number>
        </attribute>
        <attribute name="verticalHeaderShowSortIndicator" stdset="0">
         <bool>false</bool>
@@ -248,8 +248,8 @@
     <rect>
      <x>0</x>
      <y>0</y>
-     <width>685</width>
-     <height>21</height>
+     <width>451</width>
+     <height>24</height>
     </rect>
    </property>
    <widget class="QMenu" name="menuFile">
@@ -275,6 +275,8 @@
     <addaction name="uiAction_popStack"/>
     <addaction name="separator"/>
     <addaction name="uiAction_goToRow"/>
+    <addaction name="uiAction_firstRow"/>
+    <addaction name="uiAction_lastRow"/>
    </widget>
    <widget class="QMenu" name="menuHelp">
     <property name="title">
@@ -417,6 +419,22 @@
    </property>
    <property name="shortcut">
     <string>Ctrl+G</string>
+   </property>
+  </action>
+  <action name="uiAction_firstRow">
+   <property name="text">
+    <string>First row</string>
+   </property>
+   <property name="shortcut">
+    <string>Ctrl+Home</string>
+   </property>
+  </action>
+  <action name="uiAction_lastRow">
+   <property name="text">
+    <string>Last row</string>
+   </property>
+   <property name="shortcut">
+    <string>Ctrl+End</string>
    </property>
   </action>
  </widget>
