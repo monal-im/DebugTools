@@ -198,17 +198,19 @@ class MainWindow(QtWidgets.QMainWindow):
         QtWidgets.QApplication.processEvents()
         error = None
         visibleCounter = 0
-        filterQuery = self.uiCombobox_filterInput.currentText().strip()
+        
+        # apply filter manually
+        self.currentFilterQuery = self.uiCombobox_filterInput.currentText().strip()
         for index in range(len(self.rawlog)):
             self.uiWidget_listView.addItem(self.rawlog[index]["uiItem"])
-            if len(filterQuery) != 0:
-                result = matchQuery(filterQuery, self.rawlog, index, usePython=SettingsSingleton()["usePythonFilter"])
+            if len(self.currentFilterQuery ) != 0:
+                result = matchQuery(self.currentFilterQuery , self.rawlog, index, usePython=SettingsSingleton()["usePythonFilter"])
                 if result["status"] != QueryStatus.QUERY_ERROR:
                     self.rawlog[index]["uiItem"].setHidden(not result["matching"])
                 else:
                     error = result["error"]
                 visibleCounter += 1 if result["matching"] else 0
-        if len(filterQuery) != 0:
+        if len(self.currentFilterQuery ) != 0:
             self.checkQueryResult(error, visibleCounter, self.uiCombobox_filterInput)
         QtWidgets.QApplication.processEvents()
         progressbar.hide()
