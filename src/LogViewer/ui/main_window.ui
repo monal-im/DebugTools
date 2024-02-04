@@ -277,6 +277,8 @@
     <addaction name="uiAction_goToRow"/>
     <addaction name="uiAction_firstRow"/>
     <addaction name="uiAction_lastRow"/>
+    <addaction name="uiAction_firstRowInViewport"/>
+    <addaction name="uiAction_lastRowInViewport"/>
    </widget>
    <widget class="QMenu" name="menuHelp">
     <property name="title">
@@ -435,6 +437,22 @@
    </property>
    <property name="shortcut">
     <string>Ctrl+End</string>
+   </property>
+  </action>
+  <action name="uiAction_firstRowInViewport">
+   <property name="text">
+    <string>First row in viewport</string>
+   </property>
+   <property name="shortcut">
+    <string>Home</string>
+   </property>
+  </action>
+  <action name="uiAction_lastRowInViewport">
+   <property name="text">
+    <string>Last row in viewport</string>
+   </property>
+   <property name="shortcut">
+    <string>End</string>
    </property>
   </action>
  </widget>

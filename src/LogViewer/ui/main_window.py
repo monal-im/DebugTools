@@ -61,6 +61,8 @@ class MainWindow(QtWidgets.QMainWindow):
         self.uiAction_goToRow.triggered.connect(self.openGoToRowWidget)
         self.uiAction_firstRow.triggered.connect(self.goToFirstRow)
         self.uiAction_lastRow.triggered.connect(self.goToLastRow)
+        self.uiAction_firstRowInViewport.triggered.connect(self.goToFirstRowInViewport)
+        self.uiAction_lastRowInViewport.triggered.connect(self.goToLastRowInViewport)
 
         self.uiWidget_listView.doubleClicked.connect(self.inspectLine)
         self.uiWidget_listView.clicked.connect(self.listViewClicked)
@@ -124,6 +126,8 @@ class MainWindow(QtWidgets.QMainWindow):
         self.uiSpinBox_goToRow.setEnabled(self.file != None)
         self.uiCombobox_searchInput.setEnabled(self.file != None)
         self.uiCombobox_filterInput.setEnabled(self.file != None)
+        self.uiAction_lastRowInViewport.setEnabled(self.file != None)
+        self.uiAction_firstRowInViewport.setEnabled(self.file != None)
 
     def export(self):
         if self.rawlog:
@@ -628,6 +632,32 @@ class MainWindow(QtWidgets.QMainWindow):
             self.uiWidget_listView.setCurrentRow(index)
             self.statusbar.showDynamicText(str("Done ✓ | Switched to last row: %d" % index))
             break
+
+    @catch_exceptions(logger=logger)
+    def goToFirstRowInViewport(self, *args):
+        lastIndex = self.uiWidget_listView.selectedIndexes()[0].row()
+        # Counts backwards from the current entry
+        for index in range(self.uiWidget_listView.selectedIndexes()[0].row(), -1, -1):
+            # The entry height is added to the Y position of the entry to see if that line is still in the viewport
+            if self.uiWidget_listView.visualItemRect(self.rawlog[index]["uiItem"]).height() + self.uiWidget_listView.visualItemRect(self.rawlog[index]["uiItem"]).y() < 0:
+                self.uiWidget_listView.setCurrentRow(lastIndex)
+                self.statusbar.showDynamicText(str("Done ✓ | Switched to the first line in the viewport: %d" % lastIndex))
+                break
+            else:
+                lastIndex = index
+
+    @catch_exceptions(logger=logger)
+    def goToLastRowInViewport(self, *args):
+        lastIndex = self.uiWidget_listView.selectedIndexes()[0].row()
+        # Counts upwards from the current entry
+        for index in range(self.uiWidget_listView.selectedIndexes()[0].row(), 32):
+            # If the item position is larger than the listview-height, it must be the last one in our viewport
+            if self.uiWidget_listView.visualItemRect(self.rawlog[index]["uiItem"]).y() > self.uiWidget_listView.height():
+                self.uiWidget_listView.setCurrentRow(lastIndex)
+                self.statusbar.showDynamicText(str("Done ✓ | Switched to the last line in the viewport: %d" % lastIndex))
+                break
+            else:
+                lastIndex = index
     
     def cancelFilter(self):
         for index in range(len(self.rawlog)):
