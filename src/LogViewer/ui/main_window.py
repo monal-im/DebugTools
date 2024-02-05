@@ -571,16 +571,6 @@ class MainWindow(QtWidgets.QMainWindow):
         else:
             self.setComboboxStatusColor(combobox, QueryStatus.QUERY_OK)
 
-    def updateComboboxHistory(self, query, combobox):
-        if query == None or query.strip() == "":
-            return
-
-        if combobox.findText(query) != -1:
-            combobox.removeItem(combobox.findText(query))
-        combobox.insertItem(0, query)
-        combobox.setCurrentIndex(0)
-        SettingsSingleton().setComboboxHistory(combobox, [combobox.itemText(i) for i in range(combobox.count())])
-
     @catch_exceptions(logger=logger)
     def uiCombobox_searchInputChanged(self, *args):
         self.toggleUiItems()
@@ -853,4 +843,21 @@ class MainWindow(QtWidgets.QMainWindow):
     def loadComboboxHistory(self, combobox):
         combobox.clear()
         combobox.addItems(SettingsSingleton().getComboboxHistory(combobox))
-        combobox.lineEdit().setText("")
+        combobox.setCurrentIndex(0)
+
+    def updateComboboxHistory(self, query, combobox):
+        if query == None or query.strip() == "":
+            return
+
+        if combobox.findText(query) != -1:
+            combobox.removeItem(combobox.findText(query))
+
+        for index in range(combobox.count()):
+            if combobox.findText("") != None:
+                combobox.removeItem(combobox.findText(""))
+
+        combobox.insertItem(0, "")
+        combobox.insertItem(1, query)
+        combobox.setCurrentIndex(0)
+        combobox.lineEdit().setText(query)
+        SettingsSingleton().setComboboxHistory(combobox, [combobox.itemText(i) for i in range(combobox.count())])
