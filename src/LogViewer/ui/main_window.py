@@ -640,7 +640,7 @@ class MainWindow(QtWidgets.QMainWindow):
     def goToLastRowInViewport(self, *args):
         lastIndex = self.uiWidget_listView.selectedIndexes()[0].row()
         # Counts upwards from the current entry
-        for index in range(self.uiWidget_listView.selectedIndexes()[0].row(), 32):
+        for index in range(self.uiWidget_listView.selectedIndexes()[0].row(), self.uiWidget_listView.selectedIndexes()[0].row()+32):
             # If the item position is larger than the listview-height, it must be the last one in our viewport
             if self.uiWidget_listView.visualItemRect(self.rawlog[index]["uiItem"]).y() > self.uiWidget_listView.height():
                 self.uiWidget_listView.setCurrentRow(lastIndex)
