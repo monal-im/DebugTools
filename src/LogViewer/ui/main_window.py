@@ -1,6 +1,6 @@
 from PyQt5 import QtWidgets, QtGui, QtCore
 from PyQt5.QtWidgets import QStyle
-import sys, os, functools
+import sys, os, functools, pandas
 
 from LogViewer.storage import SettingsSingleton
 from LogViewer.utils import Search, AbortSearch, QueryStatus, matchQuery, Helpers
@@ -41,6 +41,8 @@ class MainWindow(QtWidgets.QMainWindow):
         self.logflag2colorMapping = {v: "logline-%s" % k.lower() for k, v in LOGLEVELS.items()}
 
         self.toggleUiItems()
+
+        QtWidgets.QShortcut(QtGui.QKeySequence("CTRL+C"), self).activated.connect(self.copyToClipboard)
 
         self.uiButton_previous.setIcon(self.style().standardIcon(getattr(QStyle, "SP_ArrowBack")))
         self.uiButton_previous.clicked.connect(self.searchPrevious)
@@ -861,3 +863,9 @@ class MainWindow(QtWidgets.QMainWindow):
         combobox.setCurrentIndex(0)
         combobox.lineEdit().setText(query)
         SettingsSingleton().setComboboxHistory(combobox, [combobox.itemText(i) for i in range(combobox.count())])
+
+    def copyToClipboard(self):
+        if self.uiWidget_listView.hasFocus():
+            # copy to clipboard
+            pandas.DataFrame([self.rawlog[self.uiWidget_listView.selectedIndexes()[0].row()]["data"]["__formattedMessage"].replace("    ", " ")]).to_clipboard(index=False,header=False)
+            self.statusbar.showDynamicText(str("Done ✓ | Copied to clipboard"))
