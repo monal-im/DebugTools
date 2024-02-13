@@ -1,6 +1,6 @@
 from PyQt5 import QtWidgets, QtGui, QtCore
 from PyQt5.QtWidgets import QStyle
-import sys, os, functools, pandas
+import sys, os, functools
 
 from LogViewer.storage import SettingsSingleton
 from LogViewer.utils import Search, AbortSearch, QueryStatus, matchQuery, Helpers
@@ -867,5 +867,7 @@ class MainWindow(QtWidgets.QMainWindow):
     def copyToClipboard(self):
         if self.uiWidget_listView.hasFocus():
             # copy to clipboard
-            pandas.DataFrame([self.rawlog[self.uiWidget_listView.selectedIndexes()[0].row()]["data"]["__formattedMessage"].replace("    ", " ")]).to_clipboard(index=False,header=False)
+            clipboard = QtWidgets.QApplication.clipboard()
+            clipboard.clear(mode=clipboard.Clipboard)
+            clipboard.setText(self.rawlog[self.uiWidget_listView.selectedIndexes()[0].row()]["data"]["__formattedMessage"].replace("    ", " ").replace("\n", ""), mode=clipboard.Clipboard)
             self.statusbar.showDynamicText(str("Done ✓ | Copied to clipboard"))
