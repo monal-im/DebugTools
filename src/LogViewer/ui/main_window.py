@@ -642,7 +642,7 @@ class MainWindow(QtWidgets.QMainWindow):
     def goToLastRowInViewport(self, *args):
         lastIndex = self.uiWidget_listView.selectedIndexes()[0].row()
         # Counts upwards from the current entry
-        for index in range(self.uiWidget_listView.selectedIndexes()[0].row(), self.uiWidget_listView.selectedIndexes()[0].row()+32):
+        for index in range(self.uiWidget_listView.selectedIndexes()[0].row(), len(self.rawlog)):
             # If the item position is larger than the listview-height, it must be the last one in our viewport
             if self.uiWidget_listView.visualItemRect(self.rawlog[index]["uiItem"]).y() > self.uiWidget_listView.height():
                 self.uiWidget_listView.setCurrentRow(lastIndex)
@@ -845,7 +845,7 @@ class MainWindow(QtWidgets.QMainWindow):
     def loadComboboxHistory(self, combobox):
         combobox.clear()
         combobox.addItems(SettingsSingleton().getComboboxHistory(combobox))
-        combobox.setCurrentIndex(0)
+        combobox.setCurrentIndex(-1)
 
     def updateComboboxHistory(self, query, combobox):
         if query == None or query.strip() == "":
@@ -854,15 +854,10 @@ class MainWindow(QtWidgets.QMainWindow):
         if combobox.findText(query) != -1:
             combobox.removeItem(combobox.findText(query))
 
-        for index in range(combobox.count()):
-            if combobox.findText("") != None:
-                combobox.removeItem(combobox.findText(""))
-
-        combobox.insertItem(0, "")
-        combobox.insertItem(1, query)
-        combobox.setCurrentIndex(0)
-        combobox.lineEdit().setText(query)
         SettingsSingleton().setComboboxHistory(combobox, [combobox.itemText(i) for i in range(combobox.count())])
+        combobox.lineEdit().setText(query)
+        combobox.insertItem(0, query)
+        combobox.setCurrentIndex(None)
 
     def copyToClipboard(self):
         if self.uiWidget_listView.hasFocus():
