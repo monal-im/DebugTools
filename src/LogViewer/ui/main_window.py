@@ -3,13 +3,15 @@ from PyQt5.QtWidgets import QStyle
 import sys, os, functools
 
 from LogViewer.storage import SettingsSingleton
-from LogViewer.utils import Search, AbortSearch, QueryStatus, matchQuery, Helpers
+from LogViewer.utils import Search, AbortSearch, QueryStatus, matchQuery
+import LogViewer.utils.helpers as helpers
 from LogViewer.utils.version import VERSION
 from .utils import Completer, MagicLineEdit, Statusbar, StyleManager
 from .preferences_dialog import PreferencesDialog
 from shared.storage import Rawlog, AbortRawlogLoading
 from shared.ui.utils import UiAutoloader
-from shared.utils import catch_exceptions, SharedHelpers
+from shared.utils import catch_exceptions
+import shared.ui.utils.helpers as sharedUiHelpers
 from shared.utils.constants import LOGLEVELS
                 
 import logging
@@ -28,10 +30,6 @@ class MainWindow(QtWidgets.QMainWindow):
         self.stack = []
         self.selectedCombobox = self.uiCombobox_filterInput
 
-        # initialize helpers
-        self.sharedHelpers = SharedHelpers()
-        self.helpers = Helpers()
-        
         self.queryStatus2colorMapping = {
             QueryStatus.EOF_REACHED:    SettingsSingleton().getColor("combobox-eof_reached"),
             QueryStatus.QUERY_ERROR:    SettingsSingleton().getColor("combobox-query_error"),
@@ -57,7 +55,7 @@ class MainWindow(QtWidgets.QMainWindow):
         self.uiAction_export.triggered.connect(self.export)
         self.uiAction_save.triggered.connect(self.save)
         self.uiAction_inspectLine.triggered.connect(self.inspectLine)
-        self.uiAction_about.triggered.connect(functools.partial(self.sharedHelpers.action_about, VERSION))
+        self.uiAction_about.triggered.connect(functools.partial(sharedUiHelpers.action_about, VERSION))
         self.uiAction_pushStack.triggered.connect(self.pushStack)
         self.uiAction_popStack.triggered.connect(self.popStack)
         self.uiAction_goToRow.triggered.connect(self.openGoToRowWidget)
@@ -183,7 +181,7 @@ class MainWindow(QtWidgets.QMainWindow):
             if formattedEntry == None:
                 return None
             
-            item_with_color = self.helpers.wordWrapLogline(formattedEntry)   
+            item_with_color = helpers.wordWrapLogline(formattedEntry)   
             fg, bg = SettingsSingleton().getQColorTuple(self.logflag2colorMapping[entry["flag"]])
             item_with_color = QtWidgets.QListWidgetItem(item_with_color)
             item_with_color.setFont(itemFont)
@@ -311,8 +309,8 @@ class MainWindow(QtWidgets.QMainWindow):
                             retval += splitter(value, path)
                         else:
                             retval.append({
-                                "name": path[0] + "".join(map(lambda value: "[%s]" % self.helpers.pythonize(value), path[1:])),
-                                "value": self.helpers.pythonize(value)
+                                "name": path[0] + "".join(map(lambda value: "[%s]" % helpers.pythonize(value), path[1:])),
+                                "value": helpers.pythonize(value)
                             })
                         path.pop(-1)
                     return retval
@@ -806,7 +804,7 @@ class MainWindow(QtWidgets.QMainWindow):
                 except Exception as e:
                     entry["data"]["__formattedMessage"] = "E R R O R"
                     ignoreError = True
-                entry["uiItem"].setText(self.helpers.wordWrapLogline(entry["data"]["__formattedMessage"]))
+                entry["uiItem"].setText(helpers.wordWrapLogline(entry["data"]["__formattedMessage"]))
                 rebuildFont(entry)
                 rebuildColor(entry)
             
@@ -835,7 +833,7 @@ class MainWindow(QtWidgets.QMainWindow):
             else:
                 if preInstance["staticLineWrap"] != SettingsSingleton()["staticLineWrap"]:
                     for entry in range(len(self.rawlog)):
-                        self.rawlog[entry]["uiItem"].setText(self.helpers.wordWrapLogline(self.rawlog[entry]["data"]["__formattedMessage"]))
+                        self.rawlog[entry]["uiItem"].setText(helpers.wordWrapLogline(self.rawlog[entry]["data"]["__formattedMessage"]))
                 if preInstance["font"] != SettingsSingleton().getQFont():
                     for item in self.rawlog:
                         rebuildFont(item)
