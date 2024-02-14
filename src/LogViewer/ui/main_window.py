@@ -864,5 +864,5 @@ class MainWindow(QtWidgets.QMainWindow):
             # copy to clipboard
             clipboard = QtWidgets.QApplication.clipboard()
             clipboard.clear(mode=clipboard.Clipboard)
-            clipboard.setText(self.rawlog[self.uiWidget_listView.selectedIndexes()[0].row()]["data"]["__formattedMessage"].replace("    ", " ").replace("\n", ""), mode=clipboard.Clipboard)
+            clipboard.setText(self.rawlog[self.uiWidget_listView.selectedIndexes()[0].row()]["data"]["__formattedMessage"], mode=clipboard.Clipboard)
             self.statusbar.showDynamicText(str("Done ✓ | Copied to clipboard"))
