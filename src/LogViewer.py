@@ -4,6 +4,7 @@ import argparse
 import signal
 from PyQt5 import QtWidgets
 
+import shared.ui.utils.helpers as sharedUiHelpers
 from shared.utils import Paths
 from LogViewer.storage import SettingsSingleton
 from LogViewer.ui import MainWindow
@@ -40,6 +41,7 @@ logger.info('Logger configured...')
 signal.signal(signal.SIGINT, sigint_handler)
 try:
     application = QtWidgets.QApplication(sys.argv)
+    sharedUiHelpers.applyStyle(SettingsSingleton()["uiStyle"])
     main_window = MainWindow()
     main_window.show()
     if args.file != None:

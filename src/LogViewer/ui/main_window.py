@@ -6,7 +6,7 @@ from LogViewer.storage import SettingsSingleton
 from LogViewer.utils import Search, AbortSearch, QueryStatus, matchQuery
 import LogViewer.utils.helpers as helpers
 from LogViewer.utils.version import VERSION
-from .utils import Completer, MagicLineEdit, Statusbar, StyleManager
+from .utils import Completer, MagicLineEdit, Statusbar
 from .preferences_dialog import PreferencesDialog
 from shared.storage import Rawlog, AbortRawlogLoading
 from shared.ui.utils import UiAutoloader
@@ -18,7 +18,6 @@ import logging
 logger = logging.getLogger(__name__)
 
 @UiAutoloader
-@StyleManager.styleDecorator
 class MainWindow(QtWidgets.QMainWindow):
     def __init__(self):
         SettingsSingleton().loadDimensions(self)
@@ -395,7 +394,7 @@ class MainWindow(QtWidgets.QMainWindow):
     def setComboboxStatusColor(self, combobox, status):
         combobox.setStyleSheet("background-color: rgb(%s); color: %s;" % (
             ", ".join([str(x) for x in self.queryStatus2colorMapping[status]]),
-            SettingsSingleton().getCssContrastColor(self.queryStatus2colorMapping[status])
+            sharedUiHelpers.getCssContrastColor(self.queryStatus2colorMapping[status])
         ))
 
     @catch_exceptions(logger=logger)
@@ -825,7 +824,7 @@ class MainWindow(QtWidgets.QMainWindow):
         rebuildCombobox(self.uiCombobox_searchInput)
 
         if preInstance["style"] != SettingsSingleton()["uiStyle"]:
-            StyleManager.updateStyle(self)
+            sharedUiHelpers.applyStyle(SettingsSingleton()["uiStyle"])
 
         if self.file != None:
             if preInstance["formatter"] != SettingsSingleton().getCurrentFormatterCode():

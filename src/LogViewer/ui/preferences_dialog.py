@@ -4,15 +4,15 @@ import functools
 from PyQt5 import QtWidgets, uic, QtGui, QtCore
 
 from LogViewer.storage import SettingsSingleton
-from .utils import PythonHighlighter, DeletableQListWidget, StyleManager
+from .utils import PythonHighlighter, DeletableQListWidget
 from shared.utils import catch_exceptions, Paths
 from shared.ui.utils import UiAutoloader
+import shared.ui.utils.helpers as sharedUiHelpers
 
 import logging
 logger = logging.getLogger(__name__)
 
 @UiAutoloader
-@StyleManager.styleDecorator
 class PreferencesDialog(QtWidgets.QDialog):
     def __init__(self):
         self.colors = {}
@@ -80,7 +80,8 @@ class PreferencesDialog(QtWidgets.QDialog):
             button = QtWidgets.QPushButton(self.uiTab_color)
             if colorTuple[index] != None:
                 button.setText("rgb(%d, %d, %d)" % tuple(rgbTuple[index]))
-                button.setStyleSheet("background-color: %s; color: %s;" % (colorTuple[index], SettingsSingleton().getCssContrastColor(*rgbTuple[index])))
+                logger.debug("rgbTuple: %s" % str(rgbTuple[index]))
+                button.setStyleSheet("background-color: %s; color: %s;" % (colorTuple[index], sharedUiHelpers.getCssContrastColor(*rgbTuple[index])))
             else:
                 button.setText("Add")
             button.clicked.connect(functools.partial(self._openColorPicker, colorName, index, button))
@@ -101,7 +102,7 @@ class PreferencesDialog(QtWidgets.QDialog):
             colorTuple = self.colors[colorName]
             rgbColor = [colorTuple[index].red(), colorTuple[index].green(), colorTuple[index].blue()]
             button.setText("rgb(%d, %d, %d)" % tuple(rgbColor))
-            button.setStyleSheet("background-color: %s; color: %s;" % (colorTuple[index].name(), SettingsSingleton().getCssContrastColor(*rgbColor)))
+            button.setStyleSheet("background-color: %s; color: %s;" % (colorTuple[index].name(), sharedUiHelpers.getCssContrastColor(*rgbColor)))
 
     def _delColor(self, colorName, index, button):
         self.colors[colorName][index] = None
@@ -145,7 +146,7 @@ class PreferencesDialog(QtWidgets.QDialog):
                 widget.clicked.connect(functools.partial(self._changeFont, widget))
             elif miscName == "uiStyle":
                 widget = QtWidgets.QComboBox()
-                widget.addItems(StyleManager.getAvailableStyles())
+                widget.addItems(sharedUiHelpers.getAvailableStyles())
                 widget.setCurrentText(value)
             elif miscName == "lastPath":
                 self.lastPath = SettingsSingleton().getLastPath()
