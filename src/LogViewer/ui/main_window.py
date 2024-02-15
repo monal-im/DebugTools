@@ -67,7 +67,9 @@ class MainWindow(QtWidgets.QMainWindow):
         self.uiWidget_listView.clicked.connect(self.listViewClicked)
         self.uiFrame_search.hide()
 
+        self.uiButton_goToRow.setIcon(self.style().standardIcon(getattr(QStyle, "SP_CommandLink")))
         self.uiButton_goToRow.clicked.connect(self.goToRow)
+        self.uiSpinBox_goToRow.valueChanged.connect(self.goToRow)
         self.uiFrame_goToRow.hide()
 
         self.uiTable_characteristics.doubleClicked.connect(self.pasteDetailItem)
@@ -78,7 +80,7 @@ class MainWindow(QtWidgets.QMainWindow):
         self.uiCombobox_filterInput.currentTextChanged.connect(self.uiCombobox_filterInputChanged)
 
         self.loadComboboxHistory(self.uiCombobox_searchInput)
-        QtWidgets.QShortcut(QtGui.QKeySequence("ESC"), self).activated.connect(self.hideSearch)
+        QtWidgets.QShortcut(QtGui.QKeySequence("ESC"), self).activated.connect(self.hideSearchOrGoto)
         self.uiCombobox_searchInput.activated[str].connect(self.searchNext)
 
         self.loadComboboxHistory(self.uiCombobox_filterInput)
@@ -234,6 +236,7 @@ class MainWindow(QtWidgets.QMainWindow):
         if self.search != None:
             # set self.search to None to retrigger a new search using the new rawlog (new file) rather than the old one
             self.search = None 
+            self.uiFrame_goToRow.hide()
             self.uiFrame_search.show()
             self.searchNext()
 
@@ -242,7 +245,7 @@ class MainWindow(QtWidgets.QMainWindow):
         self.setCompleter(self.uiCombobox_filterInput)
         self.setCompleter(self.uiCombobox_searchInput)
 
-        self.uiSpinBox_goToRow.setMaximum(len(self.rawlog))
+        self.uiSpinBox_goToRow.setMaximum(len(self.rawlog) - 1)
 
         self._updateStatusbar()
         self.toggleUiItems()
@@ -359,7 +362,7 @@ class MainWindow(QtWidgets.QMainWindow):
     @catch_exceptions(logger=logger)
     def closeFile(self, *args):
         self.uiWidget_listView.clear()
-        self.hideSearch()
+        self.hideSearchOrGoto()
         self.selectedCombobox = self.uiCombobox_filterInput
         self.file = None
         self.currentFilterQuery = None
@@ -386,6 +389,7 @@ class MainWindow(QtWidgets.QMainWindow):
 
     @catch_exceptions(logger=logger)
     def openSearchWidget(self, *args):
+        self.uiFrame_goToRow.hide()
         self.uiFrame_search.show()
         self.uiCombobox_searchInput.setFocus()
         self.uiCombobox_searchInput.lineEdit().selectAll()
@@ -449,8 +453,9 @@ class MainWindow(QtWidgets.QMainWindow):
         self.updateComboboxHistory(query, self.uiCombobox_searchInput)
     
     @catch_exceptions(logger=logger)
-    def hideSearch(self):
+    def hideSearchOrGoto(self):
         self.uiFrame_search.hide()
+        self.uiFrame_goToRow.hide()
     
     @catch_exceptions(logger=logger)
     def clearFilter(self, *args):
@@ -543,18 +548,23 @@ class MainWindow(QtWidgets.QMainWindow):
     @catch_exceptions(logger=logger)
     def openGoToRowWidget(self, *args):
         if self.uiFrame_goToRow.isHidden():
+            self.hideSearchOrGoto()
             self.uiFrame_goToRow.show()
+            self.uiSpinBox_goToRow.setFocus()
+            self.uiSpinBox_goToRow.selectAll()
         else:
             self.uiFrame_goToRow.hide()
+            self.selectedCombobox.setFocus()
 
     @catch_exceptions(logger=logger)
     def goToRow(self, *args):
-        rowIndex = self.uiSpinBox_goToRow.value()
-
+        if self.uiFrame_goToRow.isHidden():
+            return
+        
         # prevent switching to row if that row is already selected
+        rowIndex = self.uiSpinBox_goToRow.value()
         if len(self.uiWidget_listView.selectedIndexes()) == 0 or rowIndex != self.uiWidget_listView.selectedIndexes()[0].row():
             self.uiWidget_listView.setCurrentRow(rowIndex)
-            self.statusbar.showDynamicText(str("Done ✓ | Switched to row: %d" % rowIndex))
     
     def checkQueryResult(self, error = None, visibleCounter = 0, combobox=None):
         if error != None:

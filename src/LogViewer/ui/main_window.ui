@@ -234,7 +234,7 @@
           </size>
          </property>
          <property name="text">
-          <string>Switch</string>
+          <string>Go to row</string>
          </property>
         </widget>
        </item>
@@ -417,7 +417,7 @@
   </action>
   <action name="uiAction_goToRow">
    <property name="text">
-    <string>Switch line</string>
+    <string>Go to row</string>
    </property>
    <property name="shortcut">
     <string>Ctrl+G</string>
