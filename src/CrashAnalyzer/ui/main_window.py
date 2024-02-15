@@ -3,8 +3,9 @@ from PyQt5 import QtWidgets
 
 from CrashAnalyzer.storage import CrashReport
 from CrashAnalyzer.utils.version import VERSION
-from shared.utils import catch_exceptions, SharedHelpers
+from shared.utils import catch_exceptions
 from shared.ui.utils import UiAutoloader
+import shared.ui.utils.helpers as sharedUiHelpers
 
 import logging
 logger = logging.getLogger(__name__)
@@ -14,9 +15,6 @@ class MainWindow(QtWidgets.QMainWindow):
     def __init__(self):
         # initialize ui parts and instance vars
         self.reset_ui()
-
-        # initialize sharedHelpers
-        self.sharedHelpers = SharedHelpers()
         
         # connect ui element signals
         self.uiAction_openCrashreport.triggered.connect(self.open_crashreport)
@@ -25,7 +23,7 @@ class MainWindow(QtWidgets.QMainWindow):
         self.uiList_parts.itemDoubleClicked.connect(self.export_part)
         self.uiList_parts.currentItemChanged.connect(self.switch_part)
         self.uiAction_close.triggered.connect(self.close)
-        self.uiAction_about.triggered.connect(functools.partial(self.sharedHelpers.action_about, VERSION))
+        self.uiAction_about.triggered.connect(functools.partial(sharedUiHelpers.action_about, VERSION))
     
     @catch_exceptions(logger=logger)
     def close(self, _):
