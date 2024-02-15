@@ -624,29 +624,37 @@ class MainWindow(QtWidgets.QMainWindow):
 
     @catch_exceptions(logger=logger)
     def goToFirstRowInViewport(self, *args):
+        if len(self.uiWidget_listView.selectedIndexes()) == 0:
+            return;
         lastIndex = self.uiWidget_listView.selectedIndexes()[0].row()
         # Counts backwards from the current entry
         for index in range(self.uiWidget_listView.selectedIndexes()[0].row(), -1, -1):
-            # The entry height is added to the Y position of the entry to see if that line is still in the viewport
-            if self.uiWidget_listView.visualItemRect(self.rawlog[index]["uiItem"]).height() + self.uiWidget_listView.visualItemRect(self.rawlog[index]["uiItem"]).y() < 0:
-                self.uiWidget_listView.setCurrentRow(lastIndex)
-                self.statusbar.showDynamicText(str("Done ✓ | Switched to the first line in the viewport: %d" % lastIndex))
+            # If the item is not fully visible (e.g. y-position is not in our viewport anymore),
+            # the previous one must have been the last one in our viewport --> use that
+            visualItemRect = self.uiWidget_listView.visualItemRect(self.rawlog[index]["uiItem"])
+            if visualItemRect.y() < 0:
                 break
             else:
                 lastIndex = index
+        self.uiWidget_listView.setCurrentRow(lastIndex)
+        self.statusbar.showDynamicText(str("Done ✓ | Switched to the first line in the viewport: %d" % lastIndex))
 
     @catch_exceptions(logger=logger)
     def goToLastRowInViewport(self, *args):
+        if len(self.uiWidget_listView.selectedIndexes()) == 0:
+            return;
         lastIndex = self.uiWidget_listView.selectedIndexes()[0].row()
         # Counts upwards from the current entry
         for index in range(self.uiWidget_listView.selectedIndexes()[0].row(), len(self.rawlog)):
-            # If the item position is larger than the listview-height, it must be the last one in our viewport
-            if self.uiWidget_listView.visualItemRect(self.rawlog[index]["uiItem"]).y() > self.uiWidget_listView.height():
-                self.uiWidget_listView.setCurrentRow(lastIndex)
-                self.statusbar.showDynamicText(str("Done ✓ | Switched to the last line in the viewport: %d" % lastIndex))
+            # If the item is not fully visible (e.g. y-position + height is not in our viewport anymore),
+            # the previous one must have been the last one in our viewport --> use that
+            visualItemRect = self.uiWidget_listView.visualItemRect(self.rawlog[index]["uiItem"])
+            if visualItemRect.y() + visualItemRect.height() > self.uiWidget_listView.height():
                 break
             else:
                 lastIndex = index
+        self.uiWidget_listView.setCurrentRow(lastIndex)
+        self.statusbar.showDynamicText(str("Done ✓ | Switched to the last line in the viewport: %d" % lastIndex))
     
     def cancelFilter(self):
         for index in range(len(self.rawlog)):
