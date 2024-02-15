@@ -434,6 +434,10 @@ class MainWindow(QtWidgets.QMainWindow):
 
     def _prepareSearch(self):
         query = self.uiCombobox_searchInput.currentText().strip()
+        if query == "":
+            self.search = None
+            self.uiCombobox_searchInput.setStyleSheet("")
+            return
         if self.search != None:
             if self.search.getQuery() == query:
                 return
@@ -456,14 +460,17 @@ class MainWindow(QtWidgets.QMainWindow):
     def hideSearchOrGoto(self):
         self.uiFrame_search.hide()
         self.uiFrame_goToRow.hide()
+        self.search = None
+        self.uiCombobox_searchInput.setStyleSheet("")
+        self._updateStatusbar()
     
     @catch_exceptions(logger=logger)
     def clearFilter(self, *args):
-        currentSelectetLine = None
-        if len(self.uiWidget_listView.selectedIndexes()) != 0:
-            currentSelectetLine = self.uiWidget_listView.selectedIndexes()[0].row()
-
-        if (self.currentFilterQuery != None and len(self.currentFilterQuery) != 0) or len(self.uiCombobox_filterInput.currentText().strip()) != 0:
+        if self.currentFilterQuery != None and len(self.currentFilterQuery) > 0:
+            currentSelectetLine = None
+            if len(self.uiWidget_listView.selectedIndexes()) != 0:
+                currentSelectetLine = self.uiWidget_listView.selectedIndexes()[0].row()
+                
             self.uiCombobox_filterInput.setCurrentText("")
             self.uiCombobox_filterInput.setStyleSheet("")
 
@@ -485,8 +492,12 @@ class MainWindow(QtWidgets.QMainWindow):
     @catch_exceptions(logger=logger)
     def filter(self, *args):
         query = self.uiCombobox_filterInput.currentText().strip()
+        if query == "":
+            self.clearFilter()
+            return
         if query == self.currentFilterQuery:
             return
+        
         self.updateComboboxHistory(query, self.uiCombobox_filterInput)
         self.currentFilterQuery = query
 
@@ -694,13 +705,14 @@ class MainWindow(QtWidgets.QMainWindow):
             "scrollPosVertical": self.uiWidget_listView.verticalScrollBar().value(),
             "scrollPosHorizontal": self.uiWidget_listView.horizontalScrollBar().value(),
             "selectedCombobox": self.selectedCombobox,
+            "listViewFocus": self.uiWidget_listView.hasFocus(),
             "detail": {
                 "isOpen": not self.uiTable_characteristics.isHidden(), 
                 "size": self.uiTable_characteristics.height(), 
                 "currentDetailIndex": self.currentDetailIndex
             }, 
             "search": {
-                "isOpen": not self.uiFrame_search.isHidden(), 
+                "isOpen": not self.uiFrame_search.isHidden(),
                 "instance": self.search, 
                 "currentText": self.uiCombobox_searchInput.currentText(), 
                 "currentLine": currentSearchResult,
@@ -718,7 +730,7 @@ class MainWindow(QtWidgets.QMainWindow):
         }
         self.stack.append(state)
         self._updateStatusbar()
-        self.statusbar.showDynamicText("State saved ✓")
+        #self.statusbar.showDynamicText("State saved ✓")
         self.toggleUiItems()
     
     @catch_exceptions(logger=logger)
@@ -743,8 +755,8 @@ class MainWindow(QtWidgets.QMainWindow):
                 # Before continuing the search, we set the row so that the search starts at the correct index
                 self.uiWidget_listView.setCurrentRow(stack["search"]["currentLine"])
                 self.search = stack["search"]["instance"]
-                self.search.next()
-                self.search.previous()
+                self.searchNext()
+                self.searchPrevious()
 
         # unpacking goToRow
         if stack["goToRow"]["isOpen"]:
@@ -767,9 +779,12 @@ class MainWindow(QtWidgets.QMainWindow):
 
         if stack["selectedCombobox"]:
             stack["selectedCombobox"].lineEdit().setFocus()
+        
+        if stack["listViewFocus"]:
+            self.uiWidget_listView.setFocus()
 
         self._updateStatusbar()
-        self.statusbar.showDynamicText("State loaded ✓")
+        #self.statusbar.showDynamicText("State loaded ✓")
         self.toggleUiItems()
 
     @catch_exceptions(logger=logger)
@@ -787,7 +802,7 @@ class MainWindow(QtWidgets.QMainWindow):
         else:
             text += " %d" % len(self.rawlog)
             
-        if self.search != None and len(self.uiCombobox_searchInput.currentText().strip()) > 0:
+        if self.search != None and not self.uiFrame_search.isHidden() and len(self.uiCombobox_searchInput.currentText().strip()) > 0:
             if len(self.search) != 0:
                 text += ", search: %d/%d" % (self.search.getPosition(), len(self.search))
             else:
@@ -803,13 +818,8 @@ class MainWindow(QtWidgets.QMainWindow):
         def rebuildCombobox(combobox):
             if len(SettingsSingleton().getComboboxHistory(combobox)) != len([combobox.itemText(i) for i in range(combobox.count())]):
                 currentText = combobox.lineEdit().text()
-                combobox.clear()
-                combobox.addItems(SettingsSingleton().getComboboxHistory(combobox))
-                combobox.lineEdit().setText(currentText)
-
-                if currentText not in SettingsSingleton().getComboboxHistory(combobox):
-                    combobox.insertItem(0, currentText)
-                    SettingsSingleton().setComboboxHistory(combobox, [combobox.itemText(i) for i in range(combobox.count())])
+                self.loadComboboxHistory(combobox)
+                self.updateComboboxHistory(currentText, combobox)
 
         def rebuildFormatter():
             formatter = self.createFormatter()
@@ -863,16 +873,23 @@ class MainWindow(QtWidgets.QMainWindow):
         combobox.setCurrentIndex(-1)
 
     def updateComboboxHistory(self, query, combobox):
+        logger.debug("update combobox history with: '%s'..." % str(query))
         if query == None or query.strip() == "":
+            logger.debug("returning early...")
             return
 
+        # remove query from combobox (if it exists) and reinsert it at top position
         if combobox.findText(query) != -1:
             combobox.removeItem(combobox.findText(query))
-
-        SettingsSingleton().setComboboxHistory(combobox, [combobox.itemText(i) for i in range(combobox.count())])
-        combobox.lineEdit().setText(query)
         combobox.insertItem(0, query)
-        combobox.setCurrentIndex(None)
+
+        # store this new combobox ordering into our settings
+        SettingsSingleton().setComboboxHistory(combobox, [combobox.itemText(i) for i in range(combobox.count()) if combobox.itemText(i).strip() != ""])
+        
+        # make sure that the topmost combobox entry is always an empty string but still select our query
+        self.loadComboboxHistory(combobox)  # reload from settings to get rid of empty entries and make sure we always reflect in ui what is saved
+        combobox.insertItem(0, "")
+        combobox.setCurrentIndex(1)         # after adding an empty row, the current query is at index 1
 
     def copyToClipboard(self):
         if self.uiWidget_listView.hasFocus():
