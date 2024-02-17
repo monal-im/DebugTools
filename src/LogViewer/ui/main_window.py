@@ -632,7 +632,7 @@ class MainWindow(QtWidgets.QMainWindow):
         for index in range(len(self.rawlog)):
             if not self.rawlog[index]["uiItem"].isHidden():
                 self.uiWidget_listView.setCurrentRow(index)
-                self.statusbar.showDynamicText(str("Done ✓ | Switched to first row: %d" % index))
+                #self.statusbar.showDynamicText(str("Done ✓ | Switched to first row: %d" % index))
                 break
 
     @catch_exceptions(logger=logger)
@@ -640,7 +640,7 @@ class MainWindow(QtWidgets.QMainWindow):
         # set last row as current row 
         for index in range(len(self.rawlog)-1, -1, -1):
             self.uiWidget_listView.setCurrentRow(index)
-            self.statusbar.showDynamicText(str("Done ✓ | Switched to last row: %d" % index))
+            #self.statusbar.showDynamicText(str("Done ✓ | Switched to last row: %d" % index))
             break
 
     @catch_exceptions(logger=logger)
@@ -658,7 +658,7 @@ class MainWindow(QtWidgets.QMainWindow):
             else:
                 lastIndex = index
         self.uiWidget_listView.setCurrentRow(lastIndex)
-        self.statusbar.showDynamicText(str("Done ✓ | Switched to the first line in the viewport: %d" % lastIndex))
+        #self.statusbar.showDynamicText(str("Done ✓ | Switched to the first line in the viewport: %d" % lastIndex))
 
     @catch_exceptions(logger=logger)
     def goToLastRowInViewport(self, *args):
@@ -675,7 +675,7 @@ class MainWindow(QtWidgets.QMainWindow):
             else:
                 lastIndex = index
         self.uiWidget_listView.setCurrentRow(lastIndex)
-        self.statusbar.showDynamicText(str("Done ✓ | Switched to the last line in the viewport: %d" % lastIndex))
+        #self.statusbar.showDynamicText(str("Done ✓ | Switched to the last line in the viewport: %d" % lastIndex))
     
     def cancelFilter(self):
         for index in range(len(self.rawlog)):
