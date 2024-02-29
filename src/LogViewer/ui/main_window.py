@@ -895,9 +895,15 @@ class MainWindow(QtWidgets.QMainWindow):
         combobox.setCurrentIndex(1)         # after adding an empty row, the current query is at index 1
 
     def copyToClipboard(self):
+        data = None
         if self.uiWidget_listView.hasFocus():
+            data = self.rawlog[self.uiWidget_listView.selectedIndexes()[0].row()]["data"]["__formattedMessage"]
+        if self.uiTable_characteristics.hasFocus():
+            data = self.uiTable_characteristics.currentItem().text()
+        
+        if data != None:
             # copy to clipboard
             clipboard = QtWidgets.QApplication.clipboard()
             clipboard.clear(mode=clipboard.Clipboard)
-            clipboard.setText(self.rawlog[self.uiWidget_listView.selectedIndexes()[0].row()]["data"]["__formattedMessage"], mode=clipboard.Clipboard)
+            clipboard.setText(data, mode=clipboard.Clipboard)
             self.statusbar.showDynamicText(str("Done ✓ | Copied to clipboard"))
