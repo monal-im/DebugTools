@@ -29,8 +29,6 @@ class MainWindow(QtWidgets.QMainWindow):
         self.stack = []
         self.selectedCombobox = self.uiCombobox_filterInput
 
-        self.visibleCounter = None
-
         self.queryStatus2colorMapping = {
             QueryStatus.EOF_REACHED:    SettingsSingleton().getColor("combobox-eof_reached"),
             QueryStatus.QUERY_ERROR:    SettingsSingleton().getColor("combobox-query_error"),
@@ -523,7 +521,6 @@ class MainWindow(QtWidgets.QMainWindow):
                 self.cancelFilter()
                 break
         self.checkQueryResult(error, visibleCounter, self.uiCombobox_filterInput)
-        self.visibleCounter = visibleCounter
         
         progressbar.setLabelText("Rendering Filter...")
         QtWidgets.QApplication.processEvents()
@@ -797,9 +794,9 @@ class MainWindow(QtWidgets.QMainWindow):
         if len(self.rawlog) > 0:
             text += "%s:" % os.path.basename(self.file)
 
-        if self.currentFilterQuery != None and self.currentFilterQuery.strip() != "" and self.visibleCounter != None:
+        if self.currentFilterQuery != None:
             text += " %d/%d" % (
-                self.visibleCounter,
+                len([item for item in self.rawlog if not item["uiItem"].isHidden()]),
                 len(self.rawlog)
             )
         else:
