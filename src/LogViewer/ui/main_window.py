@@ -208,7 +208,7 @@ class MainWindow(QtWidgets.QMainWindow):
         error = None
         visibleCounter = 0
         
-        # apply filter manually
+        # Add uiItems and apply the filter manually as it's faster to do both things at the same time
         self.currentFilterQuery = self.uiCombobox_filterInput.currentText().strip()
         for index in range(len(self.rawlog)):
             self.uiWidget_listView.addItem(self.rawlog[index]["uiItem"])
@@ -219,7 +219,7 @@ class MainWindow(QtWidgets.QMainWindow):
                 else:
                     error = result["error"]
                 visibleCounter += 1 if result["matching"] else 0
-        if len(self.currentFilterQuery ) != 0:
+        if len(self.currentFilterQuery) != 0:
             self.checkQueryResult(error, visibleCounter, self.uiCombobox_filterInput)
         QtWidgets.QApplication.processEvents()
         progressbar.hide()
@@ -362,6 +362,7 @@ class MainWindow(QtWidgets.QMainWindow):
     @catch_exceptions(logger=logger)
     def closeFile(self, *args):
         self.uiWidget_listView.clear()
+        self.rawlog = Rawlog()
         self.hideSearchOrGoto()
         self.selectedCombobox = self.uiCombobox_filterInput
         self.file = None
