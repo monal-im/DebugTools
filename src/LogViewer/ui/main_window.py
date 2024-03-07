@@ -440,7 +440,7 @@ class MainWindow(QtWidgets.QMainWindow):
             self.uiCombobox_searchInput.setStyleSheet("")
             return
         if self.search != None:
-            if self.search.getQuery() == query:
+            if self.search.getQuery() == query and self.uiWidget_listView.selectedIndexes()[0].row() == self.search.getPosition:
                 return
         progressbar, update_progressbar = self.progressDialog("Searching...", query, True)
         try:
