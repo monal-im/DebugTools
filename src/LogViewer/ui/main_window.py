@@ -439,9 +439,12 @@ class MainWindow(QtWidgets.QMainWindow):
             self.search = None
             self.uiCombobox_searchInput.setStyleSheet("")
             return
-        if self.search != None:
-            if self.search.getQuery() == query and self.uiWidget_listView.selectedIndexes()[0].row() == self.search.getPosition:
+        if self.search != None and self.search.getQuery() == query:
+            if self.uiWidget_listView.selectedIndexes()[0].row() != self.search.getPosition:
+                self.search.resetStartIndex(self.uiWidget_listView.selectedIndexes()[0].row())
                 return
+            return
+
         progressbar, update_progressbar = self.progressDialog("Searching...", query, True)
         try:
             # let our new search begin at the currently selected line (if any)
