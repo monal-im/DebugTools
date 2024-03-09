@@ -419,7 +419,15 @@ class MainWindow(QtWidgets.QMainWindow):
         self._search(Search.previous)
 
     def _search(self, func):
-        self._prepareSearch()   # create search instance (to be bound below)
+        query = self.uiCombobox_searchInput.currentText().strip()
+        if query == "":
+            self.search = None
+            self.uiCombobox_searchInput.setStyleSheet("")
+        elif self.search != None and self.search.getQuery() == query:
+            if self.uiWidget_listView.selectedIndexes()[0].row() != self.search.getPosition:
+                self.search.resetStartIndex(self.uiWidget_listView.selectedIndexes()[0].row())
+        else:
+            self._prepareSearch()   # create search instance (to be bound below)
         
         result = None
         if self.search != None:
@@ -435,15 +443,6 @@ class MainWindow(QtWidgets.QMainWindow):
 
     def _prepareSearch(self):
         query = self.uiCombobox_searchInput.currentText().strip()
-        if query == "":
-            self.search = None
-            self.uiCombobox_searchInput.setStyleSheet("")
-            return
-        if self.search != None and self.search.getQuery() == query:
-            if self.uiWidget_listView.selectedIndexes()[0].row() != self.search.getPosition:
-                self.search.resetStartIndex(self.uiWidget_listView.selectedIndexes()[0].row())
-                return
-            return
 
         progressbar, update_progressbar = self.progressDialog("Searching...", query, True)
         try:
