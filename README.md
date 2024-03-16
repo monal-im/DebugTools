@@ -4,3 +4,4 @@ Some tools for reading [Monal IM](https://github.com/monal-im/Monal/) crash repo
 1. Monal Crash Report Analyzer
 2. Monal Log Viewer
 3. Monal Mobile Crash Analyzer
+4. Monal Mobile Log Viewer
