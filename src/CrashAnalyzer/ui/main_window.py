@@ -1,11 +1,11 @@
 import functools
 from PyQt5 import QtWidgets
 
-from CrashAnalyzer.storage import CrashReport
 from CrashAnalyzer.utils.version import VERSION
 from shared.utils import catch_exceptions
 from shared.ui.utils import UiAutoloader
 import shared.ui.utils.helpers as sharedUiHelpers
+from shared.storage import CrashReport
 
 import logging
 logger = logging.getLogger(__name__)
