@@ -76,8 +76,8 @@ class MainWindow(QtWidgets.QMainWindow):
         MagicLineEdit(self.uiCombobox_searchInput)
         MagicLineEdit(self.uiCombobox_filterInput)
 
-        self.uiCombobox_searchInput.currentTextChanged.connect(self.uiCombobox_searchInputChanged)
-        self.uiCombobox_filterInput.currentTextChanged.connect(self.uiCombobox_filterInputChanged)
+        self.uiCombobox_searchInput.currentTextChanged.connect(self.uiCombobox_inputChanged)
+        self.uiCombobox_filterInput.currentTextChanged.connect(self.uiCombobox_inputChanged)
 
         self.loadComboboxHistory(self.uiCombobox_searchInput)
         QtWidgets.QShortcut(QtGui.QKeySequence("ESC"), self).activated.connect(self.hideSearchOrGoto)
@@ -595,13 +595,9 @@ class MainWindow(QtWidgets.QMainWindow):
             self.setComboboxStatusColor(combobox, QueryStatus.QUERY_OK)
 
     @catch_exceptions(logger=logger)
-    def uiCombobox_searchInputChanged(self, *args):
+    def uiCombobox_inputChanged(self, *args):
         self.toggleUiItems()
 
-    @catch_exceptions(logger=logger)
-    def uiCombobox_filterInputChanged(self, *args):
-        self.toggleUiItems()
-    
     @catch_exceptions(logger=logger)
     def progressDialog(self, title, label, hasCancelButton=False):
         progressbar = QtWidgets.QProgressDialog(label, "Cancel", 0, 100, self)
