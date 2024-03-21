@@ -7,10 +7,12 @@ from kivy.uix.gridlayout import GridLayout
 from kivy.uix.button import Button
 from kivy.uix.label import Label
 from kivy.uix.popup import Popup
+from kivy.factory import Factory
 
 from shared.utils.constants import LOGLEVELS
 from shared.storage import Rawlog
 from shared.utils import Paths
+from shared.ui.mobile_about_dialog import MobileAboutDialog
 
 import logging
 logger = logging.getLogger(__name__)
@@ -39,28 +41,41 @@ class MainWindow(App):
         self.logflag2colorMapping = {v: "logline-%s" % k.lower() for k, v in LOGLEVELS.items()}
 
         logger.debug("Create ui elements")
-        self.layout = GridLayout(rows=2)
-        gridLayout_menueBar = GridLayout(cols=2, size_hint=(1, 0.1))
+        self.layout = GridLayout(rows=3)
+
+        self.uiActionBar = Factory.ActionBar(pos_hint={'top': 1})
+        self.uiActionView = Factory.ActionView()
+        self.uiActionGroup = Factory.ActionGroup(text='File', mode='spinner')
+
+        self.uiActionGroup.add_widget(Factory.ActionButton(text='Open File...', on_press = self.selectFile))
+        self.uiActionGroup.add_widget(Factory.ActionButton(text='About', on_press = MobileAboutDialog))
+
+        self.uiActionView.add_widget(self.uiActionGroup)
+        self.uiActionView.add_widget(Factory.ActionPrevious(title='', with_previous=False, app_icon=Paths.get_art_filepath("quitIcon.png"), on_press = self.quit))
+        self.uiActionBar.add_widget(self.uiActionView)
 
         self.uiLabel_selectedFile = Label(text="Selected File: None", size_hint=(1, None), color =(0, 0, 0, 1))
         self.uiLabel_selectedFile.bind(
             width=lambda *x:
             self.uiLabel_selectedFile.setter("text_size")(self.uiLabel_selectedFile, (self.uiLabel_selectedFile.width, None)),
             texture_size=lambda *x: self.uiLabel_selectedFile.setter("height")(self.uiLabel_selectedFile, self.uiLabel_selectedFile.texture_size[1]))
-        self.uiButton_selectFile = Button(text="Open File", size_hint=(0.2, 0.2), on_press = self.selectFile)
 
         self.uiScrollWidget_logs = ScrollView()
         self.uiLayout_logs = GridLayout(cols=1, spacing=10, size_hint_y=None)
         self.uiLayout_logs.bind(minimum_height=self.uiLayout_logs.setter("height"))
         self.uiScrollWidget_logs.add_widget(self.uiLayout_logs)
         
+        gridLayout_menueBar = GridLayout(cols=1, size_hint=(1, 0.1))
         gridLayout_menueBar.add_widget(self.uiLabel_selectedFile)
-        gridLayout_menueBar.add_widget(self.uiButton_selectFile)
 
+        self.layout.add_widget(self.uiActionBar)
         self.layout.add_widget(gridLayout_menueBar)
         self.layout.add_widget(self.uiScrollWidget_logs)
 
         return self.layout
+        
+    def quit(self, *args):
+        self.stop()
     
     def selectFile(self, *args):
         # Create popup window to select file
