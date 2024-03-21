@@ -4,7 +4,7 @@ name: Build
 on:
   push:
     tags:
-      - 'MCA-v*' # Push events to matching v*, i.e. v1.0, v20.15.10
+      - 'v*' # Push events to matching v*, i.e. v1.0, v20.15.10
   workflow_dispatch:
 
 jobs:
@@ -17,6 +17,39 @@ jobs:
     strategy:
       matrix:
         include:
+          # LogViewer
+          - os: macos-latest
+            TARGET: macos
+            #--volicon "Hello World.icns" \
+            # for the dmg stuff, see https://www.pythonguis.com/tutorials/packaging-pyqt5-applications-pyinstaller-macos-dmg/
+            CMD_BUILD: >
+                pyinstaller --clean --log-level DEBUG --name "LogViewer" --add-data "LogViewer/data:LogViewer/data" --add-data "shared/ui/*.ui:shared/ui" --add-data "LogViewer/ui/*.ui:LogViewer/ui" --specpath src --windowed --icon LogViewer/data/art/icon.png --onefile --debug bootloader --argv-emulation src/LogViewer.py &&        
+                cd dist/ &&
+                zip -r9 LogViewer LogViewer.app/ &&
+                brew install create-dmg &&
+                mkdir -p dmg &&
+                cp -vr "LogViewer.app" dmg/ &&
+                create-dmg --volname "LogViewer" --volicon LogViewer.app/Contents/Resources/generated-* --window-pos 200 120 --window-size 600 300 --icon-size 100 --icon "LogViewer.app" 175 120 --hide-extension "LogViewer.app" --app-drop-link 425 120 "LogViewer.dmg" "./dmg/"
+            OUT_FILE_NAME: LogViewer.dmg
+            ASSET_MIME: application/binary
+          - os: windows-latest
+            TARGET: windows
+            CMD_BUILD: >
+                pyinstaller --clean --log-level DEBUG --name "LogViewer" --add-data "LogViewer/data;LogViewer/data" --add-data "shared/ui/*.ui;shared/ui" --add-data "LogViewer/ui/*.ui;LogViewer/ui" --specpath src --windowed --icon LogViewer/data/art/icon.png --onefile --debug bootloader src/LogViewer.py
+            OUT_FILE_NAME: LogViewer.exe
+            ASSET_MIME: application/vnd.microsoft.portable-executable
+          - os: ubuntu-latest
+            TARGET: linux
+                #sudo apt install plasma-integration -y &&
+                #sudo cp -av /usr/lib/x86_64-linux-gnu/qt5/plugins/platformthemes/KDEPlasmaPlatformTheme.so /opt/hostedtoolcache/Python/3.11.5/x64/lib/python3.11/site-packages/PyQt5/Qt5/plugins/platformthemes/ -f &&
+                #--add-binary "/usr/lib/x86_64-linux-gnu/qt5/plugins/platformthemes/KDEPlasmaPlatformTheme.so:PyQt5/Qt5/plugins/platformthemes"
+                #--add-binary "/lib/x86_64-linux-gnu/libz.so.1:."
+            CMD_BUILD: >
+                pyinstaller --clean --log-level DEBUG --name "LogViewer" --add-data "LogViewer/data:LogViewer/data" --add-data "shared/ui/*.ui:shared/ui" --add-data "LogViewer/ui/*.ui:LogViewer/ui" --specpath src --windowed --icon LogViewer/data/art/icon.png --onefile src/LogViewer.py
+            OUT_FILE_NAME: LogViewer
+            ASSET_MIME: application/x-executable
+
+          # CrashAnalyzer
           - os: macos-latest
             TARGET: macos
             #--volicon "Hello World.icns" \
@@ -64,7 +97,7 @@ jobs:
         pip install --upgrade tcl
         pip install --upgrade -r src/requirements.txt
     - name: Extract version string
-      run: echo "VERSION='${{ github.ref_name }}'" >src/CrashAnalyzer/utils/version.py
+      run: echo "VERSION='${{ github.ref_name }}'" >src/shared/utils/version.py
     - name: Build with pyinstaller for ${{matrix.TARGET}}
       run: ${{matrix.CMD_BUILD}}
     - uses: actions/upload-artifact@v3
@@ -89,6 +122,7 @@ jobs:
         body: |
           New release
         files: |
+          LogViewer*/*
           CrashAnalyzer*/*
         fail_on_unmatched_files: true
         token: ${{ secrets.GITHUB_TOKEN }}

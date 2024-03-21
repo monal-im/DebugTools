@@ -1,7 +1,6 @@
 import functools
 from PyQt5 import QtWidgets
 
-from CrashAnalyzer.utils.version import VERSION
 from shared.utils import catch_exceptions
 from shared.ui.utils import UiAutoloader
 import shared.ui.utils.helpers as sharedUiHelpers
@@ -23,7 +22,7 @@ class MainWindow(QtWidgets.QMainWindow):
         self.uiList_parts.itemDoubleClicked.connect(self.export_part)
         self.uiList_parts.currentItemChanged.connect(self.switch_part)
         self.uiAction_close.triggered.connect(self.close)
-        self.uiAction_about.triggered.connect(functools.partial(sharedUiHelpers.action_about, VERSION))
+        self.uiAction_about.triggered.connect(sharedUiHelpers.action_about)
     
     @catch_exceptions(logger=logger)
     def close(self, _):

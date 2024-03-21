@@ -5,7 +5,6 @@ import sys, os, functools
 from LogViewer.storage import SettingsSingleton
 from LogViewer.utils import Search, AbortSearch, QueryStatus, matchQuery
 import LogViewer.utils.helpers as helpers
-from LogViewer.utils.version import VERSION
 from .utils import Completer, MagicLineEdit, Statusbar
 from .preferences_dialog import PreferencesDialog
 from shared.storage import Rawlog, AbortRawlogLoading
@@ -54,7 +53,7 @@ class MainWindow(QtWidgets.QMainWindow):
         self.uiAction_export.triggered.connect(self.export)
         self.uiAction_save.triggered.connect(self.save)
         self.uiAction_inspectLine.triggered.connect(self.inspectLine)
-        self.uiAction_about.triggered.connect(functools.partial(sharedUiHelpers.action_about, VERSION))
+        self.uiAction_about.triggered.connect(sharedUiHelpers.action_about)
         self.uiAction_pushStack.triggered.connect(self.pushStack)
         self.uiAction_popStack.triggered.connect(self.popStack)
         self.uiAction_goToRow.triggered.connect(self.openGoToRowWidget)
