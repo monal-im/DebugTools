@@ -12,6 +12,7 @@ import functools
 
 from shared.storage import CrashReport
 from shared.utils import Paths
+from shared.ui.mobile_about_dialog import MobileAboutDialog
 
 import logging
 logger = logging.getLogger(__name__)
@@ -116,12 +117,14 @@ class MainWindow(App):
 
         self.uiActionView = Factory.ActionView()
         self.uiActionGroup = Factory.ActionGroup(text='File', mode='spinner')
-        self.uiActionGroup.add_widget(Factory.ActionButton(text='Open File...', on_press = self.selectFile))
 
         # If report is open objects are loaded
         if self.report != None:
             for report in self.report:
                 self.uiActionGroup.add_widget(Factory.ActionButton(text=report["name"], on_press = functools.partial(self.switch_part, report["name"])))
+
+        self.uiActionGroup.add_widget(Factory.ActionButton(text='Open File...', on_press = self.selectFile))
+        self.uiActionGroup.add_widget(Factory.ActionButton(text='About', on_press = MobileAboutDialog))
 
         self.uiActionView.add_widget(self.uiActionGroup)
         self.uiActionView.add_widget(Factory.ActionPrevious(title='', with_previous=False, app_icon=Paths.get_art_filepath("quitIcon.png"), on_press = self.quit))
