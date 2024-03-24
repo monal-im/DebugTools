@@ -1,7 +1,12 @@
-from PyQt5 import QtWidgets
+from PyQt5 import QtWidgets, QtCore
 
 #custom completer, see here for reference: https://stackoverflow.com/a/36296644
 class Completer(QtWidgets.QCompleter):
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.setCaseSensitivity(QtCore.Qt.CaseInsensitive)
+        self.setCompletionMode(Completer.PopupCompletion)
+
     # Add texts instead of replace
     def pathFromIndex(self, index):
         path = QtWidgets.QCompleter.pathFromIndex(self, index)
