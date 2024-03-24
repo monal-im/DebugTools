@@ -421,7 +421,7 @@ class MainWindow(QtWidgets.QMainWindow):
             self.search = None
             self.uiCombobox_searchInput.setStyleSheet("")
         elif self.search != None and self.search.getQuery() == query:
-            if self.uiWidget_listView.selectedIndexes()[0].row() != self.search.getPosition:
+            if len(self.uiWidget_listView.selectedIndexes()) != 0 and self.uiWidget_listView.selectedIndexes()[0].row() != self.search.getPosition():
                 self.search.resetStartIndex(self.uiWidget_listView.selectedIndexes()[0].row())
         else:
             self._prepareSearch()   # create search instance (to be bound below)
