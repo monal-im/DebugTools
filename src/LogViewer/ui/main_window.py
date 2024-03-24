@@ -254,8 +254,6 @@ class MainWindow(QtWidgets.QMainWindow):
         wordlist += ["True", "False", "true", "false"] + list(LOGLEVELS.keys())
 
         completer = Completer(wordlist, self)
-        completer.setCompletionMode(Completer.PopupCompletion)
-        completer.setCaseSensitivity(QtCore.Qt.CaseInsensitive)
         combobox.setCompleter(completer)
     
     def createFormatterText(self, formatter, entry, ignoreError=False):        
