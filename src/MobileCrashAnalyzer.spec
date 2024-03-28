@@ -4,10 +4,8 @@ title = Monal Mobile Crash Analyzer
 package.name = MMCA
 package.domain = monal-im.org
 
-source.dir = .
+source.dir = .src/
 source.include_exts = py,png,jpg,kv,atlas
-
-version.filename = src/MobileCrashAnalyzer.py
 
 version = 0.1
 requirements = python3,kivy
