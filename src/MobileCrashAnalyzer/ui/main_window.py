@@ -4,13 +4,14 @@ from kivy.factory import Factory
 from kivy.uix.filechooser import FileChooserListView
 from kivy.uix.scrollview import ScrollView
 from kivy.uix.gridlayout import GridLayout
+from kivy.uix.textinput import TextInput
 from kivy.uix.button import Button
 from kivy.uix.label import Label
 from kivy.uix.popup import Popup
 
 import functools
 
-from shared.storage import CrashReport
+from shared.storage import CrashReport, Rawlog
 from shared.utils import Paths
 from shared.ui.mobile_about_dialog import MobileAboutDialog
 
@@ -24,21 +25,20 @@ class MainWindow(App):
         self.title = "Monal Mobile Crash Analyzer"
 
         self.report = None
+        self.currentPart = ""
 
         logger.debug("Create ui elements")
         self.layout = GridLayout(rows=2)
 
         # Create actionbar
         self.uiActionBar = Factory.ActionBar(pos_hint={'top': 1})
-        self.createActionBar()
+        self.rebuildActionBar()
 
-        self.uiScrollWidget_logs = ScrollView()
-        self.uiLayout_logs = GridLayout(cols=1, spacing=10, size_hint_y=None)
-        self.uiLayout_logs.bind(minimum_height=self.uiLayout_logs.setter("height"))
-        self.uiScrollWidget_logs.add_widget(self.uiLayout_logs)
+        self.uiTextInput = TextInput(text = "")
+        #self.uiTextInput.bind(minimum_height=self.uiTextInput.setter("height"))
 
         self.layout.add_widget(self.uiActionBar)
-        self.layout.add_widget(self.uiScrollWidget_logs)
+        self.layout.add_widget(self.uiTextInput)
 
         return self.layout
 
@@ -63,16 +63,11 @@ class MainWindow(App):
         popup = Popup(title ="MMCA | Choose File", content = uiGridLayout_selectFile)   
         popup.open()    
 
-        # Hide popup and open file, if a file is selected
-        def checkSelection(*args):
-            if len(self.uiFileChooserListView_file.selection) != 0:
-                popup.dismiss() # Can't be executed in self.openFile
-                self.openFile()
-
         closeButton.bind(on_press = popup.dismiss) 
-        openButton.bind(on_press = checkSelection) 
+        openButton.bind(on_press = functools.partial(self.openFile, popup)) 
   
-    def openFile(self, *args):
+    def openFile(self, popup, *args):
+        popup.dismiss()
         filename = self.uiFileChooserListView_file.selection[0]
         logger.info("Loading crash report at '%s'..." % filename)
         # instantiate a new CrashReport and load our file
@@ -80,40 +75,40 @@ class MainWindow(App):
             self.report = CrashReport(filename)
         except Exception as ex:
             logger.warn("Exception loading crash report: %s" % str(ex))
-            self.reset_ui()
+            self.resetUi()
             return
         self.filename = filename
         logger.info("Crash report now loaded...")
-
-        # Rebuild ActionBar with new parameters
-        logger.debug("Rebuild ActionBar...")
-        self.createActionBar()
-
-        for index in range(len(self.report)):
-            self.report[index]["data"] = "".join(str(self.report[index]["data"]).split("\n")[-256:])
 
         logger.debug("Load report...")
         self.switch_part(self.report[0]["name"])
 
     def switch_part(self, reportName, *args):
-        self.emptyScrollView()
+        self.clearUiTextInput()
 
         for index in range(len(self.report)):
             if self.report[index]["name"] == reportName:
-                formatterLabel = Label(text=str(self.report.display_format(index)), size_hint=(1, None), color = (0,0,0,1))
-                formatterLabel.bind(
-                    width=lambda *x:
-                    formatterLabel.setter("text_size")(formatterLabel, (formatterLabel.width, None)),
-                    texture_size=lambda *x: formatterLabel.setter("height")(formatterLabel, formatterLabel.texture_size[1])
-                    )
-                self.uiLayout_logs.add_widget(formatterLabel)
+                self.currentPart = reportName
 
-    def createActionBar(self, *args):
+                # Rebuild ActionBar with new parameters
+                self.rebuildActionBar()
+
+                if self.report[index]["type"] in ("*.rawlog", "*.rawlog.gz"):
+                    text = self.report.display_format(index, tail=256)
+                else:
+                    text = self.report.display_format(index)
+                
+                self.uiTextInput.text = text
+                self.uiTextInput.cursor = (0,0)
+
+    def rebuildActionBar(self, *args):
         # Rebuild ActionBar because it's impossible to change it
 
-        # Delete old ActionBar
-        if len(self.uiActionBar.children) != 0:
-            self.uiActionBar.remove_widget(self.uiActionBar.children[0])
+        logger.debug("Rebuilding ActionBar...")
+
+        # Delete old ActionBar content
+        for child in self.uiActionBar.children:
+            self.uiActionBar.remove_widget(child)
 
         self.uiActionView = Factory.ActionView()
         self.uiActionGroup = Factory.ActionGroup(text='File', mode='spinner')
@@ -121,22 +116,23 @@ class MainWindow(App):
         # If report is open objects are loaded
         if self.report != None:
             for report in self.report:
-                self.uiActionGroup.add_widget(Factory.ActionButton(text=report["name"], on_press = functools.partial(self.switch_part, report["name"])))
+                button = Factory.ActionButton(text = report["name"], on_press = functools.partial(self.switch_part, report["name"]))
+                self.uiActionGroup.add_widget(button)
+                button.texture_update()
+                self.uiActionGroup.dropdown_width = max(self.uiActionGroup.dropdown_width, button.texture_size[0]) + 16
 
-        self.uiActionGroup.add_widget(Factory.ActionButton(text='Open File...', on_press = self.selectFile))
-        self.uiActionGroup.add_widget(Factory.ActionButton(text='About', on_press = MobileAboutDialog))
+        self.uiActionGroup.add_widget(Factory.ActionButton(text = 'Open File...', on_press = self.selectFile))
+        self.uiActionGroup.add_widget(Factory.ActionButton(text = 'About', on_press = MobileAboutDialog))
 
         self.uiActionView.add_widget(self.uiActionGroup)
-        self.uiActionView.add_widget(Factory.ActionPrevious(title='', with_previous=False, app_icon=Paths.get_art_filepath("quitIcon.png"), on_press = self.quit))
+        self.uiActionView.add_widget(Factory.ActionPrevious(title = self.currentPart, with_previous=False, app_icon=Paths.get_art_filepath("quitIcon.png"), on_press = self.quit))
         self.uiActionBar.add_widget(self.uiActionView)
 
-    def reset_ui(self):
-        logger.debug("Reset report")
-        self.emptyScrollView()
+    def resetUi(self):
+        logger.debug("Reseting ui...")
+        self.clearUiTextInput()
         self.report = None
 
-    def emptyScrollView(self):
-        logger.debug("Empty scrollview...")
-        if len(self.uiLayout_logs.children) != 0:
-            self.uiLayout_logs.remove_widget(self.uiLayout_logs.children[0])
-        logger.debug("Empty scrollview done...")
+    def clearUiTextInput(self):
+        logger.debug("Clearing uiTextInput...")
+        self.uiTextInput.text = ""

@@ -84,14 +84,23 @@ class CrashReport:
         for index in range(len(self.parts)):
             self.export_part(index, pathlib.Path(dirname) / ("report%s" % self.parts[index]["type"][1:]))
     
-    def display_format(self, index):
+    def display_format(self, index, tail=None):
         if index not in range(len(self.parts)):
             raise Exception("Invalid part index: %d" % index)
         data = self.parts[index]
         if isinstance(data["data"], str):
-            return data["data"]
+            if tail == None:
+                return data["data"]
+            return data["data"][-tail:]
         if data["type"] in ("*.rawlog", "*.rawlog.gz"):
-            return str(Rawlog(data["data"]).export_bytes(False, formatter=lambda entry: "%s %s" % (entry["timestamp"], entry["message"])), encoding="UTF-8")
+            rawlog = Rawlog(data["data"])
+            if tail == None:
+                return str(rawlog.export_bytes(False, formatter=lambda entry: "%s %s" % (entry["timestamp"], entry["message"])), encoding="UTF-8")
+            return str(rawlog.export_bytes(
+                False, 
+                formatter=lambda entry: "%s %s" % (entry["timestamp"], entry["message"]), 
+                custom_store_callback = lambda entry: None if entry["__logline_index"] < len(rawlog) - tail else entry
+            ), encoding="UTF-8")
         else:
             return "This part contains raw bytes (%s) and cannot be displayed!" % data["type"]
     
