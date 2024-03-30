@@ -9,6 +9,9 @@ from kivy.uix.label import Label
 from kivy.uix.popup import Popup
 from kivy.factory import Factory
 
+import functools
+from collections import defaultdict
+
 from shared.utils.constants import LOGLEVELS
 from shared.storage import Rawlog
 from shared.utils import Paths
@@ -25,47 +28,44 @@ class MainWindow(App):
 
         self.rawlog = Rawlog()
 
-        # Configure loglevels
-        logger.debug("Configure loglevels")
-        self.logLevels = {
-            "logline-error":    (255, 0, 0, 0),
-            "logline-warning":  (254, 134, 0, 0),
-            "logline-info":     (0, 238, 0, 1),
-            "logline-debug":    (1, 175, 255, 1),
-            "logline-verbose":  (148, 149, 149, 1),
-            "logline-stderr":   (255, 0, 0, 1),
-            "logline-stdout":   (0, 0, 0, 1),
-            "logline-status":   (255, 255, 255, 0)
-            }
+        # Configure logFlags2color
+        self.logFlag2color = defaultdict(lambda: (0, 0, 0), {v: {
+            "ERROR":    (255, 0, 0, 0),
+            "WARNING":  (254, 134, 0, 0),
+            "INFO":     (0, 238, 0, 1),
+            "DEBUG":    (1, 175, 255, 1),
+            "VERBOSE":  (148, 149, 149, 1),
+            "STDERR":   (255, 0, 0, 1),
+            "STDOUT":   (0, 0, 0, 1),
+            "STATUS":   (255, 255, 255, 0)
+        }[k] for k, v in LOGLEVELS.items()})
 
-        self.logflag2colorMapping = {v: "logline-%s" % k.lower() for k, v in LOGLEVELS.items()}
+        logger.debug("Creating ui elements...")
+        self.layout = GridLayout(rows = 3)
 
-        logger.debug("Create ui elements")
-        self.layout = GridLayout(rows=3)
-
-        self.uiActionBar = Factory.ActionBar(pos_hint={'top': 1})
+        self.uiActionBar = Factory.ActionBar(pos_hint = {'top': 1})
         self.uiActionView = Factory.ActionView()
-        self.uiActionGroup = Factory.ActionGroup(text='File', mode='spinner')
+        self.uiActionGroup = Factory.ActionGroup(text = 'File', mode = 'spinner')
 
-        self.uiActionGroup.add_widget(Factory.ActionButton(text='Open File...', on_press = self.selectFile))
-        self.uiActionGroup.add_widget(Factory.ActionButton(text='About', on_press = MobileAboutDialog))
+        self.uiActionGroup.add_widget(Factory.ActionButton(text = 'Open File...', on_press = self.selectFile))
+        self.uiActionGroup.add_widget(Factory.ActionButton(text = 'About', on_press = MobileAboutDialog))
 
         self.uiActionView.add_widget(self.uiActionGroup)
-        self.uiActionView.add_widget(Factory.ActionPrevious(title='', with_previous=False, app_icon=Paths.get_art_filepath("quitIcon.png"), on_press = self.quit))
+        self.uiActionView.add_widget(Factory.ActionPrevious(title = '', with_previous = False, app_icon = Paths.get_art_filepath("quitIcon.png"), on_press = self.quit))
         self.uiActionBar.add_widget(self.uiActionView)
 
-        self.uiLabel_selectedFile = Label(text="Selected File: None", size_hint=(1, None), color =(0, 0, 0, 1))
+        self.uiLabel_selectedFile = Label(text = "Selected File: None", size_hint = (1, None), color = (0, 0, 0, 1))
         self.uiLabel_selectedFile.bind(
-            width=lambda *x:
-            self.uiLabel_selectedFile.setter("text_size")(self.uiLabel_selectedFile, (self.uiLabel_selectedFile.width, None)),
-            texture_size=lambda *x: self.uiLabel_selectedFile.setter("height")(self.uiLabel_selectedFile, self.uiLabel_selectedFile.texture_size[1]))
+            width=lambda *x: self.uiLabel_selectedFile.setter("text_size")(self.uiLabel_selectedFile, (self.uiLabel_selectedFile.width, None)),
+            texture_size=lambda *x: self.uiLabel_selectedFile.setter("height")(self.uiLabel_selectedFile, self.uiLabel_selectedFile.texture_size[1])
+        )
 
         self.uiScrollWidget_logs = ScrollView()
-        self.uiLayout_logs = GridLayout(cols=1, spacing=10, size_hint_y=None)
-        self.uiLayout_logs.bind(minimum_height=self.uiLayout_logs.setter("height"))
+        self.uiLayout_logs = GridLayout(cols = 1, spacing = 10, size_hint_y = None)
+        self.uiLayout_logs.bind(minimum_height = self.uiLayout_logs.setter("height"))
         self.uiScrollWidget_logs.add_widget(self.uiLayout_logs)
         
-        gridLayout_menueBar = GridLayout(cols=1, size_hint=(1, 0.1))
+        gridLayout_menueBar = GridLayout(cols = 1, size_hint = (1, 0.1))
         gridLayout_menueBar.add_widget(self.uiLabel_selectedFile)
 
         self.layout.add_widget(self.uiActionBar)
@@ -79,13 +79,13 @@ class MainWindow(App):
     
     def selectFile(self, *args):
         # Create popup window to select file
-        logger.debug("Create popup dialog for file selection")
-        layout = GridLayout(rows=2)
+        logger.debug("Creating popup dialog for file selection...")
+        layout = GridLayout(rows = 2)
 
-        logger.debug("Create popup buttons")
-        inLayout = GridLayout(cols=2, size_hint=(1, 0.1))
-        closeButton = Button(text = "Cancel", size_hint=(0.5, 0.5))
-        openButton = Button(text = "Open", size_hint=(0.5, 0.5))
+        logger.debug("Creating popup buttons...")
+        inLayout = GridLayout(cols = 2, size_hint = (1, 0.1))
+        closeButton = Button(text = "Cancel", size_hint = (0.5, 0.5))
+        openButton = Button(text = "Open", size_hint = (0.5, 0.5))
         inLayout.add_widget(closeButton)
         inLayout.add_widget(openButton)
 
@@ -96,19 +96,14 @@ class MainWindow(App):
         layout.add_widget(self.uiFileChooserListView_file) 
         layout.add_widget(inLayout)        
 
-        popup = Popup(title ="MMLV | Choose File", content = layout)   
+        popup = Popup(title = "MMLV | Choose File", content = layout)   
         popup.open()    
 
-        # Hide popup and open file, if a file is selected
-        def checkSelection(*args):
-            if len(self.uiFileChooserListView_file.selection) != 0:
-                popup.dismiss()
-                self.openFile()
-
         closeButton.bind(on_press = popup.dismiss) 
-        openButton.bind(on_press = checkSelection) 
+        openButton.bind(on_press = functools.partial(self.openFile, popup)) 
   
-    def openFile(self, *args):
+    def openFile(self, popup, *args):
+        popup.dismiss()
         file = self.uiFileChooserListView_file.selection[0]
 
         # Reset ui to a sane state
@@ -126,12 +121,11 @@ class MainWindow(App):
                 return None
             
             # Create log label
-            item_with_color = Label(text=formattedEntry, size_hint=(1, None), color =self.logLevels[self.logflag2colorMapping[entry["flag"]]])
+            item_with_color = Label(text = formattedEntry, size_hint = (1, None), color = self.logFlag2color[entry["flag"]])
             item_with_color.bind(
-                width=lambda *x:
-                item_with_color.setter("text_size")(item_with_color, (item_with_color.width, None)),
+                width=lambda *x: item_with_color.setter("text_size")(item_with_color, (item_with_color.width, None)),
                 texture_size=lambda *x: item_with_color.setter("height")(item_with_color, item_with_color.texture_size[1])
-                )
+            )
 
             return {"uiItem": item_with_color, "data": entry}
 
