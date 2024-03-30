@@ -11,17 +11,16 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-      - name: moveFiles
-        run: |
-          cd ..
-          mkdir MonalMobileCrashAnalyzer_Deploy
-          ls
-          mv DebugTools/src/MobileCrashAnalyzer MonalMobileCrashAnalyzer_Deploy/main
-          mv DebugTools/src/MobileCrashAnalyzer.py MonalMobileCrashAnalyzer_Deploy/main.py
-          mv DebugTools/src/MobileCrashAnalyzer.spec MonalMobileCrashAnalyzer_Deploy/main.spec
-
       - name: Checkout
         uses: actions/checkout@v2
+
+      - name: moveFiles
+        run: |
+          mkdir MonalMobileCrashAnalyzer_Deploy
+          cp -av src/MobileCrashAnalyzer MonalMobileCrashAnalyzer_Deploy/MobileCrashAnalyzer
+          cp -av src/shared MonalMobileCrashAnalyzer_Deploy/shared
+          cp src/MobileCrashAnalyzer.py MonalMobileCrashAnalyzer_Deploy/main.py
+          cp src/MobileCrashAnalyzer.spec MonalMobileCrashAnalyzer_Deploy/main.spec
 
       - name: Build with Buildozer
         uses: ArtemSBulgakov/buildozer-action@v1.1.3
