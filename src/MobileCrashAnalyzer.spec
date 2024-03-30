@@ -4,7 +4,7 @@ title = Monal Mobile Crash Analyzer
 package.name = MMCA
 package.domain = monal-im.org
 
-source.dir = .src/
+source.dir = .
 source.include_exts = py,png,jpg,kv,atlas
 
 version = 0.1
