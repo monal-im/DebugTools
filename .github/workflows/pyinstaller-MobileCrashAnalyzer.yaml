@@ -19,8 +19,9 @@ jobs:
           mkdir MonalMobileCrashAnalyzer_Deploy
           cp -av src/MobileCrashAnalyzer MonalMobileCrashAnalyzer_Deploy/MobileCrashAnalyzer
           cp -av src/shared MonalMobileCrashAnalyzer_Deploy/shared
-          cp src/MobileCrashAnalyzer.py MonalMobileCrashAnalyzer_Deploy/main.py
-          cp src/MobileCrashAnalyzer.spec MonalMobileCrashAnalyzer_Deploy/main.spec
+          cp -av src/MobileCrashAnalyzer.py MonalMobileCrashAnalyzer_Deploy/main.py
+          cp -av src/MobileCrashAnalyzer.spec MonalMobileCrashAnalyzer_Deploy/buildozer.spec
+          pip install -r src/android-requirements.txt
 
       - name: Build with Buildozer
         uses: ArtemSBulgakov/buildozer-action@v1.1.3
