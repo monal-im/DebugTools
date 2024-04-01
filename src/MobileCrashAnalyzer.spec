@@ -6,6 +6,7 @@ package.domain = monal-im.org
 
 source.dir = .
 source.include_exts = py,png,jpg,kv,atlas
+source.include_patterns = shared/*,MobileCrashAnalyzer/*
 
 version = 0.1
 requirements = python3,kivy

@@ -19,8 +19,11 @@ jobs:
           mkdir MonalMobileCrashAnalyzer_Deploy
           cp -av src/MobileCrashAnalyzer MonalMobileCrashAnalyzer_Deploy/MobileCrashAnalyzer
           cp -av src/shared MonalMobileCrashAnalyzer_Deploy/shared
-          cp src/MobileCrashAnalyzer.py MonalMobileCrashAnalyzer_Deploy/main.py
-          cp src/MobileCrashAnalyzer.spec MonalMobileCrashAnalyzer_Deploy/main.spec
+          cp -av src/MobileCrashAnalyzer.py MonalMobileCrashAnalyzer_Deploy/main.py
+          cp -av src/MobileCrashAnalyzer.spec MonalMobileCrashAnalyzer_Deploy/buildozer.spec
+          pip install -r src/android-requirements.txt
+          sudo apt update -qq > /dev/null && \
+          sudo apt install -y autoconf automake autopoint build-essential ccache cmake gettext git libffi-dev libltdl-dev libssl-dev liblzma-dev libtool openjdk-8-jdk patch pkg-config python3-pip python3-setuptools sudo unzip zip zlib1g-dev
 
       - name: Build with Buildozer
         uses: ArtemSBulgakov/buildozer-action@v1.1.3
