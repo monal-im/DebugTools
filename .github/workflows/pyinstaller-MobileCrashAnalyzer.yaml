@@ -14,7 +14,7 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v2
 
-      - name: moveFiles
+      - name: move Files
         run: |
           mkdir MonalMobileCrashAnalyzer_Deploy
           cp -av src/MobileCrashAnalyzer MonalMobileCrashAnalyzer_Deploy/MobileCrashAnalyzer
@@ -29,8 +29,29 @@ jobs:
           workdir: MonalMobileCrashAnalyzer_Deploy
           buildozer_version: stable
 
-      - name: Upload artifacts
-        uses: actions/upload-artifact@v2
+      - uses: actions/upload-artifact@v4
         with:
-          name: package
+          name: MobileCrashAnalyzer
           path: ${{ steps.buildozer.outputs.filename }}
+            
+  createrelease:
+    name: Create Release
+    runs-on: [ubuntu-latest]
+    needs: build-android
+    steps:
+    - name: Load build artifacts
+      uses: actions/download-artifact@v4
+    - name: Release
+      uses: softprops/action-gh-release@v1
+      with:
+        name: Release ${{ github.ref_name }}
+        tag_name: ${{ github.ref }}
+        target_commitish: master
+        generate_release_notes: true
+        body: |
+          New release
+        files: |
+          MobileCrashAnalyzer*/*
+        fail_on_unmatched_files: true
+        token: ${{ secrets.GITHUB_TOKEN }}
+        draft: false
