@@ -5,11 +5,13 @@ package.name = MMCA
 package.domain = org.test
 
 source.dir = .
-source.include_exts = py,png,jpg,kv,atlas
+source.include_exts = py,png,jpg,kv,atlas,json
 source.include_patterns = shared/*,MobileCrashAnalyzer/*
+icon.filename = %(source.dir)s/MobileCrashAnalyzer/data/art/icon.png
+presplash.filename = %(source.dir)s/MobileCrashAnalyzer/data/art/icon.png
 
 version = 0.1
-requirements = python3,kivy
+requirements = python3,kivy,platformdirs,logging
 
 orientation = portrait
 fullscreen = 0
