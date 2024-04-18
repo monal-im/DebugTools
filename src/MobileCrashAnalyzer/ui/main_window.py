@@ -48,7 +48,7 @@ class MainWindow(App):
     def selectFile(self, *args):
         logger.debug("Create file select popup dialog...")
 
-        self.uiFileChooserListView_file = FileChooserListView() 
+        self.uiFileChooserListView_file = FileChooserListView(path=Paths.get_user_documents_dir()) 
 
         closeButton = Button(text = "Cancel", size_hint=(0.5, 0.5))
         openButton = Button(text = "Open", size_hint=(0.5, 0.5))
