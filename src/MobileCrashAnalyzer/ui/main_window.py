@@ -11,6 +11,9 @@ from kivy.uix.popup import Popup
 
 import functools
 
+from jnius import autoclass, cast
+from android import activity
+
 from shared.storage import CrashReport, Rawlog
 from shared.utils import Paths
 from shared.ui.mobile_about_dialog import MobileAboutDialog
@@ -40,10 +43,17 @@ class MainWindow(App):
         self.layout.add_widget(self.uiActionBar)
         self.layout.add_widget(self.uiTextInput)
 
+        activity.bind(on_new_intent=self.on_new_intent)
+
         return self.layout
 
     def quit(self, *args):
         self.stop()
+    
+    def on_new_intent(self, intent):
+        logger.info("Got new intent with action: %s" % str(intent.getAction()))
+        logger.debug("Raw intent: %s" % str(intent))
+        #tag = cast('android.nfc.Tag', intent.getParcelableExtra(NfcAdapter.EXTRA_TAG))
     
     def selectFile(self, *args):
         logger.debug("Create file select popup dialog...")

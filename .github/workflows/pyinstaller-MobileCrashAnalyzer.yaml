@@ -21,7 +21,12 @@ jobs:
           cp -av src/MobileCrashAnalyzer MonalMobileCrashAnalyzer_Deploy/MobileCrashAnalyzer
           cp -av src/shared MonalMobileCrashAnalyzer_Deploy/shared
 
+          cp -av src/MobileCrashAnalyzer.intent_filters.xml MonalMobileCrashAnalyzer_Deploy/MobileCrashAnalyzer.intent_filters.xml
           cp -av src/MobileCrashAnalyzer.spec MonalMobileCrashAnalyzer_Deploy/buildozer.spec
+          REFNAME=${{ github.ref_name }}
+          echo "" >>MonalMobileCrashAnalyzer_Deploy/buildozer.spec
+          echo "version = ${REFNAME#MMCA-v}" >>MonalMobileCrashAnalyzer_Deploy/buildozer.spec
+          
           echo "import os" >MonalMobileCrashAnalyzer_Deploy/main.py
           echo "os.environ['KIVY_LOG_MODE'] = 'MIXED'" >>MonalMobileCrashAnalyzer_Deploy/main.py
           echo "os.environ['KIVY_NO_FILELOG'] = '1'" >>MonalMobileCrashAnalyzer_Deploy/main.py
@@ -38,6 +43,13 @@ jobs:
           echo "out = spec.loader.exec_module(mod)" >>MonalMobileCrashAnalyzer_Deploy/main.py
           echo "print(f'{out = }')" >>MonalMobileCrashAnalyzer_Deploy/main.py
           echo "print('Proxied file returned, terminating...')" >>MonalMobileCrashAnalyzer_Deploy/main.py
+          
+          echo ""
+          echo "buildozer.spec:"
+          cat MonalMobileCrashAnalyzer_Deploy/buildozer.spec
+          echo ""
+          echo "main.py:"
+          cat MonalMobileCrashAnalyzer_Deploy/main.py
 
       - name: Build with Buildozer
         uses: Sobottasgithub/buildozer-action@v1.1.3
