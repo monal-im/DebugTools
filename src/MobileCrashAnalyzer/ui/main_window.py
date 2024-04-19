@@ -53,6 +53,9 @@ class MainWindow(App):
     def on_new_intent(self, intent):
         logger.info("Got new intent with action: %s" % str(intent.getAction()))
         logger.debug("Raw intent: %s" % str(intent))
+        if intent.getAction() == "android.intent.action.VIEW":
+            logger.info("Intent path: %s" % intent.getData().getPath())
+        
         #tag = cast('android.nfc.Tag', intent.getParcelableExtra(NfcAdapter.EXTRA_TAG))
     
     def selectFile(self, *args):

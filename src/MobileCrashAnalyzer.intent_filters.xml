@@ -1,8 +1,49 @@
+<!-- see https://stackoverflow.com/a/31028507/3528174 -->
 <intent-filter>
   <action android:name="android.intent.action.VIEW" />
   <category android:name="android.intent.category.DEFAULT" />
+  <category android:name="android.intent.category.BROWSABLE" />
   <data android:scheme="file" />
-  <data android:mimeType="*/*" />
-  <data android:pathPattern=".*\\.mcrash(\\.gz)?" />
+  <data android:scheme="content" />
   <data android:host="*" />
+  <data android:mimeType="*/*" />
+  <data android:pathPattern=".*\\.mcrash\\.gz" />
+  <data android:pathPattern=".*\\..*\\.mcrash\\.gz" />
+  <data android:pathPattern=".*\\..*\\..*\\.mcrash\\.gz" />
+  <data android:pathPattern=".*\\..*\\..*\\..*\\.mcrash\\.gz" />
+  <data android:pathPattern=".*\\..*\\..*\\..*\\..*\\.mcrash\\.gz" />
+  <data android:pathPattern=".*\\..*\\..*\\..*\\..*\\..*\\.mcrash\\.gz" />
+  <data android:pathPattern=".*\\..*\\..*\\..*\\..*\\..*\\..*\\.mcrash\\.gz" />
+  <data android:pathPattern=".*\\.mcrash" />
+  <data android:pathPattern=".*\\..*\\.mcrash" />
+  <data android:pathPattern=".*\\..*\\..*\\.mcrash" />
+  <data android:pathPattern=".*\\..*\\..*\\..*\\.mcrash" />
+  <data android:pathPattern=".*\\..*\\..*\\..*\\..*\\.mcrash" />
+  <data android:pathPattern=".*\\..*\\..*\\..*\\..*\\..*\\.mcrash" />
+  <data android:pathPattern=".*\\..*\\..*\\..*\\..*\\..*\\..*\\.mcrash" />
+</intent-filter>
+
+<!-- handle intents with null mimeType -->
+<!-- see https://stackoverflow.com/a/31028507/3528174 -->
+<intent-filter>
+  <action android:name="android.intent.action.VIEW" />
+  <category android:name="android.intent.category.DEFAULT" />
+  <category android:name="android.intent.category.BROWSABLE" />
+  <data android:scheme="file" />
+  <data android:scheme="content" />
+  <data android:host="*" />
+  <data android:pathPattern=".*\\.mcrash\\.gz" />
+  <data android:pathPattern=".*\\..*\\.mcrash\\.gz" />
+  <data android:pathPattern=".*\\..*\\..*\\.mcrash\\.gz" />
+  <data android:pathPattern=".*\\..*\\..*\\..*\\.mcrash\\.gz" />
+  <data android:pathPattern=".*\\..*\\..*\\..*\\..*\\.mcrash\\.gz" />
+  <data android:pathPattern=".*\\..*\\..*\\..*\\..*\\..*\\.mcrash\\.gz" />
+  <data android:pathPattern=".*\\..*\\..*\\..*\\..*\\..*\\..*\\.mcrash\\.gz" />
+  <data android:pathPattern=".*\\.mcrash" />
+  <data android:pathPattern=".*\\..*\\.mcrash" />
+  <data android:pathPattern=".*\\..*\\..*\\.mcrash" />
+  <data android:pathPattern=".*\\..*\\..*\\..*\\.mcrash" />
+  <data android:pathPattern=".*\\..*\\..*\\..*\\..*\\.mcrash" />
+  <data android:pathPattern=".*\\..*\\..*\\..*\\..*\\..*\\.mcrash" />
+  <data android:pathPattern=".*\\..*\\..*\\..*\\..*\\..*\\..*\\.mcrash" />
 </intent-filter>
