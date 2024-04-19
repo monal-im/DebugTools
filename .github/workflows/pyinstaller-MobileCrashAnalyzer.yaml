@@ -11,11 +11,18 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
+      - name: Install dependencies
+        run: |
+          apt -y install apksigner
+
       - name: Checkout
         uses: actions/checkout@v2
 
-      - name: move Files
+      - name: Prepare app for buildozer
         run: |
+          REFNAME="${{ github.ref_name }}"
+          echo "VERSION='${REFNAME}'" >src/shared/utils/version.py
+          
           mkdir MonalMobileCrashAnalyzer_Deploy
           cp -av src/MobileCrashAnalyzer.py MonalMobileCrashAnalyzer_Deploy/MobileCrashAnalyzer.py
           cp -av src/MobileCrashAnalyzer MonalMobileCrashAnalyzer_Deploy/MobileCrashAnalyzer
@@ -23,7 +30,6 @@ jobs:
 
           cp -av src/MobileCrashAnalyzer.intent_filters.xml MonalMobileCrashAnalyzer_Deploy/MobileCrashAnalyzer.intent_filters.xml
           cp -av src/MobileCrashAnalyzer.spec MonalMobileCrashAnalyzer_Deploy/buildozer.spec
-          REFNAME=${{ github.ref_name }}
           echo "" >>MonalMobileCrashAnalyzer_Deploy/buildozer.spec
           echo "version = ${REFNAME#MMCA-v}" >>MonalMobileCrashAnalyzer_Deploy/buildozer.spec
           
@@ -58,10 +64,21 @@ jobs:
           workdir: MonalMobileCrashAnalyzer_Deploy
           buildozer_version: stable
 
+      - name: Sign Apk
+        id: signer
+        run: |
+          apkinfile="${{ steps.buildozer.outputs.filename }}"
+          apkoutfile="$HOME/signed-$(basename "${apkinfile}")"
+          echo -n "${{ secrets.APK_SIGNING_KEY }}" >"$HOME/keystore.key"
+          openssl enc -d -chacha20 -pbkdf2 -in src/release.keystore.enc -out "$HOME/release.keystore" -kfile "$HOME/keystore.key"
+          cat "$HOME/keystore.key" | apksigner sign -ks "$HOME/release.keystore" -in "${apkinfile}" -out "${apkoutfile}"
+          echo "unsigned_apk=${apkinfile}" >> "$GITHUB_OUTPUT"
+          echo "signed_apk=${apkoutfile}" >> "$GITHUB_OUTPUT"
+
       - uses: actions/upload-artifact@v4
         with:
           name: MobileCrashAnalyzer
-          path: ${{ steps.buildozer.outputs.filename }}
+          path: ${{ steps.signer.outputs.signed_apk }}
             
   createrelease:
     name: Create Release

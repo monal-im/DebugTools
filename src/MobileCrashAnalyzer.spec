@@ -4,7 +4,7 @@ log_level = 2
 [app]
 title = Monal Mobile Crash Analyzer
 package.name = MMCA
-package.domain = org.test
+package.domain = im.monal
 
 source.dir = .
 source.include_exts = py,png,jpg,kv,atlas,json
