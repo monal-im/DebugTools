@@ -18,6 +18,7 @@ orientation = portrait
 fullscreen = 0
 
 # android specific
+android.minapi = 29
 android.permissions = WRITE_EXTERNAL_STORAGE,READ_EXTERNAL_STORAGE
 android.arch = armeabi-v7a
 android.manifest.intent_filters = MobileCrashAnalyzer.intent_filters.xml

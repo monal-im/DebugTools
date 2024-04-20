@@ -39,6 +39,10 @@ class Paths:
     def get_conf_filepath(filename):
         return os.path.abspath(os.path.join(Paths.user_data_dir(), filename))
 
+    @staticmethod 
+    def get_cache_filepath(filename):
+        return os.path.abspath(os.path.join(Paths.user_cache_dir(), filename))
+    
     @staticmethod
     def user_data_dir():
         return os.path.abspath(platformdirs.user_data_dir(*Paths.PLATFORM_ARGS, roaming=True))
@@ -46,6 +50,10 @@ class Paths:
     @staticmethod
     def user_log_dir():
         return os.path.abspath(platformdirs.user_log_dir(*Paths.PLATFORM_ARGS))
+    
+    @staticmethod
+    def user_cache_dir():
+        return os.path.abspath(platformdirs.user_cache_dir(*Paths.PLATFORM_ARGS))
 
 # dummy defaults to be overwritten by main.py
 Paths.PLATFORM_ARGS = ()

@@ -1,6 +1,7 @@
 from kivy.core.window import Window
 from kivy.app import App
 from kivy.factory import Factory
+from kivy.clock import mainthread
 from kivy.uix.filechooser import FileChooserListView
 from kivy.uix.scrollview import ScrollView
 from kivy.uix.gridlayout import GridLayout
@@ -9,20 +10,29 @@ from kivy.uix.button import Button
 from kivy.uix.label import Label
 from kivy.uix.popup import Popup
 
+import os
 import functools
 
 from jnius import autoclass, cast
-from android import activity
+from android import activity, mActivity
+J_FileOutputStream = autoclass("java.io.FileOutputStream")
+J_FileUtils = autoclass("android.os.FileUtils")
+#J_Intent = autoclass("android.content.Intent")
+#J_PythonActivity = autoclass('org.kivy.android.PythonActivity')
 
 from shared.storage import CrashReport, Rawlog
 from shared.utils import Paths
 from shared.ui.mobile_about_dialog import MobileAboutDialog
+
+RAWLOG_TAIL = 256
 
 import logging
 logger = logging.getLogger(__name__)
 
 class MainWindow(App):
     def build(self):
+        logger.info("Building gui...")
+        
         Window.clearcolor = (239, 239, 239, 1)
         self.icon = Paths.get_art_filepath("icon.png")
         self.title = "Monal Mobile Crash Analyzer"
@@ -30,7 +40,7 @@ class MainWindow(App):
         self.report = None
         self.currentPart = ""
 
-        logger.debug("Create ui elements")
+        logger.debug("Creating ui elements")
         self.layout = GridLayout(rows=2)
 
         # Create actionbar
@@ -50,13 +60,65 @@ class MainWindow(App):
     def quit(self, *args):
         self.stop()
     
+    def on_start(self, *args):
+        context = cast('android.content.Context', mActivity.getApplicationContext())
+        logger.info(f"Startup application context: {context}")
+        intent = mActivity.getIntent()
+        logger.info(f"Got startup intent: {intent}")
+        if intent:
+            self.on_new_intent(intent)
+    
+    #see https://github.com/termux/termux-app/blob/74b23cb2096652601050d0f4951f9fb92577743c/app/src/main/java/com/termux/filepicker/TermuxFileReceiverActivity.java#L70
+    @mainthread
     def on_new_intent(self, intent):
         logger.info("Got new intent with action: %s" % str(intent.getAction()))
         logger.debug("Raw intent: %s" % str(intent))
         if intent.getAction() == "android.intent.action.VIEW":
+            logger.info("Intent scheme: %s" % intent.getScheme())
+            logger.info("Intent type: %s" % intent.getType())
+            logger.info("Intent data: %s" % intent.getData())
             logger.info("Intent path: %s" % intent.getData().getPath())
-        
-        #tag = cast('android.nfc.Tag', intent.getParcelableExtra(NfcAdapter.EXTRA_TAG))
+            
+            uri = intent.getData()
+            context = mActivity.getApplicationContext()
+            contentResolver = context.getContentResolver()
+            
+            cacheFile = Paths.get_cache_filepath("intent.file")
+            if os.path.exists(cacheFile):
+                os.remove(cacheFile)
+            logger.debug(f"Writing file at '{uri.getPath()}' to '{cacheFile}'...")
+            bytecount = J_FileUtils.copy(contentResolver.openInputStream(uri), J_FileOutputStream(cacheFile))
+            logger.debug(f"{bytecount} bytes copied...")
+            self.openFile(cacheFile)
+            os.remove(cacheFile)
+            
+            """
+            logger.info("Intent uri: %s" % intent.getParcelableExtra(J_Intent.EXTRA_STREAM))
+            logger.info("Intent text: %s" % intent.getStringExtra(J_Intent.EXTRA_TEXT))
+            uri = intent.getParcelableExtra(J_Intent.EXTRA_STREAM)
+            context = mActivity.getApplicationContext()
+            contentResolver = context.getContentResolver()
+            if uri != None and type(uri) != str:
+                logger.info("Real android.net.Uri found...")
+                uri = cast("android.net.Uri", uri)
+                if uri.getScheme().lower() != 'content':
+                    logger.error("Uri scheme not supported: '%s'" % uri.getScheme())
+                    return
+                cacheFile = Paths.get_cache_filepath("intent.file")
+                if os.path.exists(cacheFile):
+                    os.remove(cacheFile)
+                J_FileUtils.copy(contentResolver.openInputStream(uri), J_FileOutputStream(cacheFile))
+                self.openFile(cacheFile)
+                os.remove(cacheFile)
+            else:
+                logger.info("Str based uri found...")
+                cacheFile = Paths.get_cache_filepath("intent.file")
+                if os.path.exists(cacheFile):
+                    os.remove(cacheFile)
+                J_FileUtils.copy(contentResolver.openInputStream(intent.getData()), J_FileOutputStream(cacheFile))
+                self.openFile(cacheFile)
+                os.remove(cacheFile)
+            """
     
     def selectFile(self, *args):
         logger.debug("Create file select popup dialog...")
@@ -73,32 +135,33 @@ class MainWindow(App):
         uiGridLayout_selectFile.add_widget(self.uiFileChooserListView_file) 
         uiGridLayout_selectFile.add_widget(uiGridLayout_buttons)        
 
-        popup = Popup(title ="MMCA | Choose File", content = uiGridLayout_selectFile)   
-        popup.open()    
-
         closeButton.bind(on_press = popup.dismiss) 
-        openButton.bind(on_press = functools.partial(self.openFile, popup)) 
+        def openClosure(*args):
+            popup.dismiss()
+            self.openFile(self.uiFileChooserListView_file.selection[0])
+        openButton.bind(on_press = openClosure) 
+        
+        popup = Popup(title ="MMCA | Choose File", content = uiGridLayout_selectFile)   
+        popup.open()
   
-    def openFile(self, popup, *args):
-        popup.dismiss()
-        filename = self.uiFileChooserListView_file.selection[0]
+    def openFile(self, filename):
         logger.info("Loading crash report at '%s'..." % filename)
-        # instantiate a new CrashReport and load our file
         try:
             self.report = CrashReport(filename)
         except Exception as ex:
             logger.warn("Exception loading crash report: %s" % str(ex))
             self.resetUi()
+            #TODO: show warning dialog with exception info
             return
-        self.filename = filename
         logger.info("Crash report now loaded...")
 
-        logger.debug("Load report...")
+        logger.debug("Showing first report part...")
         self.switch_part(self.report[0]["name"])
 
     def switch_part(self, reportName, *args):
         self.clearUiTextInput()
 
+        logger.info("Showing report part '%s'..." % reportName)
         for index in range(len(self.report)):
             if self.report[index]["name"] == reportName:
                 self.currentPart = reportName
@@ -107,7 +170,8 @@ class MainWindow(App):
                 self.rebuildActionBar()
 
                 if self.report[index]["type"] in ("*.rawlog", "*.rawlog.gz"):
-                    text = self.report.display_format(index, tail=256)
+                    logger.warning("Only showing last %d lines of rawlog..." % RAWLOG_TAIL)
+                    text = self.report.display_format(index, tail = RAWLOG_TAIL)
                 else:
                     text = self.report.display_format(index)
                 
