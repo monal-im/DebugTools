@@ -33,7 +33,7 @@
       </sizepolicy>
      </property>
      <property name="text">
-      <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;Copyright 2023 monal-im&lt;br/&gt;Project Homepage: &lt;a href=&quot;https://github.com/monal-im/DebugTools&quot;&gt;https://github.com/monal-im/DebugTools&lt;/a&gt;&lt;br/&gt;Umbrella Project Homepage: &lt;a href=&quot;https://github.com/monal-im/Monal&quot;&gt;https://github.com/monal-im/Monal&lt;/a&gt;&lt;br/&gt;&lt;br/&gt;App Icon by Ann-Sophie Zwahlen: &lt;a href=&quot;https://art.of-sophy.ch/&quot;&gt;https://art.of-sophy.ch/&lt;/a&gt;&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
+      <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;Copyright 2024 monal-im&lt;br/&gt;Project Homepage: &lt;a href=&quot;https://github.com/monal-im/DebugTools&quot;&gt;https://github.com/monal-im/DebugTools&lt;/a&gt;&lt;br/&gt;Umbrella Project Homepage: &lt;a href=&quot;https://github.com/monal-im/Monal&quot;&gt;https://github.com/monal-im/Monal&lt;/a&gt;&lt;br/&gt;&lt;br/&gt;App Icon by Ann-Sophie Zwahlen: &lt;a href=&quot;https://art.of-sophy.ch/&quot;&gt;https://art.of-sophy.ch/&lt;/a&gt;&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
      </property>
      <property name="textFormat">
       <enum>Qt::RichText</enum>
