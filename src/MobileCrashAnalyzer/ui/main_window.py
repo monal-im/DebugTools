@@ -126,7 +126,7 @@ class MainWindow(App):
     def selectFile(self, *args):
         logger.debug("Create file select popup dialog...")
 
-        self.uiFileChooserListView_file = FileChooserListView(path=Paths.get_user_documents_dir()) 
+        self.uiFileChooserListView_file = FileChooserListView(path=Paths.get_user_documents_dir(), filters=["*.mcrash", "*.mcrash.gz"]) 
 
         closeButton = Button(text = "Cancel", size_hint=(0.5, 0.5))
         openButton = Button(text = "Open", size_hint=(0.5, 0.5))
@@ -138,13 +138,12 @@ class MainWindow(App):
         uiGridLayout_selectFile.add_widget(self.uiFileChooserListView_file) 
         uiGridLayout_selectFile.add_widget(uiGridLayout_buttons)        
 
-        closeButton.bind(on_press = popup.dismiss) 
+        popup = Popup(title ="MMCA | Choose File", content = uiGridLayout_selectFile)   
         def openClosure(*args):
             popup.dismiss()
             self.openFile(self.uiFileChooserListView_file.selection[0])
         openButton.bind(on_press = openClosure) 
-        
-        popup = Popup(title ="MMCA | Choose File", content = uiGridLayout_selectFile)   
+        closeButton.bind(on_press = popup.dismiss) 
         popup.open()
   
     def openFile(self, filename):
