@@ -47,7 +47,10 @@ class MainWindow(App):
         self.uiActionBar = Factory.ActionBar(pos_hint={'top': 1})
         self.rebuildActionBar()
 
-        self.uiTextInput = TextInput(text = "")
+        # we want our keyboard to not show up on every touch and we don't want the user to be able to change the contents of the text input
+        # note: if using self.uiTextInput.readonly = True, no touch events will be handled anymore not even scrolling ones
+        self.uiTextInput = TextInput(text = "", keyboard_mode = "managed")
+        self.uiTextInput.insert_text = lambda self, substring, from_undo=False: False
         #self.uiTextInput.bind(minimum_height=self.uiTextInput.setter("height"))
 
         self.layout.add_widget(self.uiActionBar)
