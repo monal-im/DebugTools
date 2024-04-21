@@ -8,10 +8,74 @@ on:
   workflow_dispatch:
 
 jobs:
-
   # see https://data-dive.com/multi-os-deployment-in-cloud-using-pyinstaller-and-github-actions/
   # but here we build first and run our createrelease job afterwards, accessing the artifacts of our build job 
-  build:
+  build-android:
+    name: Mobile Crash Analyzer
+    runs-on: ubuntu-latest
+
+    steps:
+    - name: Install dependencies
+      run: |
+        sudo apt -y install apksigner
+    - name: Prepare app for buildozer
+      run: |
+        REFNAME="${{ github.ref_name }}"
+        echo "VERSION='${REFNAME}'" >src/shared/utils/version.py
+        
+        mkdir MonalMobileCrashAnalyzer_Deploy
+        cp -av src/MobileCrashAnalyzer.py MonalMobileCrashAnalyzer_Deploy/MobileCrashAnalyzer.py
+        cp -av src/MobileCrashAnalyzer MonalMobileCrashAnalyzer_Deploy/MobileCrashAnalyzer
+        cp -av src/shared MonalMobileCrashAnalyzer_Deploy/shared
+
+        cp -av src/MobileCrashAnalyzer/data/conf/intent_filters.xml MonalMobileCrashAnalyzer_Deploy/intent_filters.xml
+        cp -av src/MobileCrashAnalyzer/data/conf/buildozer.spec MonalMobileCrashAnalyzer_Deploy/buildozer.spec
+        echo "" >>MonalMobileCrashAnalyzer_Deploy/buildozer.spec
+        echo "version = ${REFNAME#MMCA-v}" >>MonalMobileCrashAnalyzer_Deploy/buildozer.spec
+        
+        echo "import os" >MonalMobileCrashAnalyzer_Deploy/main.py
+        echo "os.environ['KIVY_LOG_MODE'] = 'MIXED'" >>MonalMobileCrashAnalyzer_Deploy/main.py
+        echo "os.environ['KIVY_NO_FILELOG'] = '1'" >>MonalMobileCrashAnalyzer_Deploy/main.py
+        echo "from importlib import util" >>MonalMobileCrashAnalyzer_Deploy/main.py
+        echo "real_file = os.path.join(os.path.dirname(__file__), 'MobileCrashAnalyzer.pyc')" >>MonalMobileCrashAnalyzer_Deploy/main.py
+        echo "print('Proxy loading real file: %s' % real_file)" >>MonalMobileCrashAnalyzer_Deploy/main.py
+        echo "" >>MonalMobileCrashAnalyzer_Deploy/main.py
+        echo "spec = util.spec_from_file_location('MobileCrashAnalyzer', real_file)" >>MonalMobileCrashAnalyzer_Deploy/main.py
+        echo "print(f'{spec = }')" >>MonalMobileCrashAnalyzer_Deploy/main.py
+        echo "mod = util.module_from_spec(spec)" >>MonalMobileCrashAnalyzer_Deploy/main.py
+        echo "# we don't want to add our module to sys.modules to not interfere with the package path having the same name" >>MonalMobileCrashAnalyzer_Deploy/main.py
+        echo "#(just like if our real_file was the real entry point)" >>MonalMobileCrashAnalyzer_Deploy/main.py
+        echo "print(f'{mod = }')" >>MonalMobileCrashAnalyzer_Deploy/main.py
+        echo "out = spec.loader.exec_module(mod)" >>MonalMobileCrashAnalyzer_Deploy/main.py
+        echo "print(f'{out = }')" >>MonalMobileCrashAnalyzer_Deploy/main.py
+        echo "print('Proxied file returned, terminating...')" >>MonalMobileCrashAnalyzer_Deploy/main.py
+        
+        echo ""
+        echo "buildozer.spec:"
+        cat MonalMobileCrashAnalyzer_Deploy/buildozer.spec
+        echo ""
+        echo "main.py:"
+        cat MonalMobileCrashAnalyzer_Deploy/main.py
+
+    - name: Build with Buildozer
+      uses: Sobottasgithub/buildozer-action@v1.1.3
+      id: buildozer
+      with:
+        workdir: MonalMobileCrashAnalyzer_Deploy
+        buildozer_version: stable
+
+    - name: Sign Apk
+      id: signer
+      run: |
+        apkinfile="${{ steps.buildozer.outputs.filename }}"
+        apkoutfile="$HOME/signed-$(basename "${apkinfile}")"
+        echo -n "${{ secrets.APK_SIGNING_KEY }}" >"$HOME/keystore.key"
+        openssl enc -d -chacha20 -pbkdf2 -in src/MobileCrashAnalyzer/data/conf/release.keystore.enc -out "$HOME/release.keystore" -kfile "$HOME/keystore.key"
+        cat "$HOME/keystore.key" | apksigner sign -ks "$HOME/release.keystore" -in "${apkinfile}" -out "${apkoutfile}"
+        echo "unsigned_apk=${apkinfile}" >> "$GITHUB_OUTPUT"
+        echo "signed_apk=${apkoutfile}" >> "$GITHUB_OUTPUT"
+
+  build-desktop:
     name: Build packages
     runs-on: ${{ matrix.os }}
     strategy:
@@ -80,35 +144,40 @@ jobs:
                 pyinstaller --clean --log-level DEBUG --name "CrashAnalyzer" --add-data "CrashAnalyzer/data:CrashAnalyzer/data" --add-data "shared/ui/*.ui:shared/ui" --add-data "CrashAnalyzer/ui/*.ui:CrashAnalyzer/ui" --specpath src --windowed --icon CrashAnalyzer/data/art/icon.png --onefile src/CrashAnalyzer.py
             OUT_FILE_NAME: CrashAnalyzer
             ASSET_MIME: application/x-executable
+
     steps:
-    - uses: actions/checkout@v1
-    - name: Set up Python 3.11
-      uses: actions/setup-python@v3
-      with:
-        python-version: 3.11
-    # requirements.txt was created using pipreqs
-    - name: Install dependencies
-      run: |
-        python -m pip install --upgrade pip
-        pip install --upgrade pyinstaller
-        pip install --upgrade pyinstaller-hooks-contrib
-        pip install --upgrade Pillow
-        pip install --upgrade tk
-        pip install --upgrade tcl
-        pip install --upgrade -r src/requirements.txt
-    - name: Extract version string
-      run: echo "VERSION='${{ github.ref_name }}'" >src/shared/utils/version.py
-    - name: Build with pyinstaller for ${{matrix.TARGET}}
-      run: ${{matrix.CMD_BUILD}}
-    - uses: actions/upload-artifact@v3
-      with:
-        name: ${{ matrix.OUT_FILE_NAME}}
-        path: ./dist/${{ matrix.OUT_FILE_NAME}} # or path/to/artifact
+      - uses: actions/checkout@v1
+      - name: Set up Python 3.11
+        uses: actions/setup-python@v3
+        with:
+          python-version: 3.11
+      # requirements.txt was created using pipreqs
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install --upgrade pyinstaller
+          pip install --upgrade pyinstaller-hooks-contrib
+          pip install --upgrade Pillow
+          pip install --upgrade tk
+          pip install --upgrade tcl
+          pip install --upgrade -r src/requirements.txt
+      - name: Extract version string
+        run: echo "VERSION='${{ github.ref_name }}'" >src/shared/utils/version.py
+      - name: Build with pyinstaller for ${{matrix.TARGET}}
+        run: ${{matrix.CMD_BUILD}}
+      - uses: actions/upload-artifact@v3
+        with:
+          name: |
+            ${{ matrix.OUT_FILE_NAME}}
+            MonalMobileCrashAnalyzer
+          path: |
+            ./dist/${{ matrix.OUT_FILE_NAME}} # or path/to/artifact
+            steps.signer.outputs.signed_apk
 
   createrelease:
     name: Create Release
     runs-on: [ubuntu-latest]
-    needs: build
+    needs: build-desktop
     steps:
     - name: Load build artifacts
       uses: actions/download-artifact@v3
@@ -124,6 +193,7 @@ jobs:
         files: |
           LogViewer*/*
           CrashAnalyzer*/*
+          MobileCrashAnalyzer*/*
         fail_on_unmatched_files: true
         token: ${{ secrets.GITHUB_TOKEN }}
         draft: false
