@@ -18,6 +18,10 @@ jobs:
     - name: Install dependencies
       run: |
         sudo apt -y install apksigner
+
+    - name: Checkout
+      uses: actions/checkout@v2
+    
     - name: Prepare app for buildozer
       run: |
         REFNAME="${{ github.ref_name }}"
@@ -31,7 +35,7 @@ jobs:
         cp -av src/MobileCrashAnalyzer/data/conf/intent_filters.xml MonalMobileCrashAnalyzer_Deploy/intent_filters.xml
         cp -av src/MobileCrashAnalyzer/data/conf/buildozer.spec MonalMobileCrashAnalyzer_Deploy/buildozer.spec
         echo "" >>MonalMobileCrashAnalyzer_Deploy/buildozer.spec
-        echo "version = ${REFNAME#MMCA-v}" >>MonalMobileCrashAnalyzer_Deploy/buildozer.spec
+        echo "version = ${REFNAME}" >>MonalMobileCrashAnalyzer_Deploy/buildozer.spec
         
         echo "import os" >MonalMobileCrashAnalyzer_Deploy/main.py
         echo "os.environ['KIVY_LOG_MODE'] = 'MIXED'" >>MonalMobileCrashAnalyzer_Deploy/main.py
@@ -78,6 +82,7 @@ jobs:
   build-desktop:
     name: Build packages
     runs-on: ${{ matrix.os }}
+    needs: build-android
     strategy:
       matrix:
         include:
