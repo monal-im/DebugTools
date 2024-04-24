@@ -79,6 +79,12 @@ jobs:
         cat "$HOME/keystore.key" | apksigner sign -ks "$HOME/release.keystore" -in "${apkinfile}" -out "${apkoutfile}"
         echo "unsigned_apk=${apkinfile}" >> "$GITHUB_OUTPUT"
         echo "signed_apk=${apkoutfile}" >> "$GITHUB_OUTPUT"
+    
+    - name: Upload signed apk
+      uses: actions/upload-artifact@v4
+      with:
+        name: MobileCrashAnalyzer
+        path: ${{ steps.signer.outputs.signed_apk }}
 
   build-desktop:
     name: Build packages for ${{ matrix.TARGET }}
