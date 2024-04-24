@@ -57,4 +57,5 @@
   <data android:scheme="file"/>
   <data android:scheme="content"/>
   <data android:mimeType="application/gzip"/>
+  <data android:mimeType="application/x-gzip"/>
 </intent-filter>
