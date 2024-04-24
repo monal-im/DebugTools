@@ -14,11 +14,12 @@ import os
 import functools
 
 from jnius import autoclass, cast
-from android import activity, mActivity
+from android import activity, mActivity, permissions
 J_FileOutputStream = autoclass("java.io.FileOutputStream")
 J_FileUtils = autoclass("android.os.FileUtils")
 #J_Intent = autoclass("android.content.Intent")
 #J_PythonActivity = autoclass('org.kivy.android.PythonActivity')
+permissions.request_permissions([permissions.Permission.READ_EXTERNAL_STORAGE, permissions.Permission.WRITE_EXTERNAL_STORAGE])
 
 from shared.storage import CrashReport, Rawlog
 from shared.utils import Paths
@@ -126,7 +127,7 @@ class MainWindow(App):
     def selectFile(self, *args):
         logger.debug("Create file select popup dialog...")
 
-        self.uiFileChooserListView_file = FileChooserListView(path=Paths.get_user_documents_dir(), filters=["*.mcrash", "*.mcrash.gz"]) 
+        self.uiFileChooserListView_file = FileChooserListView(path=Paths.get_user_documents_dir()) #, filters=["*.mcrash", "*.mcrash.gz"]
 
         closeButton = Button(text = "Cancel", size_hint=(0.5, 0.5))
         openButton = Button(text = "Open", size_hint=(0.5, 0.5))
