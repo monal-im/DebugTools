@@ -2,11 +2,15 @@ from kivy.uix.button import Button
 from kivy.uix.label import Label
 from kivy.uix.popup import Popup
 from kivy.uix.gridlayout import GridLayout
+from kivy.utils import platform
 
 from jnius import autoclass, cast
-from android import activity, mActivity
-J_Intent = autoclass("android.content.Intent")
-J_Uri = autoclass("android.net.Uri")
+
+# Just import if the os is Android to avoid Android peculiarities
+if platform == "android":
+    from android import activity, mActivity
+    J_Intent = autoclass("android.content.Intent")
+    J_Uri = autoclass("android.net.Uri")
 
 from shared.utils import Paths
 from shared.utils.version import VERSION
@@ -21,11 +25,13 @@ def createResponsiveLabel(text):
         label.setter("text_size")(label, (label.width, None)),
         texture_size = lambda *x: label.setter("height")(label, label.texture_size[1])
     )
-    def ref_pressed(instance, value):
-        logger.info(f"Reference pressed on {instance}: {value}")
-        browserIntent = J_Intent(J_Intent.ACTION_VIEW, J_Uri.parse(value));
-        mActivity.startActivity(browserIntent);
-    label.bind(on_ref_press = ref_pressed)
+    # Just import if the os is Android to avoid Android peculiarities
+    if platform == "android":
+        def ref_pressed(instance, value):
+            logger.info(f"Reference pressed on {instance}: {value}")
+            browserIntent = J_Intent(J_Intent.ACTION_VIEW, J_Uri.parse(value));
+            mActivity.startActivity(browserIntent);
+        label.bind(on_ref_press = ref_pressed)
     return label
 
 def MobileAboutDialog(*args):

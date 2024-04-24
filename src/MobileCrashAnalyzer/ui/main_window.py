@@ -9,17 +9,21 @@ from kivy.uix.textinput import TextInput
 from kivy.uix.button import Button
 from kivy.uix.label import Label
 from kivy.uix.popup import Popup
+from kivy.utils import platform
 
 import os
 import functools
 
 from jnius import autoclass, cast
-from android import activity, mActivity, permissions
-J_FileOutputStream = autoclass("java.io.FileOutputStream")
-J_FileUtils = autoclass("android.os.FileUtils")
-#J_Intent = autoclass("android.content.Intent")
-#J_PythonActivity = autoclass('org.kivy.android.PythonActivity')
-permissions.request_permissions([permissions.Permission.READ_EXTERNAL_STORAGE, permissions.Permission.WRITE_EXTERNAL_STORAGE])
+
+# Just import if the os is Android to avoid Android peculiarities
+if platform == "android":
+    from android import activity, mActivity, permissions
+    J_FileOutputStream = autoclass("java.io.FileOutputStream")
+    J_FileUtils = autoclass("android.os.FileUtils")
+    #J_Intent = autoclass("android.content.Intent")
+    #J_PythonActivity = autoclass('org.kivy.android.PythonActivity')
+    permissions.request_permissions([permissions.Permission.READ_EXTERNAL_STORAGE, permissions.Permission.WRITE_EXTERNAL_STORAGE])
 
 from shared.storage import CrashReport, Rawlog
 from shared.utils import Paths
@@ -57,7 +61,9 @@ class MainWindow(App):
         self.layout.add_widget(self.uiActionBar)
         self.layout.add_widget(self.uiTextInput)
 
-        activity.bind(on_new_intent=self.on_new_intent)
+        # Just import if the os is Android to avoid Android peculiarities
+        if platform == "android":
+            activity.bind(on_new_intent=self.on_new_intent)
 
         return self.layout
 
@@ -65,12 +71,14 @@ class MainWindow(App):
         self.stop()
     
     def on_start(self, *args):
-        context = cast('android.content.Context', mActivity.getApplicationContext())
-        logger.info(f"Startup application context: {context}")
-        intent = mActivity.getIntent()
-        logger.info(f"Got startup intent: {intent}")
-        if intent:
-            self.on_new_intent(intent)
+        # Just import if the os is Android to avoid Android peculiarities
+        if platform == "android":
+            context = cast('android.content.Context', mActivity.getApplicationContext())
+            logger.info(f"Startup application context: {context}")
+            intent = mActivity.getIntent()
+            logger.info(f"Got startup intent: {intent}")
+            if intent:
+                self.on_new_intent(intent)
     
     #see https://github.com/termux/termux-app/blob/74b23cb2096652601050d0f4951f9fb92577743c/app/src/main/java/com/termux/filepicker/TermuxFileReceiverActivity.java#L70
     @mainthread
