@@ -3,7 +3,6 @@ from kivy.app import App
 from kivy.factory import Factory
 from kivy.clock import mainthread
 from kivy.uix.filechooser import FileChooserListView
-from kivy.uix.scrollview import ScrollView
 from kivy.uix.gridlayout import GridLayout
 from kivy.uix.textinput import TextInput
 from kivy.uix.button import Button
@@ -154,15 +153,15 @@ class MainWindow(App):
             logger.info("Loading crash report at '%s'..." % filename)
             try:
                 self.report = CrashReport(filename)
+                logger.info("Crash report now loaded...")
+
+                logger.debug("Showing first report part...")
+                self.switch_part(self.report[0]["name"])
             except Exception as ex:
                 logger.warn("Exception loading crash report: %s" % str(ex))
+                self.createPopup("Exception loading crash report: %s" % str(ex))
                 self.resetUi()
-                #TODO: show warning dialog with exception info
                 return
-            logger.info("Crash report now loaded...")
-
-            logger.debug("Showing first report part...")
-            self.switch_part(self.report[0]["name"])
 
         openButton.bind(on_press = openClosure) 
         closeButton.bind(on_press = popup.dismiss) 
@@ -223,3 +222,22 @@ class MainWindow(App):
     def clearUiTextInput(self):
         logger.debug("Clearing uiTextInput...")
         self.uiTextInput.text = ""
+
+    def createPopup(self, message):
+        logger.debug("Creating Popup...")
+        closeButton = Button(text = "Close", size_hint = (1, None))
+
+        label = Label(text = "[color=ffffff] %s [/color]" % message, size_hint = (1, None), markup=True)
+        label.bind(
+            width=lambda *x: label.setter("text_size")(label, (label.width, None)),
+            texture_size=lambda *x: label.setter("height")(label, label.texture_size[1])
+        )
+
+        uiGridLayout_popup = GridLayout(cols = 1, padding = 6) 
+        uiGridLayout_popup.add_widget(label) 
+        uiGridLayout_popup.add_widget(closeButton)        
+
+        popup = Popup(title ="MMCA | Warning", content = uiGridLayout_popup)
+
+        closeButton.bind(on_press = popup.dismiss) 
+        popup.open()
