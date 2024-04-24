@@ -132,7 +132,7 @@ class MainWindow(App):
                 os.remove(cacheFile)
             """
     
-    def selectFile(self, *args):
+    def openFile(self, *args):
         logger.debug("Create file select popup dialog...")
 
         self.uiFileChooserListView_file = FileChooserListView(path=Paths.get_user_documents_dir()) #, filters=["*.mcrash", "*.mcrash.gz"]
@@ -150,24 +150,23 @@ class MainWindow(App):
         popup = Popup(title ="MMCA | Choose File", content = uiGridLayout_selectFile)   
         def openClosure(*args):
             popup.dismiss()
-            self.openFile(self.uiFileChooserListView_file.selection[0])
+            filename = self.uiFileChooserListView_file.selection[0]
+            logger.info("Loading crash report at '%s'..." % filename)
+            try:
+                self.report = CrashReport(filename)
+            except Exception as ex:
+                logger.warn("Exception loading crash report: %s" % str(ex))
+                self.resetUi()
+                #TODO: show warning dialog with exception info
+                return
+            logger.info("Crash report now loaded...")
+
+            logger.debug("Showing first report part...")
+            self.switch_part(self.report[0]["name"])
+
         openButton.bind(on_press = openClosure) 
         closeButton.bind(on_press = popup.dismiss) 
         popup.open()
-  
-    def openFile(self, filename):
-        logger.info("Loading crash report at '%s'..." % filename)
-        try:
-            self.report = CrashReport(filename)
-        except Exception as ex:
-            logger.warn("Exception loading crash report: %s" % str(ex))
-            self.resetUi()
-            #TODO: show warning dialog with exception info
-            return
-        logger.info("Crash report now loaded...")
-
-        logger.debug("Showing first report part...")
-        self.switch_part(self.report[0]["name"])
 
     def switch_part(self, reportName, *args):
         self.clearUiTextInput()
@@ -209,7 +208,7 @@ class MainWindow(App):
                 button.texture_update()
                 self.uiActionGroup.dropdown_width = max(self.uiActionGroup.dropdown_width, button.texture_size[0]) + 16
 
-        self.uiActionGroup.add_widget(Factory.ActionButton(text = 'Open File...', on_press = self.selectFile))
+        self.uiActionGroup.add_widget(Factory.ActionButton(text = 'Open File...', on_press = self.openFile))
         self.uiActionGroup.add_widget(Factory.ActionButton(text = 'About', on_press = MobileAboutDialog))
 
         self.uiActionView.add_widget(self.uiActionGroup)
