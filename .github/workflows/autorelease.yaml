@@ -11,12 +11,12 @@ jobs:
   # see https://data-dive.com/multi-os-deployment-in-cloud-using-pyinstaller-and-github-actions/
   # but here we build first and run our createrelease job afterwards, accessing the artifacts of our build job 
   build-android:
-    name: Build packages for android
+    name: Build package for android
     runs-on: ubuntu-latest
 
     steps:
     - name: Checkout
-      uses: actions/checkout@v2
+      uses: actions/checkout@v4
     
     - name: Install dependencies
       run: sudo apt -y install apksigner
@@ -87,7 +87,7 @@ jobs:
         path: ${{ steps.signer.outputs.signed_apk }}
 
   build-desktop:
-    name: Build packages for ${{ matrix.TARGET }}
+    name: Build package for ${{ matrix.TARGET }}
     runs-on: ${{ matrix.os }}
     strategy:
       matrix:
@@ -157,9 +157,9 @@ jobs:
             ASSET_MIME: application/x-executable
 
     steps:
-      - uses: actions/checkout@v1
+      - uses: actions/checkout@v4
       - name: Set up Python 3.11
-        uses: actions/setup-python@v3
+        uses: actions/setup-python@v4
         with:
           python-version: 3.11
       # requirements.txt was created using pipreqs
@@ -176,7 +176,7 @@ jobs:
         run: echo "VERSION='${{ github.ref_name }}'" >src/shared/utils/version.py
       - name: Build with pyinstaller for ${{matrix.TARGET}}
         run: ${{matrix.CMD_BUILD}}
-      - uses: actions/upload-artifact@v3
+      - uses: actions/upload-artifact@v4
         with:
           name: ${{ matrix.OUT_FILE_NAME}}
           path: ./dist/${{ matrix.OUT_FILE_NAME}}
@@ -187,9 +187,9 @@ jobs:
     needs: [build-desktop, build-android]
     steps:
     - name: Load build artifacts
-      uses: actions/download-artifact@v3
+      uses: actions/download-artifact@v4
     - name: Release
-      uses: softprops/action-gh-release@v1
+      uses: softprops/action-gh-release@v2
       with:
         name: Release ${{ github.ref_name }}
         tag_name: ${{ github.ref }}
