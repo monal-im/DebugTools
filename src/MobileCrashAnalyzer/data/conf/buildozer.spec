@@ -2,8 +2,8 @@
 log_level = 2
 
 [app]
-title = Monal Mobile Crash Analyzer
-package.name = MMCA
+title = Mobile Crash Analyzer
+package.name = MobileCrashAnalyzer
 package.domain = im.monal
 
 source.dir = .
