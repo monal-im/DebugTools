@@ -185,7 +185,10 @@ class MainWindow(App):
                     text = self.report.display_format(index)
                 
                 self.uiTextInput.text = text
-                self.uiTextInput.cursor = (0,0)
+
+                # If the current part is not rawlog/rawlog.gz, the cursor is set to the beginning (0,0)
+                if self.report[index]["type"] not in ("*.rawlog", "*.rawlog.gz"):
+                    self.uiTextInput.cursor = (0,0)
 
     def rebuildActionBar(self, *args):
         # Rebuild ActionBar because it's impossible to change it
