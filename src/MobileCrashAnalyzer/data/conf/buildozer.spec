@@ -21,7 +21,7 @@ fullscreen = 0
 android.minapi = 29
 android.permissions = WRITE_EXTERNAL_STORAGE,READ_EXTERNAL_STORAGE
 android.arch = armeabi-v7a
-android.manifest.intent_filters = MobileCrashAnalyzer.intent_filters.xml
+android.manifest.intent_filters = intent_filters.xml
 
 # iOS specific
 ios.kivy_ios_url = https://github.com/kivy/kivy-ios
