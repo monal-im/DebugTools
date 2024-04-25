@@ -1,0 +1,61 @@
+<!-- see https://stackoverflow.com/a/31028507/3528174 -->
+<intent-filter>
+  <action android:name="android.intent.action.VIEW" />
+  <category android:name="android.intent.category.DEFAULT" />
+  <category android:name="android.intent.category.BROWSABLE" />
+  <data android:scheme="file" />
+  <data android:scheme="content" />
+  <data android:host="*" />
+  <data android:mimeType="*/*" />
+  <data android:pathPattern=".*\\.rawlog\\.gz" />
+  <data android:pathPattern=".*\\..*\\.rawlog\\.gz" />
+  <data android:pathPattern=".*\\..*\\..*\\.rawlog\\.gz" />
+  <data android:pathPattern=".*\\..*\\..*\\..*\\.rawlog\\.gz" />
+  <data android:pathPattern=".*\\..*\\..*\\..*\\..*\\.rawlog\\.gz" />
+  <data android:pathPattern=".*\\..*\\..*\\..*\\..*\\..*\\.rawlog\\.gz" />
+  <data android:pathPattern=".*\\..*\\..*\\..*\\..*\\..*\\..*\\.rawlog\\.gz" />
+  <data android:pathPattern=".*\\.rawlog" />
+  <data android:pathPattern=".*\\..*\\.rawlog" />
+  <data android:pathPattern=".*\\..*\\..*\\.rawlog" />
+  <data android:pathPattern=".*\\..*\\..*\\..*\\.rawlog" />
+  <data android:pathPattern=".*\\..*\\..*\\..*\\..*\\.rawlog" />
+  <data android:pathPattern=".*\\..*\\..*\\..*\\..*\\..*\\.rawlog" />
+  <data android:pathPattern=".*\\..*\\..*\\..*\\..*\\..*\\..*\\.rawlog" />
+</intent-filter>
+
+<!-- handle intents with null mimeType -->
+<!-- see https://stackoverflow.com/a/31028507/3528174 -->
+<intent-filter>
+  <action android:name="android.intent.action.VIEW" />
+  <category android:name="android.intent.category.DEFAULT" />
+  <category android:name="android.intent.category.BROWSABLE" />
+  <data android:scheme="file" />
+  <data android:scheme="content" />
+  <data android:host="*" />
+  <data android:pathPattern=".*\\.rawlog\\.gz" />
+  <data android:pathPattern=".*\\..*\\.rawlog\\.gz" />
+  <data android:pathPattern=".*\\..*\\..*\\.rawlog\\.gz" />
+  <data android:pathPattern=".*\\..*\\..*\\..*\\.rawlog\\.gz" />
+  <data android:pathPattern=".*\\..*\\..*\\..*\\..*\\.rawlog\\.gz" />
+  <data android:pathPattern=".*\\..*\\..*\\..*\\..*\\..*\\.rawlog\\.gz" />
+  <data android:pathPattern=".*\\..*\\..*\\..*\\..*\\..*\\..*\\.rawlog\\.gz" />
+  <data android:pathPattern=".*\\.rawlog" />
+  <data android:pathPattern=".*\\..*\\.rawlog" />
+  <data android:pathPattern=".*\\..*\\..*\\.rawlog" />
+  <data android:pathPattern=".*\\..*\\..*\\..*\\.rawlog" />
+  <data android:pathPattern=".*\\..*\\..*\\..*\\..*\\.rawlog" />
+  <data android:pathPattern=".*\\..*\\..*\\..*\\..*\\..*\\.rawlog" />
+  <data android:pathPattern=".*\\..*\\..*\\..*\\..*\\..*\\..*\\.rawlog" />
+</intent-filter>
+
+<!-- some file providers (mail etc.) don't provide meaningful names we could check against, just use the gzip mimetype instead -->
+<!-- yes, that's unfortunately more broad than we need, but there seems to be no known fix -->
+<intent-filter>
+  <action android:name="android.intent.action.VIEW"/>
+  <category android:name="android.intent.category.DEFAULT"/>
+  <category android:name="android.intent.category.BROWSABLE"/>
+  <data android:scheme="file"/>
+  <data android:scheme="content"/>
+  <data android:mimeType="application/gzip"/>
+  <data android:mimeType="application/x-gzip"/>
+</intent-filter>

@@ -10,7 +10,7 @@ on:
 jobs:
   # see https://data-dive.com/multi-os-deployment-in-cloud-using-pyinstaller-and-github-actions/
   # but here we build first and run our createrelease job afterwards, accessing the artifacts of our build job 
-  build-android:
+  build-android-MMCA:
     name: Build MobileCrashAnalyzer for android
     runs-on: ubuntu-latest
 
@@ -21,7 +21,8 @@ jobs:
     - name: Install dependencies
       run: sudo apt -y install apksigner
 
-    - name: Prepare app for buildozer
+    # Build Mobile Crash Analyzer
+    - name: Prepare MMCA for buildozer
       run: |
         REFNAME="${{ github.ref_name }}"
         echo "VERSION='${REFNAME}'" >src/shared/utils/version.py
@@ -84,6 +85,83 @@ jobs:
       uses: actions/upload-artifact@v4
       with:
         name: MobileCrashAnalyzer
+        path: ${{ steps.signer.outputs.signed_apk }}
+  
+  build-android-MMLV:
+    name: Build MobileLogViewer for android
+    runs-on: ubuntu-latest
+
+    steps:
+    - name: Checkout
+      uses: actions/checkout@v4
+    
+    - name: Install dependencies
+      run: sudo apt -y install apksigner
+
+    # Build Monal Mobile Log Viewer
+    - name: Prepare MMLV for buildozer
+      run: |
+        REFNAME="${{ github.ref_name }}"
+        echo "VERSION='${REFNAME}'" >src/shared/utils/version.py
+        
+        mkdir MobileLogViewer_Deploy
+        cp -av src/MobileLogViewer.py MobileLogViewer_Deploy/
+        cp -av src/MobileLogViewer MobileLogViewer_Deploy/
+        cp -av src/shared MobileLogViewer_Deploy/
+
+        cp -av src/MobileLogViewer/data/conf/intent_filters.xml MobileLogViewer_Deploy/
+        cp -av src/MobileLogViewer/data/conf/buildozer.spec MobileLogViewer_Deploy/
+        echo "" >>MobileLogViewer_Deploy/buildozer.spec
+        # buildozer does not like non-numeric version numbers
+        echo "version = ${REFNAME#v}" >>MobileLogViewer_Deploy/buildozer.spec
+        
+        # dynamically build main.py proxy to load 
+        echo "import os" >MobileLogViewer_Deploy/main.py
+        echo "os.environ['KIVY_LOG_MODE'] = 'MIXED'" >>MobileLogViewer_Deploy/main.py
+        echo "os.environ['KIVY_NO_FILELOG'] = '1'" >>MobileLogViewer_Deploy/main.py
+        echo "from importlib import util" >>MobileLogViewer_Deploy/main.py
+        echo "real_file = os.path.join(os.path.dirname(__file__), 'MobileLogViewer.pyc')" >>MobileLogViewer_Deploy/main.py
+        echo "print('Proxy loading real file: %s' % real_file)" >>MobileLogViewer_Deploy/main.py
+        echo "" >>MobileLogViewer_Deploy/main.py
+        echo "spec = util.spec_from_file_location('MobileLogViewer', real_file)" >>MobileLogViewer_Deploy/main.py
+        echo "print(f'{spec = }')" >>MobileLogViewer_Deploy/main.py
+        echo "mod = util.module_from_spec(spec)" >>MobileLogViewer_Deploy/main.py
+        echo "# we don't want to add our module to sys.modules to not interfere with the package path having the same name" >>MobileLogViewer_Deploy/main.py
+        echo "#(just like if our real_file was the real entry point)" >>MobileLogViewer_Deploy/main.py
+        echo "print(f'{mod = }')" >>MobileLogViewer_Deploy/main.py
+        echo "out = spec.loader.exec_module(mod)" >>MobileLogViewer_Deploy/main.py
+        echo "print(f'{out = }')" >>MobileLogViewer_Deploy/main.py
+        echo "print('Proxied file returned, terminating...')" >>MobileLogViewer_Deploy/main.py
+        
+        echo ""
+        echo "buildozer.spec:"
+        cat MobileLogViewer_Deploy/buildozer.spec
+        echo ""
+        echo "main.py:"
+        cat MobileLogViewer_Deploy/main.py
+
+    - name: Build with Buildozer
+      uses: Sobottasgithub/buildozer-action@v1.1.3
+      id: buildozer
+      with:
+        workdir: MobileLogViewer_Deploy
+        buildozer_version: stable
+
+    - name: Sign Apk
+      id: signer
+      run: |
+        apkinfile="${{ steps.buildozer.outputs.filename }}"
+        apkoutfile="$HOME/signed-$(basename "${apkinfile}")"
+        echo -n "${{ secrets.APK_SIGNING_KEY }}" >"$HOME/keystore.key"
+        openssl enc -d -chacha20 -pbkdf2 -in src/MobileLogViewer/data/conf/release.keystore.enc -out "$HOME/release.keystore" -kfile "$HOME/keystore.key"
+        cat "$HOME/keystore.key" | apksigner sign -ks "$HOME/release.keystore" -in "${apkinfile}" -out "${apkoutfile}"
+        echo "unsigned_apk=${apkinfile}" >> "$GITHUB_OUTPUT"
+        echo "signed_apk=${apkoutfile}" >> "$GITHUB_OUTPUT"
+    
+    - name: Upload signed apk
+      uses: actions/upload-artifact@v4
+      with:
+        name: MobileLogViewer
         path: ${{ steps.signer.outputs.signed_apk }}
 
   build-desktop:
@@ -184,7 +262,7 @@ jobs:
   createrelease:
     name: Create Release
     runs-on: [ubuntu-latest]
-    needs: [build-desktop, build-android]
+    needs: [build-desktop, build-android-MMCA, build-android-MMLV]
     steps:
     - name: Load build artifacts
       uses: actions/download-artifact@v4
@@ -209,6 +287,7 @@ jobs:
           LogViewer*/*
           CrashAnalyzer*/*
           MobileCrashAnalyzer*/*
+          MobileLogViewer*/*
         fail_on_unmatched_files: true
         token: ${{ secrets.GITHUB_TOKEN }}
         draft: false
