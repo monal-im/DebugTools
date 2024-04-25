@@ -188,15 +188,33 @@ jobs:
     steps:
     - name: Load build artifacts
       uses: actions/download-artifact@v4
+    - name: Generate release changelog
+      id: releasenotes
+      uses: heinrichreimer/action-github-changelog-generator@v2.4
+      with:
+        issues: true
+        issuesWoLabels: true
+        pullRequests: true
+        prWoLabels: true
+        filterByMilestone: true
+        author: true
+        usernamesAsGithubLogins: true
+        compareLink: true
+        issueLineLabels: ALL
+        simpleList: false
+        releaseBranch: master
+        httpCache: false
+        verbose: true
+        stripGeneratorNotice: true
+        token: ${{ secrets.GITHUB_TOKEN }} 
     - name: Release
       uses: softprops/action-gh-release@v2
       with:
         name: Release ${{ github.ref_name }}
         tag_name: ${{ github.ref }}
         target_commitish: master
-        generate_release_notes: true
-        body: |
-          New release
+        generate_release_notes: false
+        body: ${{ steps.releasenotes.outputs.changelog }}
         files: |
           LogViewer*/*
           CrashAnalyzer*/*
