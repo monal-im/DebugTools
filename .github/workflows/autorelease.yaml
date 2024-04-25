@@ -11,7 +11,7 @@ jobs:
   # see https://data-dive.com/multi-os-deployment-in-cloud-using-pyinstaller-and-github-actions/
   # but here we build first and run our createrelease job afterwards, accessing the artifacts of our build job 
   build-android:
-    name: Build package for android
+    name: Build MobileCrashAnalyzer for android
     runs-on: ubuntu-latest
 
     steps:
@@ -87,7 +87,7 @@ jobs:
         path: ${{ steps.signer.outputs.signed_apk }}
 
   build-desktop:
-    name: Build package for ${{ matrix.TARGET }}
+    name: Build ${{ matrix.OUT_FILE_NAME }} for ${{ matrix.TARGET }}
     runs-on: ${{ matrix.os }}
     strategy:
       matrix:
