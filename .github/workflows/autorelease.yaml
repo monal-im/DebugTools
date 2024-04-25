@@ -123,7 +123,7 @@ jobs:
                 pyinstaller --clean --log-level DEBUG --name "LogViewer" --add-data "LogViewer/data:LogViewer/data" --add-data "shared/ui/*.ui:shared/ui" --add-data "LogViewer/ui/*.ui:LogViewer/ui" --specpath src --windowed --icon LogViewer/data/art/icon.png --onefile src/LogViewer.py
             OUT_FILE_NAME: LogViewer
             ASSET_MIME: application/x-executable
-
+  
           # CrashAnalyzer
           - os: macos-latest
             TARGET: macos
@@ -155,7 +155,7 @@ jobs:
                 pyinstaller --clean --log-level DEBUG --name "CrashAnalyzer" --add-data "CrashAnalyzer/data:CrashAnalyzer/data" --add-data "shared/ui/*.ui:shared/ui" --add-data "CrashAnalyzer/ui/*.ui:CrashAnalyzer/ui" --specpath src --windowed --icon CrashAnalyzer/data/art/icon.png --onefile src/CrashAnalyzer.py
             OUT_FILE_NAME: CrashAnalyzer
             ASSET_MIME: application/x-executable
-
+  
     steps:
       - uses: actions/checkout@v4
       - name: Set up Python 3.11
@@ -188,25 +188,15 @@ jobs:
     steps:
     - name: Load build artifacts
       uses: actions/download-artifact@v4
-    - name: Generate release changelog
+    
+    - name: Generate release notes
       id: releasenotes
-      uses: heinrichreimer/action-github-changelog-generator@v2.4
+      uses: tmolitor-stud-tu/github-releasenotes-generator@main
       with:
-        issues: true
-        issuesWoLabels: true
-        pullRequests: true
-        prWoLabels: true
-        filterByMilestone: true
-        author: true
-        usernamesAsGithubLogins: true
-        compareLink: true
-        issueLineLabels: ALL
-        simpleList: false
-        releaseBranch: master
-        httpCache: false
-        verbose: true
-        stripGeneratorNotice: true
-        token: ${{ secrets.GITHUB_TOKEN }} 
+        NO_CREATE_RELEASE: true
+      env:
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+    
     - name: Release
       uses: softprops/action-gh-release@v2
       with:
@@ -214,7 +204,7 @@ jobs:
         tag_name: ${{ github.ref }}
         target_commitish: master
         generate_release_notes: false
-        body: ${{ steps.releasenotes.outputs.changelog }}
+        body: ${{ steps.releasenotes.outputs.notes }}
         files: |
           LogViewer*/*
           CrashAnalyzer*/*
