@@ -8,7 +8,7 @@ from kivy.uix.textinput import TextInput
 from kivy.uix.button import Button
 from kivy.uix.label import Label
 from kivy.uix.popup import Popup
-from kivy.utils import platform
+from kivy.uix.carousel import Carousel
 
 import os
 import functools
@@ -54,14 +54,11 @@ class MainWindow(App):
         self.uiActionBar = Factory.ActionBar(pos_hint={'top': 1})
         self.rebuildActionBar()
 
-        # we want our keyboard to not show up on every touch and we don't want the user to be able to change the contents of the text input
-        # note: if using self.uiTextInput.readonly = True, no touch events will be handled anymore not even scrolling ones
-        self.uiTextInput = TextInput(text = "", keyboard_mode = "managed")
-        self.uiTextInput.insert_text = lambda self, substring, from_undo=False: False
-        #self.uiTextInput.bind(minimum_height=self.uiTextInput.setter("height"))
+        self.uiCarouselWidget = Carousel(direction='right')
+        self.uiCarouselWidget.bind(on_touch_move=self.onSlideChanged)
 
         self.layout.add_widget(self.uiActionBar)
-        self.layout.add_widget(self.uiTextInput)
+        self.layout.add_widget(self.uiCarouselWidget)
 
         # Use if the os is Android to avoid Android peculiarities
         if OPERATING_SYSTEM == "Android":
@@ -71,7 +68,13 @@ class MainWindow(App):
 
     def quit(self, *args):
         self.stop()
-    
+
+    def onSlideChanged(self, *args):
+        self.currentPart = self.report[self.uiCarouselWidget.index]["name"]
+
+        # Rebuild ActionBar with new parameters
+        self.rebuildActionBar()
+
     def on_start(self, *args):
         # Use if the os is Android to avoid Android peculiarities
         if OPERATING_SYSTEM == "Android":
@@ -153,14 +156,38 @@ class MainWindow(App):
         popup = Popup(title ="MMCA | Choose File", content = uiGridLayout_selectFile)   
         def openClosure(*args):
             popup.dismiss()
+            self.resetUi()
             filename = self.uiFileChooserListView_file.selection[0]
             logger.info("Loading crash report at '%s'..." % filename)
             try:
                 self.report = CrashReport(filename)
                 logger.info("Crash report now loaded...")
 
+                logger.info("Creating report widgets...")
+                for index in range(len(self.report)):
+                    # we want our keyboard to not show up on every touch and we don't want the user to be able to change the contents of the text input
+                    # note: if using self.uiTextInput.readonly = True, no touch events will be handled anymore not even scrolling ones
+                    uiTextInput = TextInput(text = "", keyboard_mode = "managed")
+                    uiTextInput.insert_text = lambda self, substring, from_undo=False: False
+                    #self.uiTextInput.bind(minimum_height=self.uiTextInput.setter("height"))
+
+                    if self.report[index]["type"] in ("*.rawlog", "*.rawlog.gz"):
+                        logger.warning("Only showing last %d lines of rawlog..." % RAWLOG_TAIL)
+                        text = self.report.display_format(index, tail = RAWLOG_TAIL)
+                    else:
+                        text = self.report.display_format(index)
+                
+                    uiTextInput.text = text
+
+                    # If the current part is not rawlog/rawlog.gz, the cursor is set to the beginning (0,0)
+                    if self.report[index]["type"] not in ("*.rawlog", "*.rawlog.gz"):
+                        uiTextInput.cursor = (0,0)
+
+                    self.uiCarouselWidget.add_widget(uiTextInput)
+
                 logger.debug("Showing first report part...")
-                self.switch_part(self.report[0]["name"])
+                self.currentPart = self.report[0]["name"]
+                self.rebuildActionBar()
             except Exception as ex:
                 logger.warn("Exception loading crash report: %s" % str(ex))
                 self.createPopup("Exception loading crash report: %s" % str(ex))
@@ -172,8 +199,6 @@ class MainWindow(App):
         popup.open()
 
     def switch_part(self, reportName, *args):
-        self.clearUiTextInput()
-
         logger.info("Showing report part '%s'..." % reportName)
         for index in range(len(self.report)):
             if self.report[index]["name"] == reportName:
@@ -182,17 +207,7 @@ class MainWindow(App):
                 # Rebuild ActionBar with new parameters
                 self.rebuildActionBar()
 
-                if self.report[index]["type"] in ("*.rawlog", "*.rawlog.gz"):
-                    logger.warning("Only showing last %d lines of rawlog..." % RAWLOG_TAIL)
-                    text = self.report.display_format(index, tail = RAWLOG_TAIL)
-                else:
-                    text = self.report.display_format(index)
-                
-                self.uiTextInput.text = text
-
-                # If the current part is not rawlog/rawlog.gz, the cursor is set to the beginning (0,0)
-                if self.report[index]["type"] not in ("*.rawlog", "*.rawlog.gz"):
-                    self.uiTextInput.cursor = (0,0)
+                self.uiCarouselWidget.index = index
 
     def rebuildActionBar(self, *args):
         # Rebuild ActionBar because it's impossible to change it
@@ -223,12 +238,9 @@ class MainWindow(App):
 
     def resetUi(self):
         logger.debug("Reseting ui...")
-        self.clearUiTextInput()
+        self.uiCarouselWidget.clear_widgets()
         self.report = None
-
-    def clearUiTextInput(self):
-        logger.debug("Clearing uiTextInput...")
-        self.uiTextInput.text = ""
+        self.rebuildActionBar()
 
     def createPopup(self, message):
         logger.debug("Creating Popup...")
