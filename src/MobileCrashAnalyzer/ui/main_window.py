@@ -22,7 +22,6 @@ try:
     J_FileUtils = autoclass("android.os.FileUtils")
     #J_Intent = autoclass("android.content.Intent")
     #J_PythonActivity = autoclass('org.kivy.android.PythonActivity')
-    permissions.request_permissions([permissions.Permission.READ_EXTERNAL_STORAGE, permissions.Permission.WRITE_EXTERNAL_STORAGE])
     OPERATING_SYSTEM = "Android"
 except:
     OPERATING_SYSTEM = None
@@ -63,6 +62,7 @@ class MainWindow(App):
         # Use if the os is Android to avoid Android peculiarities
         if OPERATING_SYSTEM == "Android":
             activity.bind(on_new_intent=self.on_new_intent)
+            permissions.request_permissions([permissions.Permission.READ_EXTERNAL_STORAGE, permissions.Permission.WRITE_EXTERNAL_STORAGE])
 
         return self.layout
 
@@ -70,6 +70,8 @@ class MainWindow(App):
         self.stop()
 
     def onSlideChanged(self, *args):
+        if self.report == None:
+            return;
         self.currentPart = self.report[self.uiCarouselWidget.index]["name"]
 
         # Rebuild ActionBar with new parameters
@@ -107,7 +109,7 @@ class MainWindow(App):
                 logger.debug(f"Writing file at '{uri.getPath()}' to '{cacheFile}'...")
                 bytecount = J_FileUtils.copy(contentResolver.openInputStream(uri), J_FileOutputStream(cacheFile))
                 logger.debug(f"{bytecount} bytes copied...")
-                self.openFile(cacheFile)
+                self.loadFile(cacheFile)
                 os.remove(cacheFile)
                 
                 """
@@ -126,7 +128,7 @@ class MainWindow(App):
                     if os.path.exists(cacheFile):
                         os.remove(cacheFile)
                     J_FileUtils.copy(contentResolver.openInputStream(uri), J_FileOutputStream(cacheFile))
-                    self.openFile(cacheFile)
+                    self.loadfile(cacheFile)
                     os.remove(cacheFile)
                 else:
                     logger.info("Str based uri found...")
@@ -134,14 +136,14 @@ class MainWindow(App):
                     if os.path.exists(cacheFile):
                         os.remove(cacheFile)
                     J_FileUtils.copy(contentResolver.openInputStream(intent.getData()), J_FileOutputStream(cacheFile))
-                    self.openFile(cacheFile)
+                    self.loadFile(cacheFile)
                     os.remove(cacheFile)
                 """
     
     def openFile(self, *args):
         logger.debug("Create file select popup dialog...")
 
-        self.uiFileChooserListView_file = FileChooserListView(path=Paths.get_user_documents_dir()) #, filters=["*.mcrash", "*.mcrash.gz"]
+        self.uiFileChooserListView_file = FileChooserListView(path=Paths.get_user_documents_dir(), filters=["*.mcrash", "*.mcrash.gz"])
 
         closeButton = Button(text = "Cancel", size_hint=(0.5, 0.5))
         openButton = Button(text = "Open", size_hint=(0.5, 0.5))
@@ -157,47 +159,49 @@ class MainWindow(App):
         def openClosure(*args):
             popup.dismiss()
             self.resetUi()
-            filename = self.uiFileChooserListView_file.selection[0]
-            logger.info("Loading crash report at '%s'..." % filename)
-            try:
-                self.report = CrashReport(filename)
-                logger.info("Crash report now loaded...")
-
-                logger.info("Creating report widgets...")
-                for index in range(len(self.report)):
-                    # we want our keyboard to not show up on every touch and we don't want the user to be able to change the contents of the text input
-                    # note: if using self.uiTextInput.readonly = True, no touch events will be handled anymore not even scrolling ones
-                    uiTextInput = TextInput(text = "", keyboard_mode = "managed")
-                    uiTextInput.insert_text = lambda self, substring, from_undo=False: False
-                    #self.uiTextInput.bind(minimum_height=self.uiTextInput.setter("height"))
-
-                    if self.report[index]["type"] in ("*.rawlog", "*.rawlog.gz"):
-                        logger.warning("Only showing last %d lines of rawlog..." % RAWLOG_TAIL)
-                        text = self.report.display_format(index, tail = RAWLOG_TAIL)
-                    else:
-                        text = self.report.display_format(index)
-                
-                    uiTextInput.text = text
-
-                    # If the current part is not rawlog/rawlog.gz, the cursor is set to the beginning (0,0)
-                    if self.report[index]["type"] not in ("*.rawlog", "*.rawlog.gz"):
-                        uiTextInput.cursor = (0,0)
-
-                    self.uiCarouselWidget.add_widget(uiTextInput)
-
-                logger.debug("Showing first report part...")
-                self.currentPart = self.report[0]["name"]
-                self.rebuildActionBar()
-            except Exception as ex:
-                logger.warn("Exception loading crash report: %s" % str(ex))
-                self.createPopup("Exception loading crash report: %s" % str(ex))
-                self.resetUi()
-                return
+            self.loadFile(self.uiFileChooserListView_file.selection[0])
 
         openButton.bind(on_press = openClosure) 
         closeButton.bind(on_press = popup.dismiss) 
         popup.open()
 
+    def loadFile(self, filename):
+        logger.info("Loading crash report at '%s'..." % filename)
+        try:
+            self.report = CrashReport(filename)
+            logger.info("Crash report now loaded...")
+
+            logger.info("Creating report widgets...")
+            for index in range(len(self.report)):
+                # we want our keyboard to not show up on every touch and we don't want the user to be able to change the contents of the text input
+                # note: if using self.uiTextInput.readonly = True, no touch events will be handled anymore not even scrolling ones
+                uiTextInput = TextInput(text = "", keyboard_mode = "managed")
+                uiTextInput.insert_text = lambda self, substring, from_undo=False: False
+                #self.uiTextInput.bind(minimum_height=self.uiTextInput.setter("height"))
+
+                if self.report[index]["type"] in ("*.rawlog", "*.rawlog.gz"):
+                    logger.warning("Only showing last %d lines of rawlog..." % RAWLOG_TAIL)
+                    text = self.report.display_format(index, tail = RAWLOG_TAIL)
+                else:
+                    text = self.report.display_format(index)
+            
+                uiTextInput.text = text
+
+                # If the current part is not rawlog/rawlog.gz, the cursor is set to the beginning (0,0)
+                if self.report[index]["type"] not in ("*.rawlog", "*.rawlog.gz"):
+                    uiTextInput.cursor = (0,0)
+
+                self.uiCarouselWidget.add_widget(uiTextInput)
+
+            logger.debug("Showing first report part...")
+            self.currentPart = self.report[0]["name"]
+            self.rebuildActionBar()
+        except Exception as ex:
+            logger.warn("Exception loading crash report: %s" % str(ex))
+            self.createPopup("Exception loading crash report: %s" % str(ex))
+            self.resetUi()
+            return
+    
     def switch_part(self, reportName, *args):
         logger.info("Showing report part '%s'..." % reportName)
         for index in range(len(self.report)):
