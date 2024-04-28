@@ -12,8 +12,11 @@ from kivy.uix.carousel import Carousel
 
 import os
 import functools
-
 from jnius import autoclass, cast
+
+from shared.storage import CrashReport, Rawlog
+from shared.utils import Paths
+from shared.ui.mobile_about_dialog import MobileAboutDialog
 
 # Just import if the os is Android to avoid Android peculiarities
 try:
@@ -25,10 +28,6 @@ try:
     OPERATING_SYSTEM = "Android"
 except:
     OPERATING_SYSTEM = None
-
-from shared.storage import CrashReport, Rawlog
-from shared.utils import Paths
-from shared.ui.mobile_about_dialog import MobileAboutDialog
 
 RAWLOG_TAIL = 256
 
@@ -44,17 +43,18 @@ class MainWindow(App):
         self.title = "Monal Mobile Crash Analyzer"
 
         self.report = None
-        self.currentPart = ""
+        self.lastCarouselIndex = -1
 
         logger.debug("Creating ui elements")
         self.layout = GridLayout(rows=2)
 
         # Create actionbar
         self.uiActionBar = Factory.ActionBar(pos_hint={'top': 1})
-        self.rebuildActionBar()
 
         self.uiCarouselWidget = Carousel(direction='right')
-        self.uiCarouselWidget.bind(on_touch_move=self.onSlideChanged)
+        # use touch_up to make sure carousel movement has finished when invoking our handler
+        self.uiCarouselWidget.bind(index=self.onCarouselChanged)
+        self.uiCarouselWidget.ignore_perpendicular_swipes = True
 
         self.layout.add_widget(self.uiActionBar)
         self.layout.add_widget(self.uiCarouselWidget)
@@ -64,18 +64,25 @@ class MainWindow(App):
             activity.bind(on_new_intent=self.on_new_intent)
             permissions.request_permissions([permissions.Permission.READ_EXTERNAL_STORAGE, permissions.Permission.WRITE_EXTERNAL_STORAGE])
 
+        self.rebuildActionBar()
         return self.layout
 
     def quit(self, *args):
         self.stop()
 
-    def onSlideChanged(self, *args):
+    def onCarouselChanged(self, *args):
         if self.report == None:
             return;
-        self.currentPart = self.report[self.uiCarouselWidget.index]["name"]
-
-        # Rebuild ActionBar with new parameters
-        self.rebuildActionBar()
+        # rebuild ui if the carousel index changed
+        if self.uiCarouselWidget.index != self.lastCarouselIndex:
+            logger.info("Showing report having index '%d' and name '%s'..." % (self.uiCarouselWidget.index, self.report[self.uiCarouselWidget.index]["name"]))
+            
+            # save current carousel position used to display actionbar title
+            # this will be used to check if we have to reload our actionbar
+            self.lastCarouselIndex = self.uiCarouselWidget.index
+            
+            # Rebuild ActionBar with new parameters
+            self.rebuildActionBar()
 
     def on_start(self, *args):
         # Use if the os is Android to avoid Android peculiarities
@@ -193,29 +200,18 @@ class MainWindow(App):
 
                 self.uiCarouselWidget.add_widget(uiTextInput)
 
-            logger.debug("Showing first report part...")
-            self.currentPart = self.report[0]["name"]
-            self.rebuildActionBar()
+            logger.debug("Loading completed...")
         except Exception as ex:
             logger.warn("Exception loading crash report: %s" % str(ex))
             self.createPopup("Exception loading crash report: %s" % str(ex))
             self.resetUi()
             return
     
-    def switch_part(self, reportName, *args):
-        logger.info("Showing report part '%s'..." % reportName)
-        for index in range(len(self.report)):
-            if self.report[index]["name"] == reportName:
-                self.currentPart = reportName
-
-                # Rebuild ActionBar with new parameters
-                self.rebuildActionBar()
-
-                self.uiCarouselWidget.index = index
-
+    def switch_part(self, index, *args):
+        self.uiCarouselWidget.index = index
+    
     def rebuildActionBar(self, *args):
         # Rebuild ActionBar because it's impossible to change it
-
         logger.debug("Rebuilding ActionBar...")
 
         # Delete old ActionBar content
@@ -227,8 +223,8 @@ class MainWindow(App):
 
         # If report is open objects are loaded
         if self.report != None:
-            for report in self.report:
-                button = Factory.ActionButton(text = report["name"], on_press = functools.partial(self.switch_part, report["name"]))
+            for index in range(len(self.report)):
+                button = Factory.ActionButton(text = self.report[index]["name"], on_press = functools.partial(self.switch_part, index))
                 self.uiActionGroup.add_widget(button)
                 button.texture_update()
                 self.uiActionGroup.dropdown_width = max(self.uiActionGroup.dropdown_width, button.texture_size[0]) + 16
@@ -237,13 +233,16 @@ class MainWindow(App):
         self.uiActionGroup.add_widget(Factory.ActionButton(text = 'About', on_press = MobileAboutDialog))
 
         self.uiActionView.add_widget(self.uiActionGroup)
-        self.uiActionView.add_widget(Factory.ActionPrevious(title = self.currentPart, with_previous=False, app_icon=Paths.get_art_filepath("quitIcon.png"), on_press = self.quit))
+        self.uiActionView.add_widget(Factory.ActionPrevious(title = self.report[self.uiCarouselWidget.index]["name"] if self.report != None else "", with_previous=False, app_icon=Paths.get_art_filepath("quitIcon.png"), on_press = self.quit))
         self.uiActionBar.add_widget(self.uiActionView)
+        
+        logger.info("ActionBar now repopulated...")
 
     def resetUi(self):
         logger.debug("Reseting ui...")
         self.uiCarouselWidget.clear_widgets()
         self.report = None
+        self.lastCarouselIndex = -1
         self.rebuildActionBar()
 
     def createPopup(self, message):
