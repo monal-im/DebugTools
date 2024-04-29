@@ -23,8 +23,11 @@ try:
     from android import activity, mActivity, permissions
     J_FileOutputStream = autoclass("java.io.FileOutputStream")
     J_FileUtils = autoclass("android.os.FileUtils")
-    #J_Intent = autoclass("android.content.Intent")
-    #J_PythonActivity = autoclass('org.kivy.android.PythonActivity')
+    J_Intent = autoclass("android.content.Intent")
+    J_PythonActivity = autoclass('org.kivy.android.PythonActivity')
+    J_Environment = autoclass("android.os.Environment")
+    J_Settings = autoclass("android.provider.Settings")
+    J_Uri = autoclass("android.net.Uri")
     OPERATING_SYSTEM = "Android"
 except:
     OPERATING_SYSTEM = None
@@ -87,9 +90,13 @@ class MainWindow(App):
     def on_start(self, *args):
         # Use if the os is Android to avoid Android peculiarities
         if OPERATING_SYSTEM == "Android":
+            logger.info("Asking for permission for external storage")
+            self.permissions_external_storage()
+
             context = cast('android.content.Context', mActivity.getApplicationContext())
             logger.info(f"Startup application context: {context}")
             intent = mActivity.getIntent()
+
             logger.info(f"Got startup intent: {intent}")
             if intent:
                 self.on_new_intent(intent)
@@ -145,8 +152,23 @@ class MainWindow(App):
                     J_FileUtils.copy(contentResolver.openInputStream(intent.getData()), J_FileOutputStream(cacheFile))
                     self.loadFile(cacheFile)
                     os.remove(cacheFile)
+               
                 """
-    
+
+    # See: https://stackoverflow.com/questions/64849485/why-is-filemanager-not-working-on-android-kivymd
+    def permissions_external_storage(self, *args):                  
+        if not J_Environment.isExternalStorageManager():
+            try:
+                logger.debug("Ask for ACTION_MANAGE_APP_ALL_FILES_ACCESS_PERMISSION")
+                context = mActivity.getApplicationContext()
+                uri = J_Uri.parse("package:" + context.getPackageName())
+                intent = J_Intent(J_Settings.ACTION_MANAGE_APP_ALL_FILES_ACCESS_PERMISSION, uri)
+            except Exception as e:
+                logger.debug("ACTION_MANAGE_APP_ALL_FILES_ACCESS_PERMISSION Failed! Open ACTION_MANAGE_ALL_FILES_ACCESS_PERMISSION")
+                intent = J_Intent(J_Settings.ACTION_MANAGE_ALL_FILES_ACCESS_PERMISSION)
+            currentActivity = cast("android.app.Activity", J_PythonActivity.mActivity)
+            currentActivity.startActivityForResult(intent, 101)
+
     def openFile(self, *args):
         logger.debug("Create file select popup dialog...")
 

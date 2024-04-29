@@ -19,7 +19,7 @@ fullscreen = 0
 
 # android specific
 android.minapi = 29
-android.permissions = WRITE_EXTERNAL_STORAGE,READ_EXTERNAL_STORAGE
+android.permissions = WRITE_EXTERNAL_STORAGE,READ_EXTERNAL_STORAGE,ACTION_MANAGE_APP_ALL_FILES_ACCESS_PERMISSION
 android.arch = armeabi-v7a
 android.manifest.intent_filters = intent_filters.xml
 
