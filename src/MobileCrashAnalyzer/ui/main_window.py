@@ -87,9 +87,13 @@ class MainWindow(App):
     def on_start(self, *args):
         # Use if the os is Android to avoid Android peculiarities
         if OPERATING_SYSTEM == "Android":
+            logger.info("Asking for permission for external storage")
+            self.permissions_external_storage()
+
             context = cast('android.content.Context', mActivity.getApplicationContext())
             logger.info(f"Startup application context: {context}")
             intent = mActivity.getIntent()
+
             logger.info(f"Got startup intent: {intent}")
             if intent:
                 self.on_new_intent(intent)
@@ -145,8 +149,30 @@ class MainWindow(App):
                     J_FileUtils.copy(contentResolver.openInputStream(intent.getData()), J_FileOutputStream(cacheFile))
                     self.loadFile(cacheFile)
                     os.remove(cacheFile)
+               
                 """
-    
+
+    # See: https://stackoverflow.com/questions/64849485/why-is-filemanager-not-working-on-android-kivymd
+    def permissions_external_storage(self, *args):                  
+        PythonActivity = autoclass("org.kivy.android.PythonActivity")
+        Environment = autoclass("android.os.Environment")
+        Intent = autoclass("android.content.Intent")
+        Settings = autoclass("android.provider.Settings")
+        Uri = autoclass("android.net.Uri")
+
+        if not Environment.isExternalStorageManager():
+            try:
+                activity = mActivity.getApplicationContext()
+                uri = Uri.parse("package:" + activity.getPackageName())
+                intent = Intent(Settings.ACTION_MANAGE_APP_ALL_FILES_ACCESS_PERMISSION, uri)
+                currentActivity = cast("android.app.Activity", PythonActivity.mActivity)
+                currentActivity.startActivityForResult(intent, 101)
+            except Exception as e:
+                intent = Intent()
+                intent.setAction(Settings.ACTION_MANAGE_ALL_FILES_ACCESS_PERMISSION)
+                currentActivity = cast("android.app.Activity", PythonActivity.mActivity)
+                currentActivity.startActivityForResult(intent, 101)
+
     def openFile(self, *args):
         logger.debug("Create file select popup dialog...")
 
