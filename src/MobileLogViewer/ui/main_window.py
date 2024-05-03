@@ -9,7 +9,6 @@ from kivy.uix.button import Button
 from kivy.uix.label import Label
 from kivy.uix.popup import Popup
 from kivy.factory import Factory
-from kivy.utils import platform
 
 import functools
 import os
@@ -22,10 +21,6 @@ try:
     J_FileOutputStream = autoclass("java.io.FileOutputStream")
     J_FileUtils = autoclass("android.os.FileUtils")
     J_Intent = autoclass("android.content.Intent")
-    J_PythonActivity = autoclass('org.kivy.android.PythonActivity')
-    J_Environment = autoclass("android.os.Environment")
-    J_Settings = autoclass("android.provider.Settings")
-    J_Uri = autoclass("android.net.Uri")
     OPERATING_SYSTEM = "Android"
 except:
     OPERATING_SYSTEM = None
@@ -34,6 +29,7 @@ from shared.utils.constants import LOGLEVELS
 from shared.storage import Rawlog
 from shared.utils import Paths
 from shared.ui.mobile_about_dialog import MobileAboutDialog
+import shared.utils.mobileHelpers as helpers
 
 import logging
 logger = logging.getLogger(__name__)
@@ -104,7 +100,7 @@ class MainWindow(App):
         # Use if the os is Android to avoid Android peculiarities
         if OPERATING_SYSTEM == "Android":
             logger.info("Asking for permission for external storage")
-            self.permissions_external_storage()
+            helpers.permissions_external_storage()
 
             context = cast('android.content.Context', mActivity.getApplicationContext())
             logger.info(f"Startup application context: {context}")
@@ -165,19 +161,6 @@ class MainWindow(App):
                     self.openFile(cacheFile)
                     os.remove(cacheFile)
                 """
-    # See: https://stackoverflow.com/questions/64849485/why-is-filemanager-not-working-on-android-kivymd
-    def permissions_external_storage(self, *args):                  
-        if not J_Environment.isExternalStorageManager():
-            try:
-                logger.debug("Ask for ACTION_MANAGE_APP_ALL_FILES_ACCESS_PERMISSION")
-                context = mActivity.getApplicationContext()
-                uri = J_Uri.parse("package:" + context.getPackageName())
-                intent = J_Intent(J_Settings.ACTION_MANAGE_APP_ALL_FILES_ACCESS_PERMISSION, uri)
-            except Exception as e:
-                logger.debug("ACTION_MANAGE_APP_ALL_FILES_ACCESS_PERMISSION Failed! Open ACTION_MANAGE_ALL_FILES_ACCESS_PERMISSION")
-                intent = J_Intent(J_Settings.ACTION_MANAGE_ALL_FILES_ACCESS_PERMISSION)
-            currentActivity = cast("android.app.Activity", J_PythonActivity.mActivity)
-            currentActivity.startActivityForResult(intent, 101)
     
     def selectFile(self, *args):
         # Create popup window to select file
