@@ -11,7 +11,7 @@ import logging
 logger = logging.getLogger(__name__)
 
 # See: https://stackoverflow.com/questions/64849485/why-is-filemanager-not-working-on-android-kivymd
-def permissions_external_storage(self, *args):                  
+def permissions_external_storage(*args):                  
     if not J_Environment.isExternalStorageManager():
         try:
             logger.debug("Ask for ACTION_MANAGE_APP_ALL_FILES_ACCESS_PERMISSION")
