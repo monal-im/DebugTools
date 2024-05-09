@@ -630,7 +630,7 @@ class MainWindow(QtWidgets.QMainWindow):
     def goToFirstRow(self, *args):
         # set first row as current row
         for index in range(len(self.rawlog)):
-            if not self.rawlog[index]["uiItem"].isHidden():
+            if not self.uiWidget_listView.isRowHidden(index):
                 self.uiWidget_listView.setCurrentRow(index)
                 #self.statusbar.showDynamicText(str("Done ✓ | Switched to first row: %d" % index))
                 break
