@@ -55,7 +55,7 @@
       <property name="orientation">
        <enum>Qt::Vertical</enum>
       </property>
-      <widget class="QListWidget" name="uiWidget_listView">
+      <widget class="QListView" name="uiWidget_listView">
        <property name="verticalScrollMode">
         <enum>QAbstractItemView::ScrollPerPixel</enum>
        </property>

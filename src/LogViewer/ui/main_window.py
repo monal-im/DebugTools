@@ -62,6 +62,8 @@ class MainWindow(QtWidgets.QMainWindow):
         self.uiAction_firstRowInViewport.triggered.connect(self.goToFirstRowInViewport)
         self.uiAction_lastRowInViewport.triggered.connect(self.goToLastRowInViewport)
 
+        self.uiWidget_listView_model = QtGui.QStandardItemModel()
+        self.uiWidget_listView.setModel(self.uiWidget_listView_model)
         self.uiWidget_listView.doubleClicked.connect(self.inspectLine)
         self.uiWidget_listView.clicked.connect(self.listViewClicked)
         self.uiFrame_search.hide()
@@ -183,12 +185,13 @@ class MainWindow(QtWidgets.QMainWindow):
             
             item_with_color = helpers.wordWrapLogline(formattedEntry)   
             fg, bg = SettingsSingleton().getQColorTuple(self.logflag2colorMapping[entry["flag"]])
-            item_with_color = QtWidgets.QListWidgetItem(item_with_color)
+            item_with_color = QtGui.QStandardItem(item_with_color)
             item_with_color.setFont(itemFont)
             item_with_color.setForeground(fg)
             if bg == None:
                 bg = QtGui.QBrush()     # default color (usually transparent)
             item_with_color.setBackground(bg)
+            item_with_color.setEditable(False)
             
             return {"uiItem": item_with_color, "data": entry}
         
@@ -210,7 +213,7 @@ class MainWindow(QtWidgets.QMainWindow):
         # Add uiItems and apply the filter manually as it's faster to do both things at the same time
         self.currentFilterQuery = self.uiCombobox_filterInput.currentText().strip()
         for index in range(len(self.rawlog)):
-            self.uiWidget_listView.addItem(self.rawlog[index]["uiItem"])
+            self.uiWidget_listView_model.appendRow(self.rawlog[index]["uiItem"])
             if len(self.currentFilterQuery ) != 0:
                 result = matchQuery(self.currentFilterQuery , self.rawlog, index, usePython=SettingsSingleton()["usePythonFilter"])
                 if result["status"] != QueryStatus.QUERY_ERROR:
@@ -358,7 +361,8 @@ class MainWindow(QtWidgets.QMainWindow):
             
     @catch_exceptions(logger=logger)
     def closeFile(self, *args):
-        self.uiWidget_listView.clear()
+        self.uiWidget_listView_model = QtGui.QStandardItemModel()
+        self.uiWidget_listView.setModel(self.uiWidget_listView_model)
         self.rawlog = Rawlog()
         self.hideSearchOrGoto()
         self.selectedCombobox = self.uiCombobox_filterInput
@@ -792,7 +796,7 @@ class MainWindow(QtWidgets.QMainWindow):
 
         if self.currentFilterQuery != None:
             text += " %d/%d" % (
-                len([item for item in self.rawlog if not item["uiItem"].isHidden()]),
+                len([index for index in range(len(self.rawlog)) if not self.uiWidget_listView.isRowHidden(index)]),
                 len(self.rawlog)
             )
         else:
