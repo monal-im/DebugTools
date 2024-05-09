@@ -217,7 +217,7 @@ class MainWindow(QtWidgets.QMainWindow):
             if len(self.currentFilterQuery ) != 0:
                 result = matchQuery(self.currentFilterQuery , self.rawlog, index, usePython=SettingsSingleton()["usePythonFilter"])
                 if result["status"] != QueryStatus.QUERY_ERROR:
-                    self.rawlog[index]["uiItem"].setHidden(not result["matching"])
+                    self.uiWidget_listView.setRowHidden(index, not result["matching"])
                 else:
                     error = result["error"]
                 visibleCounter += 1 if result["matching"] else 0
@@ -531,9 +531,9 @@ class MainWindow(QtWidgets.QMainWindow):
         
         # this has to be done outside of our filter loop above, to not slow down our filter process significantly
         for rawlogPosition, hidden in filterMapping.items():
-            self.rawlog[rawlogPosition]["uiItem"].setHidden(hidden)
+            self.uiWidget_listView.setRowHidden(rawlogPosition, hidden)
         
-        if self.currentDetailIndex != None and self.rawlog[self.currentDetailIndex]["uiItem"].isHidden():
+        if self.currentDetailIndex != None and self.uiWidget_listView.isRowHidden(self.currentDetailIndex):
             self.hideInspectLine()
 
         progressbar.hide()
@@ -545,13 +545,13 @@ class MainWindow(QtWidgets.QMainWindow):
         if selectedLine != None:
             found = False
             for index in range(selectedLine, len(self.rawlog), 1):
-                if self.rawlog[index]["uiItem"].isHidden() == False:
+                if self.uiWidget_listView.isRowHidden(index) == False:
                     self.uiWidget_listView.scrollToItem(self.rawlog[index]["uiItem"], QtWidgets.QAbstractItemView.PositionAtCenter)
                     found = True
                     break 
             if not found:
                 for index in range(len(self.rawlog)-1, selectedLine, -1):
-                    if self.rawlog[index]["uiItem"].isHidden() == False:
+                    if self.uiWidget_listView.isRowHidden(index) == False:
                         self.uiWidget_listView.scrollToItem(self.rawlog[index]["uiItem"], QtWidgets.QAbstractItemView.PositionAtCenter)
                         found = True
                         break 
@@ -679,8 +679,8 @@ class MainWindow(QtWidgets.QMainWindow):
     
     def cancelFilter(self):
         for index in range(len(self.rawlog)):
-            if self.rawlog[index]["uiItem"].isHidden():
-                self.rawlog[index]["uiItem"].setHidden(False)
+            if self.uiWidget_listView.isRowHidden(index):
+                self.uiWidget_listView.setRowHidden(index, False)
             # this slows down significantly
             #update_progressbar(index, len(self.rawlog))
         self.currentFilterQuery = None
