@@ -215,7 +215,7 @@ class MainWindow(QtWidgets.QMainWindow):
         for index in range(len(self.rawlog)):
             self.uiWidget_listView_model.appendRow(self.rawlog[index]["uiItem"])
             if len(self.currentFilterQuery ) != 0:
-                result = matchQuery(self.currentFilterQuery , self.rawlog, index, usePython=SettingsSingleton()["usePythonFilter"])
+                result = matchQuery(self.currentFilterQuery, self.rawlog, index, usePython=SettingsSingleton()["usePythonFilter"])
                 if result["status"] != QueryStatus.QUERY_ERROR:
                     self.uiWidget_listView.setRowHidden(index, not result["matching"])
                 else:
@@ -436,8 +436,16 @@ class MainWindow(QtWidgets.QMainWindow):
             logger.info("Current search result in line (%s): %s" % (str(self.search.getStatus()), str(result)))
             self.setComboboxStatusColor(self.uiCombobox_searchInput, self.search.getStatus())
 
+            # if current line is hidden switch to next line
+            if self.uiWidget_listView.isRowHidden(result):
+                result = None
+                if func == Search.next:
+                    self.searchNext()
+                else:
+                    self.searchPrevious()
+
         if result != None:
-            self.uiWidget_listView.setCurrentRow(result)
+            self._setCurrentRow(result)
             self.uiWidget_listView.setFocus()
         
         self._updateStatusbar()
@@ -579,7 +587,7 @@ class MainWindow(QtWidgets.QMainWindow):
         # prevent switching to row if that row is already selected
         rowIndex = self.uiSpinBox_goToRow.value()
         if len(self.uiWidget_listView.selectedIndexes()) == 0 or rowIndex != self.uiWidget_listView.selectedIndexes()[0].row():
-            self.uiWidget_listView.setCurrentRow(rowIndex)
+            self._setCurrentRow(rowIndex)
     
     def checkQueryResult(self, error = None, visibleCounter = 0, combobox=None):
         if error != None:
@@ -631,7 +639,7 @@ class MainWindow(QtWidgets.QMainWindow):
         # set first row as current row
         for index in range(len(self.rawlog)):
             if not self.uiWidget_listView.isRowHidden(index):
-                self.uiWidget_listView.setCurrentRow(index)
+                self._setCurrentRow(index)
                 #self.statusbar.showDynamicText(str("Done ✓ | Switched to first row: %d" % index))
                 break
 
@@ -639,7 +647,7 @@ class MainWindow(QtWidgets.QMainWindow):
     def goToLastRow(self, *args):
         # set last row as current row 
         for index in range(len(self.rawlog)-1, -1, -1):
-            self.uiWidget_listView.setCurrentRow(index)
+            self._setCurrentRow(index)
             #self.statusbar.showDynamicText(str("Done ✓ | Switched to last row: %d" % index))
             break
 
@@ -657,7 +665,7 @@ class MainWindow(QtWidgets.QMainWindow):
                 break
             else:
                 lastIndex = index
-        self.uiWidget_listView.setCurrentRow(lastIndex)
+        self._setCurrentRow(lastIndex)
         #self.statusbar.showDynamicText(str("Done ✓ | Switched to the first line in the viewport: %d" % lastIndex))
 
     @catch_exceptions(logger=logger)
@@ -674,7 +682,7 @@ class MainWindow(QtWidgets.QMainWindow):
                 break
             else:
                 lastIndex = index
-        self.uiWidget_listView.setCurrentRow(lastIndex)
+        self._setCurrentRow(lastIndex)
         #self.statusbar.showDynamicText(str("Done ✓ | Switched to the last line in the viewport: %d" % lastIndex))
     
     def cancelFilter(self):
@@ -753,7 +761,7 @@ class MainWindow(QtWidgets.QMainWindow):
             self.uiCombobox_searchInput.lineEdit().setSelection(stack["search"]["selection"]["start"], stack["search"]["selection"]["length"])
             if stack["search"]["instance"]:
                 # Before continuing the search, we set the row so that the search starts at the correct index
-                self.uiWidget_listView.setCurrentRow(stack["search"]["currentLine"])
+                self._setCurrentRow(stack["search"]["currentLine"])
                 self.search = stack["search"]["instance"]
                 self.searchNext()
                 self.searchPrevious()
@@ -765,7 +773,7 @@ class MainWindow(QtWidgets.QMainWindow):
                 
         # unpacking details
         if stack["detail"]["isOpen"]:
-            self.uiWidget_listView.setCurrentRow(stack["detail"]["currentDetailIndex"])
+            self._setCurrentRow(stack["detail"]["currentDetailIndex"])
             self.inspectLine()
             self.uiTable_characteristics.setFixedHeight(stack["detail"]["size"])
             if stack["detail"]["size"] == 0:
@@ -773,7 +781,7 @@ class MainWindow(QtWidgets.QMainWindow):
 
         # unpacking selected items and scroll position
         if stack["selectedLine"]:
-            self.uiWidget_listView.setCurrentRow(stack["selectedLine"])
+            self._setCurrentRow(stack["selectedLine"])
         self.uiWidget_listView.verticalScrollBar().setValue(stack["scrollPosVertical"])
         self.uiWidget_listView.horizontalScrollBar().setValue(stack["scrollPosHorizontal"])
 
@@ -904,3 +912,7 @@ class MainWindow(QtWidgets.QMainWindow):
             clipboard.clear(mode=clipboard.Clipboard)
             clipboard.setText(data, mode=clipboard.Clipboard)
             self.statusbar.showDynamicText(str("Done ✓ | Copied to clipboard"))
+
+    def _setCurrentRow(self, index):
+        _index = self.uiWidget_listView_model.index(index, 0)
+        self.uiWidget_listView.setCurrentIndex(_index)

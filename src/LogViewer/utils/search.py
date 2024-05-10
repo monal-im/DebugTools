@@ -24,7 +24,7 @@ class Search:
 
         for index in range(len(rawlog)):
             # Presearch filter is expecting a finished rawlog loading
-            result = matchQuery(query, rawlog, index, preSearchFilter=self._preSearchFilter, usePython=SettingsSingleton()["usePythonSearch"])
+            result = matchQuery(query, rawlog, index, usePython=SettingsSingleton()["usePythonSearch"])
             if result["matching"]:
                 self.resultList.append(index)
             if result["status"] == QueryStatus.QUERY_ERROR:
@@ -38,11 +38,6 @@ class Search:
 
         self.resultIndex = -1           # don't jump over the first result on start
         self.eofIndex = 0               # the initial EOF point is the first result (e.g. result index 0)
-
-    def _preSearchFilter(self, resultIndex, rawlog):
-        if rawlog[resultIndex]["uiItem"].isHidden() == False:
-            return True
-        return False
 
     def calculateStartIndex(self, startIndex, direction):
         if direction == Search.NEXT:
