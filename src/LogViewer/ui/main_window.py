@@ -137,7 +137,7 @@ class MainWindow(QtWidgets.QMainWindow):
             if check:
                 SettingsSingleton().setLastPath(os.path.dirname(os.path.abspath(file)))
                 formatter = self.createFormatter()
-                status = self.rawlog.export_file(file, custom_store_callback = lambda entry: entry["data"] if not entry["uiItem"].isHidden() else None, formatter = lambda entry: self.createFormatterText(formatter, entry))
+                status = self.rawlog.export_file(file, custom_store_callback = lambda entry: entry["data"] if not self.uiWidget_listView.isRowHidden(self.uiWidget_listView_model.indexFromItem(entry["uiItem"]).row()) else None, formatter = lambda entry: self.createFormatterText(formatter, entry))
                 if status:
                     self.statusbar.showDynamicText(str("Done ✓ | Log export was successful"))
                 else:
