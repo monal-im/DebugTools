@@ -148,7 +148,7 @@ class MainWindow(QtWidgets.QMainWindow):
             file, check = QtWidgets.QFileDialog.getSaveFileName(None, "Choose where to save this rawlog logfile", SettingsSingleton().getLastPath(), "Compressed Monal rawlog (*.rawlog.gz)(*.rawlog.gz);;Monal rawlog (*.rawlog)(*.rawlog);;All files (*)")
             if check:
                 SettingsSingleton().setLastPath(os.path.dirname(os.path.abspath(file)))
-                status = self.rawlog.store_file(file, custom_store_callback = lambda entry: entry["data"] if not entry["uiItem"].isHidden() else None)
+                status = self.rawlog.store_file(file, custom_store_callback = lambda entry: entry["data"] if not self.uiWidget_listView.isRowHidden(self.uiWidget_listView_model.indexFromItem(entry["uiItem"]).row()) else None)
                 if status:
                     self.statusbar.showDynamicText(str("Done ✓ | Rawlog saved successfully"))
                 else:
