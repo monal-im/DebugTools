@@ -5,9 +5,9 @@ import sys, os, functools
 from LogViewer.storage import SettingsSingleton
 from LogViewer.utils import Search, AbortSearch, QueryStatus, matchQuery
 import LogViewer.utils.helpers as helpers
-from .utils import Completer, MagicLineEdit, Statusbar
+from .utils import Completer, MagicLineEdit, Statusbar, LazyItemModel
 from .preferences_dialog import PreferencesDialog
-from shared.storage import Rawlog, AbortRawlogLoading
+from shared.storage import Rawlog
 from shared.ui.utils import UiAutoloader
 from shared.utils import catch_exceptions
 import shared.ui.utils.helpers as sharedUiHelpers
@@ -34,7 +34,6 @@ class MainWindow(QtWidgets.QMainWindow):
             QueryStatus.QUERY_OK:       SettingsSingleton().getColor("combobox-query_ok"),
             QueryStatus.QUERY_EMPTY:    SettingsSingleton().getColor("combobox-query_empty"),
         }
-        self.logflag2colorMapping = {v: "logline-%s" % k.lower() for k, v in LOGLEVELS.items()}
 
         self.toggleUiItems()
 
@@ -62,8 +61,7 @@ class MainWindow(QtWidgets.QMainWindow):
         self.uiAction_firstRowInViewport.triggered.connect(self.goToFirstRowInViewport)
         self.uiAction_lastRowInViewport.triggered.connect(self.goToLastRowInViewport)
 
-        self.uiWidget_listView_model = QtGui.QStandardItemModel()
-        self.uiWidget_listView.setModel(self.uiWidget_listView_model)
+        self.uiWidget_listView.setVerticalScrollMode(QtWidgets.QAbstractItemView.ScrollPerPixel)
         self.uiWidget_listView.doubleClicked.connect(self.inspectLine)
         self.uiWidget_listView.clicked.connect(self.listViewClicked)
         self.uiFrame_search.hide()
@@ -137,7 +135,7 @@ class MainWindow(QtWidgets.QMainWindow):
             if check:
                 SettingsSingleton().setLastPath(os.path.dirname(os.path.abspath(file)))
                 formatter = self.createFormatter()
-                status = self.rawlog.export_file(file, custom_store_callback = lambda entry: entry["data"] if not self.uiWidget_listView.isRowHidden(self.uiWidget_listView_model.indexFromItem(entry["uiItem"]).row()) else None, formatter = lambda entry: self.createFormatterText(formatter, entry))
+                status = self.rawlog.export_file(file, custom_store_callback = lambda entry: entry["data"] if not self.uiWidget_listView.isRowHidden(self.LazyItemModel.indexFromItem(entry["uiItem"]).row()) else None, formatter = lambda entry: self.createFormatterText(formatter, entry))
                 if status:
                     self.statusbar.showDynamicText(str("Done ✓ | Log export was successful"))
                 else:
@@ -148,7 +146,7 @@ class MainWindow(QtWidgets.QMainWindow):
             file, check = QtWidgets.QFileDialog.getSaveFileName(None, "Choose where to save this rawlog logfile", SettingsSingleton().getLastPath(), "Compressed Monal rawlog (*.rawlog.gz)(*.rawlog.gz);;Monal rawlog (*.rawlog)(*.rawlog);;All files (*)")
             if check:
                 SettingsSingleton().setLastPath(os.path.dirname(os.path.abspath(file)))
-                status = self.rawlog.store_file(file, custom_store_callback = lambda entry: entry["data"] if not self.uiWidget_listView.isRowHidden(self.uiWidget_listView_model.indexFromItem(entry["uiItem"]).row()) else None)
+                status = self.rawlog.store_file(file, custom_store_callback = lambda entry: entry["data"] if not self.uiWidget_listView.isRowHidden(self.LazyItemModel.indexFromItem(entry["uiItem"]).row()) else None)
                 if status:
                     self.statusbar.showDynamicText(str("Done ✓ | Rawlog saved successfully"))
                 else:
@@ -165,35 +163,16 @@ class MainWindow(QtWidgets.QMainWindow):
         self.closeFile()
         
         self.statusbar.setText("Loading File: '%s'..." % os.path.basename(file))
-        formatter = self.createFormatter()
         self.rawlog = Rawlog()
         self.search = None
         
         def loader(entry):
-            itemFont = SettingsSingleton().getQFont()
             # directly warn about file corruptions when they happen to allow the user to abort the loading process
             # using the cancel button in the progressbar window
             if "__warning" in entry and entry["__warning"] == True:
                 QtWidgets.QMessageBox.warning(self, "File corruption detected", entry["message"])
-
-            formattedEntry = self.createFormatterText(formatter, entry)
-            entry["__formattedMessage"] = formattedEntry
             
-            # return None if our formatter filtered out that entry
-            if formattedEntry == None:
-                return None
-            
-            item_with_color = helpers.wordWrapLogline(formattedEntry)   
-            fg, bg = SettingsSingleton().getQColorTuple(self.logflag2colorMapping[entry["flag"]])
-            item_with_color = QtGui.QStandardItem(item_with_color)
-            item_with_color.setFont(itemFont)
-            item_with_color.setForeground(fg)
-            if bg == None:
-                bg = QtGui.QBrush()     # default color (usually transparent)
-            item_with_color.setBackground(bg)
-            item_with_color.setEditable(False)
-            
-            return {"uiItem": item_with_color, "data": entry}
+            return {"data": entry}
         
         progressbar, updateProgressbar = self.progressDialog("Opening File...", "Opening File: %s" % os.path.basename(file), True)
         # don't pretend something was loaded if the loading was aborted
@@ -202,28 +181,10 @@ class MainWindow(QtWidgets.QMainWindow):
             progressbar.hide()
             self.statusbar.setText("")
             return
-
-        self.statusbar.setText("Rendering File: '%s'..." % os.path.basename(file))
-        progressbar.setLabelText("Rendering File: '%s'..." % os.path.basename(file))
-        progressbar.setCancelButton(None)       # disable cancel button when rendering our file
-        QtWidgets.QApplication.processEvents()
-        error = None
-        visibleCounter = 0
         
-        # Add uiItems and apply the filter manually as it's faster to do both things at the same time
-        self.currentFilterQuery = self.uiCombobox_filterInput.currentText().strip()
-        for index in range(len(self.rawlog)):
-            self.uiWidget_listView_model.appendRow(self.rawlog[index]["uiItem"])
-            if len(self.currentFilterQuery ) != 0:
-                result = matchQuery(self.currentFilterQuery, self.rawlog, index, usePython=SettingsSingleton()["usePythonFilter"])
-                if result["status"] != QueryStatus.QUERY_ERROR:
-                    self.uiWidget_listView.setRowHidden(index, not result["matching"])
-                else:
-                    error = result["error"]
-                visibleCounter += 1 if result["matching"] else 0
-        if len(self.currentFilterQuery) != 0:
-            self.checkQueryResult(error, visibleCounter, self.uiCombobox_filterInput)
-        QtWidgets.QApplication.processEvents()
+        self.LazyItemModel = LazyItemModel(self.rawlog, self.uiWidget_listView)
+        self.uiWidget_listView.setModel(self.LazyItemModel)
+
         progressbar.hide()
 
         if self.file != file:
@@ -258,46 +219,6 @@ class MainWindow(QtWidgets.QMainWindow):
 
         completer = Completer(wordlist, self)
         combobox.setCompleter(completer)
-    
-    def createFormatterText(self, formatter, entry, ignoreError=False):        
-        try:
-            # this will make sure the log formatter does not change our log entry, but it makes loading slower
-            # formattedEntry = formatter({value: entry[value] for value in entry.keys()})
-            return formatter(entry)
-        except Exception as e:
-            logger.exception("Exception while calling log formatter for: %s" % entry)
-            if not ignoreError:
-                QtWidgets.QMessageBox.critical(
-                    self,
-                    "Monal Log Viewer | ERROR", 
-                    "Exception in formatter code:\n%s: %s\n%s" % (str(type(e).__name__), str(e), entry),
-                    QtWidgets.QMessageBox.Ok
-                )
-            raise AbortRawlogLoading()       # abort loading
-
-    def createFormatter(self):
-        # first of all: try to compile our log formatter code and abort, if this isn't generating a callable formatter function
-        try:
-            return self.compileLogFormatter(SettingsSingleton().getCurrentFormatterCode())
-        except Exception as e:
-            logger.exception("Exception while compiling log formatter")
-            QtWidgets.QMessageBox.critical(
-                self,
-                "Monal Log Viewer | ERROR",
-                "Exception in formatter code:\n%s: %s" % (str(type(e).__name__), str(e)),
-                QtWidgets.QMessageBox.Ok
-            )
-            return
-
-    def compileLogFormatter(self, code):
-        # compile our code by executing it
-        loc = {}
-        exec(code, {}, loc)
-        if "formatter" not in loc or not callable(loc["formatter"]):
-            logger.error("Formatter code did not evaluate to formatter() function!")
-            raise RuntimeError("Log formatter MUST define a function following this signature: formatter(e, **g)")
-        # bind all local variables (code imported, other defined functions etc.) onto our log formatter to be used later
-        return functools.partial(loc["formatter"], **loc)
 
     @catch_exceptions(logger=logger)
     def inspectLine(self, *args):
@@ -361,8 +282,6 @@ class MainWindow(QtWidgets.QMainWindow):
             
     @catch_exceptions(logger=logger)
     def closeFile(self, *args):
-        self.uiWidget_listView_model = QtGui.QStandardItemModel()
-        self.uiWidget_listView.setModel(self.uiWidget_listView_model)
         self.rawlog = Rawlog()
         self.hideSearchOrGoto()
         self.selectedCombobox = self.uiCombobox_filterInput
@@ -421,6 +340,7 @@ class MainWindow(QtWidgets.QMainWindow):
 
     def _search(self, func):
         query = self.uiCombobox_searchInput.currentText().strip()
+
         if query == "":
             self.search = None
             self.uiCombobox_searchInput.setStyleSheet("")
@@ -446,6 +366,7 @@ class MainWindow(QtWidgets.QMainWindow):
 
         if result != None:
             self._setCurrentRow(result)
+
             self.uiWidget_listView.setFocus()
         
         self._updateStatusbar()
@@ -497,7 +418,7 @@ class MainWindow(QtWidgets.QMainWindow):
             self._updateStatusbar()
 
             if currentSelectetLine:
-                self.uiWidget_listView.scrollToItem(self.rawlog[currentSelectetLine]["uiItem"], QtWidgets.QAbstractItemView.PositionAtCenter)
+                self._setCurrentRow(currentSelectetLine)
 
             self.toggleUiItems()
     
@@ -554,13 +475,13 @@ class MainWindow(QtWidgets.QMainWindow):
             found = False
             for index in range(selectedLine, len(self.rawlog), 1):
                 if self.uiWidget_listView.isRowHidden(index) == False:
-                    self.uiWidget_listView.scrollToItem(self.rawlog[index]["uiItem"], QtWidgets.QAbstractItemView.PositionAtCenter)
+                    self._setCurrentRow(index)
                     found = True
                     break 
             if not found:
                 for index in range(len(self.rawlog)-1, selectedLine, -1):
                     if self.uiWidget_listView.isRowHidden(index) == False:
-                        self.uiWidget_listView.scrollToItem(self.rawlog[index]["uiItem"], QtWidgets.QAbstractItemView.PositionAtCenter)
+                        self._setCurrentRow(index)
                         found = True
                         break 
             if not found:
@@ -738,7 +659,7 @@ class MainWindow(QtWidgets.QMainWindow):
         }
         self.stack.append(state)
         self._updateStatusbar()
-        #self.statusbar.showDynamicText("State saved ✓")
+        self.statusbar.showDynamicText("State saved ✓")
         self.toggleUiItems()
     
     @catch_exceptions(logger=logger)
@@ -828,22 +749,9 @@ class MainWindow(QtWidgets.QMainWindow):
                 currentText = combobox.lineEdit().text()
                 self.loadComboboxHistory(combobox)
                 self.updateComboboxHistory(currentText, combobox)
-
-        def rebuildFormatter():
-            formatter = self.createFormatter()
-
-            ignoreError = False
-            for entry in self.rawlog:
-                try:
-                    entry["data"]["__formattedMessage"] = self.createFormatterText(formatter, entry["data"], ignoreError)
-                except Exception as e:
-                    entry["data"]["__formattedMessage"] = "E R R O R"
-                    ignoreError = True
-                entry["uiItem"].setText(helpers.wordWrapLogline(entry["data"]["__formattedMessage"]))
-                rebuildFont(entry)
-                rebuildColor(entry)
             
         def rebuildColor(entry):
+            '''
             colorName = self.logflag2colorMapping[entry["data"]["flag"]]
             fg, bg = SettingsSingleton().getQColorTuple(colorName)
             if fg != preInstance["color"][colorName][0] or bg != preInstance["color"][colorName][1]:
@@ -851,6 +759,8 @@ class MainWindow(QtWidgets.QMainWindow):
                 if bg == None:
                     bg = QtGui.QBrush()     # default color (usually transparent)
                 entry["uiItem"].setBackground(bg)
+            '''
+            pass
                             
 
         def rebuildFont(item):
@@ -864,7 +774,8 @@ class MainWindow(QtWidgets.QMainWindow):
 
         if self.file != None:
             if preInstance["formatter"] != SettingsSingleton().getCurrentFormatterCode():
-                rebuildFormatter()
+                #rebuildFormatter()
+                pass
             else:
                 if preInstance["staticLineWrap"] != SettingsSingleton()["staticLineWrap"]:
                     for entry in range(len(self.rawlog)):
@@ -913,6 +824,9 @@ class MainWindow(QtWidgets.QMainWindow):
             clipboard.setText(data, mode=clipboard.Clipboard)
             self.statusbar.showDynamicText(str("Done ✓ | Copied to clipboard"))
 
-    def _setCurrentRow(self, index):
-        _index = self.uiWidget_listView_model.index(index, 0)
-        self.uiWidget_listView.setCurrentIndex(_index)
+    def _setCurrentRow(self, row):
+        index = self.LazyItemModel.createIndex(row, 0)
+        logger.info(f"Setting row {row} to index {index.row()}")
+        self.LazyItemModel.loadDataUpTo(index)
+        self.uiWidget_listView.scrollTo(index)
+        self.uiWidget_listView.setCurrentIndex(index)
