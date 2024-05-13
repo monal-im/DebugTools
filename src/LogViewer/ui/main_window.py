@@ -5,7 +5,7 @@ import sys, os, functools
 from LogViewer.storage import SettingsSingleton
 from LogViewer.utils import Search, AbortSearch, QueryStatus, matchQuery
 import LogViewer.utils.helpers as helpers
-from .utils import Completer, MagicLineEdit, Statusbar
+from .utils import Completer, MagicLineEdit, Statusbar, LazyItemModel
 from .preferences_dialog import PreferencesDialog
 from shared.storage import Rawlog, AbortRawlogLoading
 from shared.ui.utils import UiAutoloader
@@ -62,8 +62,9 @@ class MainWindow(QtWidgets.QMainWindow):
         self.uiAction_firstRowInViewport.triggered.connect(self.goToFirstRowInViewport)
         self.uiAction_lastRowInViewport.triggered.connect(self.goToLastRowInViewport)
 
-        self.uiWidget_listView_model = QtGui.QStandardItemModel()
+        self.uiWidget_listView_model = LazyItemModel(self.uiWidget_listView)
         self.uiWidget_listView.setModel(self.uiWidget_listView_model)
+        self.uiWidget_listView.setVerticalScrollMode(QtWidgets.QAbstractItemView.ScrollPerPixel)
         self.uiWidget_listView.doubleClicked.connect(self.inspectLine)
         self.uiWidget_listView.clicked.connect(self.listViewClicked)
         self.uiFrame_search.hide()
@@ -497,7 +498,7 @@ class MainWindow(QtWidgets.QMainWindow):
             self._updateStatusbar()
 
             if currentSelectetLine:
-                self.uiWidget_listView.scrollToItem(self.rawlog[currentSelectetLine]["uiItem"], QtWidgets.QAbstractItemView.PositionAtCenter)
+                self._setCurrentRow(currentSelectetLine)
 
             self.toggleUiItems()
     
@@ -554,13 +555,13 @@ class MainWindow(QtWidgets.QMainWindow):
             found = False
             for index in range(selectedLine, len(self.rawlog), 1):
                 if self.uiWidget_listView.isRowHidden(index) == False:
-                    self.uiWidget_listView.scrollToItem(self.rawlog[index]["uiItem"], QtWidgets.QAbstractItemView.PositionAtCenter)
+                    self._setCurrentRow(index)
                     found = True
                     break 
             if not found:
                 for index in range(len(self.rawlog)-1, selectedLine, -1):
                     if self.uiWidget_listView.isRowHidden(index) == False:
-                        self.uiWidget_listView.scrollToItem(self.rawlog[index]["uiItem"], QtWidgets.QAbstractItemView.PositionAtCenter)
+                        self._setCurrentRow(index)
                         found = True
                         break 
             if not found:
