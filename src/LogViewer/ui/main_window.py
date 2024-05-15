@@ -12,7 +12,7 @@ from shared.ui.utils import UiAutoloader
 from shared.utils import catch_exceptions
 import shared.ui.utils.helpers as sharedUiHelpers
 from shared.utils.constants import LOGLEVELS
-                
+
 import logging
 logger = logging.getLogger(__name__)
 
@@ -62,8 +62,6 @@ class MainWindow(QtWidgets.QMainWindow):
         self.uiAction_firstRowInViewport.triggered.connect(self.goToFirstRowInViewport)
         self.uiAction_lastRowInViewport.triggered.connect(self.goToLastRowInViewport)
 
-        self.uiWidget_listView_model = LazyItemModel(self.uiWidget_listView)
-        self.uiWidget_listView.setModel(self.uiWidget_listView_model)
         self.uiWidget_listView.setVerticalScrollMode(QtWidgets.QAbstractItemView.ScrollPerPixel)
         self.uiWidget_listView.doubleClicked.connect(self.inspectLine)
         self.uiWidget_listView.clicked.connect(self.listViewClicked)
@@ -166,35 +164,38 @@ class MainWindow(QtWidgets.QMainWindow):
         self.closeFile()
         
         self.statusbar.setText("Loading File: '%s'..." % os.path.basename(file))
-        formatter = self.createFormatter()
         self.rawlog = Rawlog()
         self.search = None
         
         def loader(entry):
-            itemFont = SettingsSingleton().getQFont()
+            #itemFont = SettingsSingleton().getQFont()
             # directly warn about file corruptions when they happen to allow the user to abort the loading process
             # using the cancel button in the progressbar window
             if "__warning" in entry and entry["__warning"] == True:
                 QtWidgets.QMessageBox.warning(self, "File corruption detected", entry["message"])
 
-            formattedEntry = self.createFormatterText(formatter, entry)
-            entry["__formattedMessage"] = formattedEntry
+            # formattedEntry = self.createFormatterText(formatter, entry)
+            #formattedEntry = entry["message"]
+            #entry["__formattedMessage"] = formattedEntry
             
             # return None if our formatter filtered out that entry
-            if formattedEntry == None:
-                return None
+            # if formattedEntry == None:
+            #     return None
             
-            item_with_color = helpers.wordWrapLogline(formattedEntry)   
-            fg, bg = SettingsSingleton().getQColorTuple(self.logflag2colorMapping[entry["flag"]])
-            item_with_color = QtGui.QStandardItem(item_with_color)
-            item_with_color.setFont(itemFont)
-            item_with_color.setForeground(fg)
-            if bg == None:
-                bg = QtGui.QBrush()     # default color (usually transparent)
-            item_with_color.setBackground(bg)
-            item_with_color.setEditable(False)
+            # item_with_color = helpers.wordWrapLogline(formattedEntry)
+            # fg, bg = SettingsSingleton().getQColorTuple(self.logflag2colorMapping[entry["flag"]])
+            # item_with_color = QtGui.QStandardItem(item_with_color)
+            # item_with_color.setFont(itemFont)
+            # item_with_color.setForeground(fg)
+            # if bg == None:
+            #     bg = QtGui.QBrush()     # default color (usually transparent)
+            # item_with_color.setBackground(bg)
+            # item_with_color.setEditable(False)
             
-            return {"uiItem": item_with_color, "data": entry}
+            return {
+                # "uiItem": item_with_color,
+                "data": entry
+            }
         
         progressbar, updateProgressbar = self.progressDialog("Opening File...", "Opening File: %s" % os.path.basename(file), True)
         # don't pretend something was loaded if the loading was aborted
@@ -204,27 +205,30 @@ class MainWindow(QtWidgets.QMainWindow):
             self.statusbar.setText("")
             return
 
-        self.statusbar.setText("Rendering File: '%s'..." % os.path.basename(file))
-        progressbar.setLabelText("Rendering File: '%s'..." % os.path.basename(file))
-        progressbar.setCancelButton(None)       # disable cancel button when rendering our file
-        QtWidgets.QApplication.processEvents()
-        error = None
-        visibleCounter = 0
+        self.uiWidget_listView_model = LazyItemModel(self.rawlog, self.uiWidget_listView)
+        self.uiWidget_listView.setModel(self.uiWidget_listView_model)
         
-        # Add uiItems and apply the filter manually as it's faster to do both things at the same time
-        self.currentFilterQuery = self.uiCombobox_filterInput.currentText().strip()
-        for index in range(len(self.rawlog)):
-            self.uiWidget_listView_model.appendRow(self.rawlog[index]["uiItem"])
-            if len(self.currentFilterQuery ) != 0:
-                result = matchQuery(self.currentFilterQuery, self.rawlog, index, usePython=SettingsSingleton()["usePythonFilter"])
-                if result["status"] != QueryStatus.QUERY_ERROR:
-                    self.uiWidget_listView.setRowHidden(index, not result["matching"])
-                else:
-                    error = result["error"]
-                visibleCounter += 1 if result["matching"] else 0
-        if len(self.currentFilterQuery) != 0:
-            self.checkQueryResult(error, visibleCounter, self.uiCombobox_filterInput)
-        QtWidgets.QApplication.processEvents()
+#         self.statusbar.setText("Rendering File: '%s'..." % os.path.basename(file))
+#         progressbar.setLabelText("Rendering File: '%s'..." % os.path.basename(file))
+#         progressbar.setCancelButton(None)       # disable cancel button when rendering our file
+#         QtWidgets.QApplication.processEvents()
+#         error = None
+#         visibleCounter = 0
+#         
+#         # Add uiItems and apply the filter manually as it's faster to do both things at the same time
+#         self.currentFilterQuery = self.uiCombobox_filterInput.currentText().strip()
+#         for index in range(len(self.rawlog)):
+#             self.uiWidget_listView_model.appendRow(self.rawlog[index]["uiItem"])
+#             if len(self.currentFilterQuery ) != 0:
+#                 result = matchQuery(self.currentFilterQuery, self.rawlog, index, usePython=SettingsSingleton()["usePythonFilter"])
+#                 if result["status"] != QueryStatus.QUERY_ERROR:
+#                     self.uiWidget_listView.setRowHidden(index, not result["matching"])
+#                 else:
+#                     error = result["error"]
+#                 visibleCounter += 1 if result["matching"] else 0
+#         if len(self.currentFilterQuery) != 0:
+#             self.checkQueryResult(error, visibleCounter, self.uiCombobox_filterInput)
+#         QtWidgets.QApplication.processEvents()
         progressbar.hide()
 
         if self.file != file:
@@ -259,46 +263,6 @@ class MainWindow(QtWidgets.QMainWindow):
 
         completer = Completer(wordlist, self)
         combobox.setCompleter(completer)
-    
-    def createFormatterText(self, formatter, entry, ignoreError=False):        
-        try:
-            # this will make sure the log formatter does not change our log entry, but it makes loading slower
-            # formattedEntry = formatter({value: entry[value] for value in entry.keys()})
-            return formatter(entry)
-        except Exception as e:
-            logger.exception("Exception while calling log formatter for: %s" % entry)
-            if not ignoreError:
-                QtWidgets.QMessageBox.critical(
-                    self,
-                    "Monal Log Viewer | ERROR", 
-                    "Exception in formatter code:\n%s: %s\n%s" % (str(type(e).__name__), str(e), entry),
-                    QtWidgets.QMessageBox.Ok
-                )
-            raise AbortRawlogLoading()       # abort loading
-
-    def createFormatter(self):
-        # first of all: try to compile our log formatter code and abort, if this isn't generating a callable formatter function
-        try:
-            return self.compileLogFormatter(SettingsSingleton().getCurrentFormatterCode())
-        except Exception as e:
-            logger.exception("Exception while compiling log formatter")
-            QtWidgets.QMessageBox.critical(
-                self,
-                "Monal Log Viewer | ERROR",
-                "Exception in formatter code:\n%s: %s" % (str(type(e).__name__), str(e)),
-                QtWidgets.QMessageBox.Ok
-            )
-            return
-
-    def compileLogFormatter(self, code):
-        # compile our code by executing it
-        loc = {}
-        exec(code, {}, loc)
-        if "formatter" not in loc or not callable(loc["formatter"]):
-            logger.error("Formatter code did not evaluate to formatter() function!")
-            raise RuntimeError("Log formatter MUST define a function following this signature: formatter(e, **g)")
-        # bind all local variables (code imported, other defined functions etc.) onto our log formatter to be used later
-        return functools.partial(loc["formatter"], **loc)
 
     @catch_exceptions(logger=logger)
     def inspectLine(self, *args):
@@ -914,6 +878,9 @@ class MainWindow(QtWidgets.QMainWindow):
             clipboard.setText(data, mode=clipboard.Clipboard)
             self.statusbar.showDynamicText(str("Done ✓ | Copied to clipboard"))
 
-    def _setCurrentRow(self, index):
-        _index = self.uiWidget_listView_model.index(index, 0)
-        self.uiWidget_listView.setCurrentIndex(_index)
+    def _setCurrentRow(self, row):
+        index = self.uiWidget_listView_model.createIndex(row, 0)
+        logger.info(f"Setting row {row} to index {index.row()}")
+        self.uiWidget_listView_model.loadDataUpTo(index)
+        self.uiWidget_listView.scrollTo(index)
+        self.uiWidget_listView.setCurrentIndex(index)
