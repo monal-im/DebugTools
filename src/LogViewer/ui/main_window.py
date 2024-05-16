@@ -356,20 +356,19 @@ class MainWindow(QtWidgets.QMainWindow):
             logger.info("Current search result in line (%s): %s" % (str(self.search.getStatus()), str(result)))
             self.setComboboxStatusColor(self.uiCombobox_searchInput, self.search.getStatus())
 
-            # if current line is hidden switch to next line
-            if self.uiWidget_listView.isRowHidden(result):
-                result = None
-                if func == Search.next:
-                    self.searchNext()
-                else:
-                    self.searchPrevious()
-
-        if result != None:
-            self._setCurrentRow(result)
-
-            self.uiWidget_listView.setFocus()
+        # if current line is hidden switch to next line
+        if self.uiWidget_listView.isRowHidden(result):
+            result = None
+            if func == Search.next:
+                self.searchNext()
+            else:
+                self.searchPrevious()
+        else:
+            if result != None:
+                self._setCurrentRow(result)
+                self.uiWidget_listView.setFocus()
         
-        self._updateStatusbar()
+                self._updateStatusbar()
 
     def _prepareSearch(self):
         query = self.uiCombobox_searchInput.currentText().strip()
