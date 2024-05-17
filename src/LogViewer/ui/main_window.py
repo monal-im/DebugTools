@@ -293,14 +293,9 @@ class MainWindow(QtWidgets.QMainWindow):
     @catch_exceptions(logger=logger)
     def preferences(self, *args):
         preInstance = {
-            "color": {},
-            "staticLineWrap": SettingsSingleton()["staticLineWrap"],
-            "font": SettingsSingleton().getQFont(),
             "formatter": SettingsSingleton().getCurrentFormatterCode(),
             "style": SettingsSingleton()["uiStyle"]
         }
-        for colorName in SettingsSingleton().getColorNames():
-            preInstance["color"][colorName] = SettingsSingleton().getQColorTuple(colorName)
         
         self.preferencesDialog = PreferencesDialog()
         self.preferencesDialog.show()
@@ -752,41 +747,11 @@ class MainWindow(QtWidgets.QMainWindow):
                 self.loadComboboxHistory(combobox)
                 self.updateComboboxHistory(currentText, combobox)
             
-        def rebuildColor(entry):
-            '''
-            colorName = self.logflag2colorMapping[entry["data"]["flag"]]
-            fg, bg = SettingsSingleton().getQColorTuple(colorName)
-            if fg != preInstance["color"][colorName][0] or bg != preInstance["color"][colorName][1]:
-                entry["uiItem"].setForeground(fg)
-                if bg == None:
-                    bg = QtGui.QBrush()     # default color (usually transparent)
-                entry["uiItem"].setBackground(bg)
-            '''
-            pass
-                            
-
-        def rebuildFont(item):
-            item["uiItem"].setFont(SettingsSingleton().getQFont())
-            
         rebuildCombobox(self.uiCombobox_filterInput)
         rebuildCombobox(self.uiCombobox_searchInput)
 
         if preInstance["style"] != SettingsSingleton()["uiStyle"]:
             sharedUiHelpers.applyStyle(SettingsSingleton()["uiStyle"])
-
-        if self.file != None:
-            if preInstance["formatter"] != SettingsSingleton().getCurrentFormatterCode():
-                #rebuildFormatter()
-                pass
-            else:
-                if preInstance["staticLineWrap"] != SettingsSingleton()["staticLineWrap"]:
-                    for entry in range(len(self.rawlog)):
-                        self.rawlog[entry]["uiItem"].setText(helpers.wordWrapLogline(self.rawlog[entry]["data"]["__formattedMessage"]))
-                if preInstance["font"] != SettingsSingleton().getQFont():
-                    for item in self.rawlog:
-                        rebuildFont(item)
-                for entry in self.rawlog:
-                    rebuildColor(entry)
     
     def loadComboboxHistory(self, combobox):
         combobox.clear()
