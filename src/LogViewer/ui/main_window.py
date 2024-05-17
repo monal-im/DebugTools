@@ -365,6 +365,9 @@ class MainWindow(QtWidgets.QMainWindow):
                 self.searchPrevious()
         else:
             if result != None:
+                loadRows = QtCore.QModelIndex()
+                loadRows.child(result, 1)
+                self.LazyItemModel.fetchMore(loadRows)
                 self._setCurrentRow(result)
                 self.uiWidget_listView.setFocus()
         

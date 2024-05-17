@@ -110,4 +110,3 @@ class LazyItemModel(QtCore.QAbstractListModel):
         # bind all local variables (code imported, other defined functions etc.) onto our log formatter to be used later
         return functools.partial(loc["formatter"], **loc)
     
-    
