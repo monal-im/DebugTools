@@ -5,7 +5,7 @@ import sys, os, functools
 from LogViewer.storage import SettingsSingleton
 from LogViewer.utils import Search, AbortSearch, QueryStatus, matchQuery
 import LogViewer.utils.helpers as helpers
-from .utils import Completer, MagicLineEdit, Statusbar, LazyItemModel
+from .utils import Completer, MagicLineEdit, Statusbar, LazyItemModel, LazyProxyModel
 from .preferences_dialog import PreferencesDialog
 from shared.storage import Rawlog
 from shared.ui.utils import UiAutoloader
@@ -172,7 +172,7 @@ class MainWindow(QtWidgets.QMainWindow):
             if "__warning" in entry and entry["__warning"] == True:
                 QtWidgets.QMessageBox.warning(self, "File corruption detected", entry["message"])
             
-            return {"data": entry}
+            return {"data": entry, "visible": True}
         
         progressbar, updateProgressbar = self.progressDialog("Opening File...", "Opening File: %s" % os.path.basename(file), True)
         # don't pretend something was loaded if the loading was aborted
@@ -182,8 +182,11 @@ class MainWindow(QtWidgets.QMainWindow):
             self.statusbar.setText("")
             return
         
-        self.LazyItemModel = LazyItemModel(self.rawlog, self.uiWidget_listView)
-        self.uiWidget_listView.setModel(self.LazyItemModel)
+        self.lazyItemModel = LazyItemModel(self.rawlog, self.uiWidget_listView)
+        self.lazyProxyModel = LazyProxyModel(self.lazyItemModel)
+        self.lazyProxyModel.setSourceModel(self.lazyItemModel)
+        self.uiWidget_listView.setModel(self.lazyProxyModel)
+        self.lazyProxyModel.setProxyData(0, 100)
 
         progressbar.hide()
 
@@ -362,7 +365,9 @@ class MainWindow(QtWidgets.QMainWindow):
             if result != None:
                 loadRows = QtCore.QModelIndex()
                 loadRows.child(result, 1)
-                self.LazyItemModel.fetchMore(loadRows)
+                start = loadRows.row()-50 if loadRows.row()-50 > 0 else loadRows.row()
+                end = loadRows.row()+50 if loadRows.row()+50 < len(self.rawlog) else loadRows.row()
+                self.lazyProxyModel.setProxyData(start, end)
                 self._setCurrentRow(result)
                 self.uiWidget_listView.setFocus()
         
@@ -440,6 +445,11 @@ class MainWindow(QtWidgets.QMainWindow):
         visibleCounter = 0
         filterMapping = {}
         for rawlogPosition in range(len(self.rawlog)):
+            # To achieve a successful filter every row has to be loaded 
+            loadRows = QtCore.QModelIndex()
+            loadRows.child(rawlogPosition, 1)
+            self.lazyItemModel.fetchMore(loadRows)
+
             result = matchQuery(query, self.rawlog, rawlogPosition, usePython=SettingsSingleton()["usePythonFilter"])
             if result["status"] == QueryStatus.QUERY_OK:
                 filterMapping[rawlogPosition] = not result["matching"]
@@ -792,8 +802,8 @@ class MainWindow(QtWidgets.QMainWindow):
             self.statusbar.showDynamicText(str("Done ✓ | Copied to clipboard"))
 
     def _setCurrentRow(self, row):
-        index = self.LazyItemModel.createIndex(row, 0)
+        index = self.lazyItemModel.createIndex(row, 0)
         logger.info(f"Setting row {row} to index {index.row()}")
-        self.LazyItemModel.loadDataUpTo(index)
+        self.lazyItemModel.loadDataUpTo(index)
         self.uiWidget_listView.scrollTo(index)
         self.uiWidget_listView.setCurrentIndex(index)
