@@ -1,114 +1,48 @@
 from PyQt5 import QtWidgets, QtCore, QtGui
-import functools
 
-from LogViewer.storage import SettingsSingleton
-import LogViewer.utils.helpers as helpers
-from shared.utils.constants import LOGLEVELS
-from shared.storage import AbortRawlogLoading
+from .proxy_data import ProxyData
 
 import logging
 logger = logging.getLogger(__name__)
 
-class LazyItemModel(QtCore.QAbstractListModel):
-    def __init__(self, rawlog, parent=None):
+class LazyItemModel(QtCore.QAbstractProxyModel):
+    def __init__(self, baseModel, parent=None):
         super().__init__(parent)
-        self.parent = parent
-        self.loadedRowsCount = 0
-        self.logflag2colorMapping = {v: "logline-%s" % k.lower() for k, v in LOGLEVELS.items()}
-        self.rawlog = rawlog
-        self.formatter = self.createFormatter()
-    
-    def canFetchMore(self, index):
-        logger.info(f"canFetchMore called at index: {index.row()}")
-        return self.loadedRowsCount < len(self.rawlog)
-    
-    def fetchMore(self, index):
-        logger.info(f"fetchMore called at index: {index.row()}")
-        itemsToFetch = min(len(self.rawlog) - self.loadedRowsCount, 10)
-        if itemsToFetch <= 0:
-            return
-        
-        self.beginInsertRows(index, self.loadedRowsCount, self.loadedRowsCount + itemsToFetch - 1);
-        self.loadedRowsCount += itemsToFetch
-        self.endInsertRows();
+        #self.setSourceModel(baseModel)
+        self.proxyData = ProxyData(self)
+        self.baseModel = baseModel
+
+        #self.proxyData.setVisible(0, 100)
+        #self.proxyData.setVisible(baseModel.realRowCount()-100, baseModel.realRowCount())
+
+    def mapFromSource(self, sourceIndex):
+        # from rawlog index to proxy index  
+        return self.baseModel.createIndex(self.proxyData.getNextVisibleProxyIndex(sourceIndex), 0)
+
+    def mapToSource(self, proxyIndex):
+        # from proxy index to rawlog index
+        if proxyIndex.row() == -1:
+            return proxyIndex
+
+        return self.baseModel.createIndex(self.proxyData.getNextVisibleIndex(proxyIndex.row()), 0)
     
     def data(self, index, role):
-        if index.isValid() or (0 <= index.row() < len(self.rawlog)):
-            if role == QtCore.Qt.DisplayRole:
-                entry = self.rawlog[index.row()]
-                formattedEntry = self.createFormatterText(self.formatter, entry["data"])
-                entry["data"]["__formattedMessage"] = formattedEntry
-                return helpers.wordWrapLogline(formattedEntry)
-            elif role == QtCore.Qt.FontRole:
-                return SettingsSingleton().getQFont()
-            elif role == QtCore.Qt.BackgroundRole:
-                entry = self.rawlog[index.row()]
-                fg, bg = SettingsSingleton().getQColorTuple(self.logflag2colorMapping[entry["data"]["flag"]])
-                if bg == None:
-                    bg = QtGui.QBrush()     # default color (usually transparent)
-                return bg
-            elif role == QtCore.Qt.ForegroundRole:
-                entry = self.rawlog[index.row()]
-                fg, bg = SettingsSingleton().getQColorTuple(self.logflag2colorMapping[entry["data"]["flag"]])
-                return fg
-        else:
-            logger.info(f"data called with invalid index: {index.row()}")
+        source = self.mapToSource(index)
+        if source.isValid():
+            return source.data(role)
         return None
     
+    def index(self, row, column, parent=None):
+        res = self.baseModel.match(self.baseModel.index(0, 0), QtCore.Qt.DisplayRole, row, flags=QtCore.Qt.MatchExactly)
+        if res:
+            return res[0].sibling(res[0].row(), column)
+        return self.createIndex(row, column)
+
     def rowCount(self, index):
-        # logger.info(f"Returning row count at index: {index.row()}")
-        return self.loadedRowsCount
+        return self.proxyData.getRowCount()
 
     def columnCount(self, index):
         return 1
     
-    def loadDataUpTo(self, index):
-        itemsToFetch = index.row() - self.loadedRowsCount
-        if itemsToFetch <= 0:
-            return
-        self.beginInsertRows(index, self.loadedRowsCount, self.loadedRowsCount + itemsToFetch - 1);
-        self.loadedRowsCount += itemsToFetch
-        self.endInsertRows();
-    
-    def createFormatterText(self, formatter, entry, ignoreError=False):        
-        try:
-            # this will make sure the log formatter does not change our log entry, but it makes loading slower
-            # formattedEntry = formatter({value: entry[value] for value in entry.keys()})
-            return formatter(entry)
-        except Exception as e:
-            logger.exception("Exception while calling log formatter for: %s" % entry)
-            if not ignoreError:
-                QtWidgets.QMessageBox.critical(
-                    self.parent,
-                    "Monal Log Viewer | ERROR", 
-                    "Exception in formatter code:\n%s: %s\n%s" % (str(type(e).__name__), str(e), entry),
-                    QtWidgets.QMessageBox.Ok
-                )
-            raise AbortRawlogLoading()       # abort loading
-
-    def createFormatter(self):
-        # first of all: try to compile our log formatter code and abort, if this isn't generating a callable formatter function
-        try:
-            return self.compileLogFormatter(SettingsSingleton().getCurrentFormatterCode())
-        except Exception as e:
-            logger.exception("Exception while compiling log formatter")
-            QtWidgets.QMessageBox.critical(
-                self.parent,
-                "Monal Log Viewer | ERROR",
-                "Exception in formatter code:\n%s: %s" % (str(type(e).__name__), str(e)),
-                QtWidgets.QMessageBox.Ok
-            )
-            return
-
-    def compileLogFormatter(self, code):
-        # compile our code by executing it
-        loc = {}
-        exec(code, {}, loc)
-        if "formatter" not in loc or not callable(loc["formatter"]):
-            logger.error("Formatter code did not evaluate to formatter() function!")
-            raise RuntimeError("Log formatter MUST define a function following this signature: formatter(e, **g)")
-        # bind all local variables (code imported, other defined functions etc.) onto our log formatter to be used later
-        return functools.partial(loc["formatter"], **loc)
-    
-    def realRowCount(self):
-        return len(self.rawlog)
+    def setProxyData(self, start, end):
+        self.proxyData.setVisible(start, end)
