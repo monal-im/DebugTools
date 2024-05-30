@@ -9,7 +9,7 @@ from shared.storage import AbortRawlogLoading
 import logging
 logger = logging.getLogger(__name__)
 
-class BaseModel(QtCore.QAbstractListModel):
+class RawlogModel(QtCore.QAbstractListModel):
     def __init__(self, rawlog, parent=None):
         super().__init__(parent)
         self.parent = parent

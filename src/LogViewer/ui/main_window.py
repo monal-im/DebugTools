@@ -5,7 +5,7 @@ import sys, os, functools
 from LogViewer.storage import SettingsSingleton
 from LogViewer.utils import Search, AbortSearch, QueryStatus, matchQuery
 import LogViewer.utils.helpers as helpers
-from .utils import Completer, MagicLineEdit, Statusbar, BaseModel, LazyItemModel
+from .utils import Completer, MagicLineEdit, Statusbar, RawlogModel, LazyItemModel
 from .preferences_dialog import PreferencesDialog
 from shared.storage import Rawlog
 from shared.ui.utils import UiAutoloader
@@ -135,7 +135,7 @@ class MainWindow(QtWidgets.QMainWindow):
             if check:
                 SettingsSingleton().setLastPath(os.path.dirname(os.path.abspath(file)))
                 formatter = self.createFormatter()
-                status = self.rawlog.export_file(file, custom_store_callback = lambda entry: entry["data"] if not self.uiWidget_listView.isRowHidden(self.baseModel.indexFromItem(entry["uiItem"]).row()) else None, formatter = lambda entry: self.createFormatterText(formatter, entry))
+                status = self.rawlog.export_file(file, custom_store_callback = lambda entry: entry["data"] if not self.uiWidget_listView.isRowHidden(self.rawlogModel.indexFromItem(entry["uiItem"]).row()) else None, formatter = lambda entry: self.createFormatterText(formatter, entry))
                 if status:
                     self.statusbar.showDynamicText(str("Done ✓ | Log export was successful"))
                 else:
@@ -146,7 +146,7 @@ class MainWindow(QtWidgets.QMainWindow):
             file, check = QtWidgets.QFileDialog.getSaveFileName(None, "Choose where to save this rawlog logfile", SettingsSingleton().getLastPath(), "Compressed Monal rawlog (*.rawlog.gz)(*.rawlog.gz);;Monal rawlog (*.rawlog)(*.rawlog);;All files (*)")
             if check:
                 SettingsSingleton().setLastPath(os.path.dirname(os.path.abspath(file)))
-                status = self.rawlog.store_file(file, custom_store_callback = lambda entry: entry["data"] if not self.uiWidget_listView.isRowHidden(self.baseModel.indexFromItem(entry["uiItem"]).row()) else None)
+                status = self.rawlog.store_file(file, custom_store_callback = lambda entry: entry["data"] if not self.uiWidget_listView.isRowHidden(self.rawlogModel.indexFromItem(entry["uiItem"]).row()) else None)
                 if status:
                     self.statusbar.showDynamicText(str("Done ✓ | Rawlog saved successfully"))
                 else:
@@ -182,9 +182,8 @@ class MainWindow(QtWidgets.QMainWindow):
             self.statusbar.setText("")
             return
         
-        self.baseModel = BaseModel(self.rawlog, self.uiWidget_listView)
-        self.lazyItemModel = LazyItemModel(self.baseModel)
-        self.lazyItemModel.setSourceModel(self.baseModel)
+        self.rawlogModel = RawlogModel(self.rawlog, self.uiWidget_listView)
+        self.lazyItemModel = LazyItemModel(self.rawlogModel)
         self.uiWidget_listView.setModel(self.lazyItemModel)
         self.lazyItemModel.setProxyData(0, 100)
 
@@ -368,7 +367,7 @@ class MainWindow(QtWidgets.QMainWindow):
                 start = loadRows.row()-50 if loadRows.row()-50 > 0 else loadRows.row()
                 end = loadRows.row()+50 if loadRows.row()+50 < len(self.rawlog) else loadRows.row()
                 self.lazyItemModel.setProxyData(start, end)
-                self.baseModel.fetchMore(loadRows)
+                self.rawlogModel.fetchMore(loadRows)
                 self._setCurrentRow(result)
                 self.uiWidget_listView.setFocus()
         
@@ -449,7 +448,7 @@ class MainWindow(QtWidgets.QMainWindow):
             # To achieve a successful filter every row has to be loaded 
             loadRows = QtCore.QModelIndex()
             loadRows.child(rawlogPosition, 1)
-            self.baseModel.fetchMore(loadRows)
+            self.rawlogModel.fetchMore(loadRows)
 
             result = matchQuery(query, self.rawlog, rawlogPosition, usePython=SettingsSingleton()["usePythonFilter"])
             if result["status"] == QueryStatus.QUERY_OK:
@@ -803,8 +802,8 @@ class MainWindow(QtWidgets.QMainWindow):
             self.statusbar.showDynamicText(str("Done ✓ | Copied to clipboard"))
 
     def _setCurrentRow(self, row):
-        index = self.baseModel.createIndex(row, 0)
+        index = self.rawlogModel.createIndex(row, 0)
         logger.info(f"Setting row {row} to index {index.row()}")
-        self.baseModel.loadDataUpTo(index)
+        self.rawlogModel.loadDataUpTo(index)
         self.uiWidget_listView.scrollTo(index)
         self.uiWidget_listView.setCurrentIndex(index)
