@@ -18,20 +18,6 @@ class RawlogModel(QtCore.QAbstractListModel):
         self.rawlog = rawlog
         self.formatter = self.createFormatter()
     
-    def canFetchMore(self, index):
-        logger.info(f"canFetchMore called at index: {index.row()}")
-        return self.loadedRowsCount < len(self.rawlog)
-    
-    def fetchMore(self, index):
-        logger.info(f"fetchMore called at index: {index.row()}")
-        itemsToFetch = min(len(self.rawlog) - self.loadedRowsCount, 10)
-        if itemsToFetch <= 0:
-            return
-        
-        self.beginInsertRows(index, self.loadedRowsCount, self.loadedRowsCount + itemsToFetch - 1);
-        self.loadedRowsCount += itemsToFetch
-        self.endInsertRows();
-    
     def data(self, index, role):
         if index.isValid() or (0 <= index.row() < len(self.rawlog)):
             if role == QtCore.Qt.DisplayRole:

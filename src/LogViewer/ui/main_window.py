@@ -185,7 +185,7 @@ class MainWindow(QtWidgets.QMainWindow):
         self.rawlogModel = RawlogModel(self.rawlog, self.uiWidget_listView)
         self.lazyItemModel = LazyItemModel(self.rawlogModel)
         self.uiWidget_listView.setModel(self.lazyItemModel)
-        self.lazyItemModel.setProxyData(0, 100)
+        self.lazyItemModel.setVisible(0, 100)
 
         progressbar.hide()
 
@@ -364,10 +364,6 @@ class MainWindow(QtWidgets.QMainWindow):
             if result != None:
                 loadRows = QtCore.QModelIndex()
                 loadRows.child(result, 1)
-                start = loadRows.row()-50 if loadRows.row()-50 > 0 else loadRows.row()
-                end = loadRows.row()+50 if loadRows.row()+50 < len(self.rawlog) else loadRows.row()
-                self.lazyItemModel.setProxyData(start, end)
-                self.rawlogModel.fetchMore(loadRows)
                 self._setCurrentRow(result)
                 self.uiWidget_listView.setFocus()
         
@@ -804,6 +800,5 @@ class MainWindow(QtWidgets.QMainWindow):
     def _setCurrentRow(self, row):
         index = self.rawlogModel.createIndex(row, 0)
         logger.info(f"Setting row {row} to index {index.row()}")
-        self.rawlogModel.loadDataUpTo(index)
         self.uiWidget_listView.scrollTo(index)
         self.uiWidget_listView.setCurrentIndex(index)

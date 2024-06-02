@@ -18,7 +18,7 @@ class ProxyData():
     def getNextVisibleIndex(self, proxyIndex):
         # from proxy index to real index
         counter = 0
-        for nextIndex in range(len(self.proxyModel.rawlogModel.rawlog)):
+        for nextIndex in range(self.proxyModel.sourceModel().realRowCount()):
             if self.visibility[nextIndex] == True:
                 if counter == proxyIndex+1:
                     return nextIndex

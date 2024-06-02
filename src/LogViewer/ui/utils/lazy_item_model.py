@@ -1,4 +1,4 @@
-from PyQt5 import QtWidgets, QtCore, QtGui
+from PyQt5 import QtCore
 
 from .proxy_data import ProxyData
 
@@ -10,32 +10,31 @@ class LazyItemModel(QtCore.QAbstractProxyModel):
         super().__init__(parent)
         self.setSourceModel(rawlogModel)
         self.proxyData = ProxyData(self)
-        self.rawlogModel = rawlogModel
-
-        #self.proxyData.setVisible(0, 100)
-        #self.proxyData.setVisible(baseModel.realRowCount()-100, baseModel.realRowCount())
 
     def mapFromSource(self, sourceIndex):
         # from rawlog index to proxy index  
-        return self.rawlogModel.createIndex(self.proxyData.getNextVisibleProxyIndex(sourceIndex), 0)
+        return self.createIndex(self.proxyData.getNextVisibleProxyIndex(sourceIndex), 0)
 
     def mapToSource(self, proxyIndex):
         # from proxy index to rawlog index
         if proxyIndex.row() == -1:
             return proxyIndex
 
-        return self.rawlogModel.createIndex(self.proxyData.getNextVisibleIndex(proxyIndex.row()), 0)
+        return self.sourceModel().createIndex(self.proxyData.getNextVisibleIndex(proxyIndex.row()), 0)
     
     def data(self, index, role):
-        source = self.mapToSource(index)
-        if source.isValid():
-            return source.data(role)
+        index = self.mapToSource(index)
+        if index.isValid():
+            # data(role) is called on index, because the index also holds the UiItem
+            # Without this the uiItem would be blanc
+            return index.data(role)
         return None
     
     def index(self, row, column, parent=None):
-        res = self.rawlogModel.match(self.rawlogModel.index(0, 0), QtCore.Qt.DisplayRole, row, flags=QtCore.Qt.MatchExactly)
-        if res:
-            return res[0].sibling(res[0].row(), column)
+        # This function is needed to provide the right index for self.data()
+        resultIndex = self.sourceModel().match(self.sourceModel().index(0, 0), QtCore.Qt.DisplayRole, row, flags=QtCore.Qt.MatchExactly)
+        if resultIndex:
+            return resultIndex[0].sibling(resultIndex[0].row(), column)
         return self.createIndex(row, column)
 
     def rowCount(self, index):
@@ -44,5 +43,7 @@ class LazyItemModel(QtCore.QAbstractProxyModel):
     def columnCount(self, index):
         return 1
     
-    def setProxyData(self, start, end):
+    def setVisible(self, start, end):
+        self.layoutAboutToBeChanged.emit()
         self.proxyData.setVisible(start, end)
+        self.layoutChanged.emit()
