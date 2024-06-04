@@ -185,7 +185,10 @@ class MainWindow(QtWidgets.QMainWindow):
         self.rawlogModel = RawlogModel(self.rawlog, self.uiWidget_listView)
         self.lazyItemModel = LazyItemModel(self.rawlogModel)
         self.uiWidget_listView.setModel(self.lazyItemModel)
-        self.lazyItemModel.setVisible(0, 100)
+        self.lazyItemModel.setVisible(0, 2)
+        self.lazyItemModel.setVisible(8, 10)
+        self.lazyItemModel.setVisible(50, 100)
+        #self.lazyItemModel.setVisible(100, 200)
 
         progressbar.hide()
 
@@ -494,6 +497,9 @@ class MainWindow(QtWidgets.QMainWindow):
 
     @catch_exceptions(logger=logger)
     def openGoToRowWidget(self, *args):
+        logger.error("Now!")
+        self.lazyItemModel.setVisible(100, 200)
+        return
         if self.uiFrame_goToRow.isHidden():
             self.hideSearchOrGoto()
             self.uiFrame_goToRow.show()
