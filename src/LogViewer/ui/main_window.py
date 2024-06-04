@@ -224,8 +224,8 @@ class MainWindow(QtWidgets.QMainWindow):
 
     @catch_exceptions(logger=logger)
     def inspectLine(self, *args):
-        if len(self.uiWidget_listView.selectedIndexes()) != 0:
-            if self.currentDetailIndex != self.uiWidget_listView.selectedIndexes()[0].row():
+        if len(self.getRealSelectedIndexes()) != 0:
+            if self.currentDetailIndex != self.getRealSelectedIndexes()[0].row():
                 def splitter(dictionary, path=[]):
                     retval = []
                     for key, value in dictionary.items():
@@ -240,7 +240,7 @@ class MainWindow(QtWidgets.QMainWindow):
                         path.pop(-1)
                     return retval
                 
-                selectedEntry = self.rawlog[self.uiWidget_listView.selectedIndexes()[0].row()].get("data")
+                selectedEntry = self.rawlog[self.getRealSelectedIndexes()[0].row()].get("data")
                 details_table_data = splitter(selectedEntry)
                 logger.debug("details table data: %s" % details_table_data)
                 
@@ -259,7 +259,7 @@ class MainWindow(QtWidgets.QMainWindow):
                     row += 1
                 
                 self.uiTable_characteristics.show()
-                self.currentDetailIndex = self.uiWidget_listView.selectedIndexes()[0].row()
+                self.currentDetailIndex = self.getRealSelectedIndexes()[0].row()
                 self.uiAction_inspectLine.setData(True)
                 self.uiAction_inspectLine.setChecked(True)
             else:
@@ -324,8 +324,8 @@ class MainWindow(QtWidgets.QMainWindow):
         if self.search == None:
             return
         # if no logline is selected, let the search implementation continue where it left of
-        if len(self.uiWidget_listView.selectedIndexes()) > 0:
-            self.search.resetStartIndex(self.uiWidget_listView.selectedIndexes()[0].row())
+        if len(self.getRealSelectedIndexes()) > 0:
+            self.search.resetStartIndex(self.getRealSelectedIndexes()[0].row())
     
     def searchNext(self):
         # use unbound function, self will be bound in _search() later on after the instance was created
@@ -342,8 +342,8 @@ class MainWindow(QtWidgets.QMainWindow):
             self.search = None
             self.uiCombobox_searchInput.setStyleSheet("")
         elif self.search != None and self.search.getQuery() == query:
-            if len(self.uiWidget_listView.selectedIndexes()) != 0 and self.uiWidget_listView.selectedIndexes()[0].row() != self.search.getPosition():
-                self.search.resetStartIndex(self.uiWidget_listView.selectedIndexes()[0].row())
+            if len(self.getRealSelectedIndexes()) != 0 and self.getRealSelectedIndexes()[0].row() != self.search.getPosition():
+                self.search.resetStartIndex(self.getRealSelectedIndexes()[0].row())
         else:
             self._prepareSearch()   # create search instance (to be bound below)
         
@@ -376,8 +376,8 @@ class MainWindow(QtWidgets.QMainWindow):
         try:
             # let our new search begin at the currently selected line (if any)
             startIndex = 0       # if no logline is selected, let the search implementation begin at our list start
-            if len(self.uiWidget_listView.selectedIndexes()) > 0:
-                startIndex = self.uiWidget_listView.selectedIndexes()[0].row()
+            if len(self.getRealSelectedIndexes()) > 0:
+                startIndex = self.getRealSelectedIndexes()[0].row()
             self.search = Search(self.rawlog, query, startIndex, update_progressbar)
             if self.search.getStatus() == QueryStatus.QUERY_ERROR:
                 self.checkQueryResult(self.search.getError(), 0, self.uiCombobox_searchInput)
@@ -399,8 +399,8 @@ class MainWindow(QtWidgets.QMainWindow):
     def clearFilter(self, *args):
         if self.currentFilterQuery != None and len(self.currentFilterQuery) > 0:
             currentSelectetLine = None
-            if len(self.uiWidget_listView.selectedIndexes()) != 0:
-                currentSelectetLine = self.uiWidget_listView.selectedIndexes()[0].row()
+            if len(self.getRealSelectedIndexes()) != 0:
+                currentSelectetLine = self.getRealSelectedIndexes()[0].row()
                 
             self.uiCombobox_filterInput.setCurrentText("")
             self.uiCombobox_filterInput.setStyleSheet("")
@@ -433,8 +433,8 @@ class MainWindow(QtWidgets.QMainWindow):
         self.currentFilterQuery = query
 
         selectedLine = None
-        if len(self.uiWidget_listView.selectedIndexes()) != 0:
-            selectedLine = self.uiWidget_listView.selectedIndexes()[0].row()
+        if len(self.getRealSelectedIndexes()) != 0:
+            selectedLine = self.getRealSelectedIndexes()[0].row()
 
         progressbar, update_progressbar = self.progressDialog("Filtering...", query, True)
         error = None
@@ -510,7 +510,7 @@ class MainWindow(QtWidgets.QMainWindow):
         
         # prevent switching to row if that row is already selected
         rowIndex = self.uiSpinBox_goToRow.value()
-        if len(self.uiWidget_listView.selectedIndexes()) == 0 or rowIndex != self.uiWidget_listView.selectedIndexes()[0].row():
+        if len(self.getRealSelectedIndexes()) == 0 or rowIndex != self.getRealSelectedIndexes()[0].row():
             self._setCurrentRow(rowIndex)
     
     def checkQueryResult(self, error = None, visibleCounter = 0, combobox=None):
@@ -577,11 +577,11 @@ class MainWindow(QtWidgets.QMainWindow):
 
     @catch_exceptions(logger=logger)
     def goToFirstRowInViewport(self, *args):
-        if len(self.uiWidget_listView.selectedIndexes()) == 0:
+        if len(self.getRealSelectedIndexes()) == 0:
             return;
-        lastIndex = self.uiWidget_listView.selectedIndexes()[0].row()
+        lastIndex = self.getRealSelectedIndexes()[0].row()
         # Counts backwards from the current entry
-        for index in range(self.uiWidget_listView.selectedIndexes()[0].row(), -1, -1):
+        for index in range(self.getRealSelectedIndexes()[0].row(), -1, -1):
             # If the item is not fully visible (e.g. y-position is not in our viewport anymore),
             # the previous one must have been the last one in our viewport --> use that
             visualItemRect = self.uiWidget_listView.visualItemRect(self.rawlog[index]["uiItem"])
@@ -594,11 +594,11 @@ class MainWindow(QtWidgets.QMainWindow):
 
     @catch_exceptions(logger=logger)
     def goToLastRowInViewport(self, *args):
-        if len(self.uiWidget_listView.selectedIndexes()) == 0:
+        if len(self.getRealSelectedIndexes()) == 0:
             return;
-        lastIndex = self.uiWidget_listView.selectedIndexes()[0].row()
+        lastIndex = self.getRealSelectedIndexes()[0].row()
         # Counts upwards from the current entry
-        for index in range(self.uiWidget_listView.selectedIndexes()[0].row(), len(self.rawlog)):
+        for index in range(self.getRealSelectedIndexes()[0].row(), len(self.rawlog)):
             # If the item is not fully visible (e.g. y-position + height is not in our viewport anymore),
             # the previous one must have been the last one in our viewport --> use that
             visualItemRect = self.uiWidget_listView.visualItemRect(self.rawlog[index]["uiItem"])
@@ -620,8 +620,8 @@ class MainWindow(QtWidgets.QMainWindow):
     @catch_exceptions(logger=logger)
     def pushStack(self, *args):
         selectedLine = None
-        if self.uiWidget_listView.selectedIndexes():
-            selectedLine = self.uiWidget_listView.selectedIndexes()[0].row()
+        if self.getRealSelectedIndexes():
+            selectedLine = self.getRealSelectedIndexes()[0].row()
 
         currentSearchResult = None
         if self.search:
@@ -786,7 +786,7 @@ class MainWindow(QtWidgets.QMainWindow):
     def copyToClipboard(self):
         data = None
         if self.uiWidget_listView.hasFocus():
-            data = self.rawlog[self.uiWidget_listView.selectedIndexes()[0].row()]["data"]["__formattedMessage"]
+            data = self.rawlog[self.getRealSelectedIndexes()[0].row()]["data"]["__formattedMessage"]
         if self.uiTable_characteristics.hasFocus():
             data = self.uiTable_characteristics.currentItem().text()
         
@@ -802,3 +802,12 @@ class MainWindow(QtWidgets.QMainWindow):
         logger.info(f"Setting row {row} to index {index.row()}")
         self.uiWidget_listView.scrollTo(index)
         self.uiWidget_listView.setCurrentIndex(index)
+    
+    def getRealSelectedIndexes(self):
+        return [self._resolveIndex(self.uiWidget_listView.model(), index) for index in self.uiWidget_listView.selectedIndexes()]
+    
+    def _resolveIndex(self, model, index):
+        # recursively map index in proxy model chain to get real rawlog index
+        if not hasattr(model, "sourceModel") or not hasattr(model, "mapToSource"):
+            return index
+        return self._resolveIndex(model.sourceModel(), model.mapToSource(index))
