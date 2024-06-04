@@ -18,18 +18,18 @@ class ProxyData():
     def getNextVisibleIndex(self, proxyIndex):
         # from proxy index to real index
         counter = 0
-        for nextIndex in range(self.proxyModel.sourceModel().realRowCount()):
-            if self.visibility[nextIndex] == True:
-                if counter == proxyIndex+1:
-                    return nextIndex
+        for realIndex in range(self.proxyModel.sourceModel().rowCount(None)):
+            if self.visibility[realIndex] == True:
                 counter += 1
+                if counter == proxyIndex+1:
+                    return realIndex
         return None
 
-    def getNextVisibleProxyIndex(self, index):
+    def getNextVisibleProxyIndex(self, realIndex):
         # from real index to proxy index
         counter = 0
-        for nextIndex in range(index.row()):
-            if self.visibility[nextIndex] == True:
+        for index in range(realIndex.row()):
+            if self.visibility[index] == True:
                 counter += 1
         return counter
         
@@ -38,5 +38,10 @@ class ProxyData():
             self.visibility[index] = True
     
     def getRowCount(self):
-        return len(self.visibility)-1
-        
+        # len(self.visibility) gives the number of items already populated in defaultdict (regardless of it's value)
+        # --> iterate over populated values and count truth values
+        visible = 0
+        for index in self.visibility:
+            if self.visibility[index] == True:
+                visible += 1
+        return visible

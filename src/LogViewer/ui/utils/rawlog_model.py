@@ -13,7 +13,6 @@ class RawlogModel(QtCore.QAbstractListModel):
     def __init__(self, rawlog, parent=None):
         super().__init__(parent)
         self.parent = parent
-        self.loadedRowsCount = 0
         self.logflag2colorMapping = {v: "logline-%s" % k.lower() for k, v in LOGLEVELS.items()}
         self.rawlog = rawlog
         self.formatter = self.createFormatter()
@@ -42,19 +41,10 @@ class RawlogModel(QtCore.QAbstractListModel):
         return None
     
     def rowCount(self, index):
-        # logger.info(f"Returning row count at index: {index.row()}")
-        return self.loadedRowsCount
+        return len(self.rawlog)
 
     def columnCount(self, index):
         return 1
-    
-    def loadDataUpTo(self, index):
-        itemsToFetch = index.row() - self.loadedRowsCount
-        if itemsToFetch <= 0:
-            return
-        self.beginInsertRows(index, self.loadedRowsCount, self.loadedRowsCount + itemsToFetch - 1);
-        self.loadedRowsCount += itemsToFetch
-        self.endInsertRows();
     
     def createFormatterText(self, formatter, entry, ignoreError=False):        
         try:
@@ -95,6 +85,3 @@ class RawlogModel(QtCore.QAbstractListModel):
             raise RuntimeError("Log formatter MUST define a function following this signature: formatter(e, **g)")
         # bind all local variables (code imported, other defined functions etc.) onto our log formatter to be used later
         return functools.partial(loc["formatter"], **loc)
-    
-    def realRowCount(self):
-        return len(self.rawlog)

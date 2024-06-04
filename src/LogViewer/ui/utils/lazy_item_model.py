@@ -11,32 +11,33 @@ class LazyItemModel(QtCore.QAbstractProxyModel):
         self.setSourceModel(rawlogModel)
         self.proxyData = ProxyData(self)
 
+    def parent(self, index):
+        # this method logs errors if not implemented, so simply return an invalid index to make qt happy
+        return QtCore.QModelIndex()
+    
+    def index(self, row, column, parent=None):
+        # this method logs errors if not implemented and is needed for qt to show content
+        return self.createIndex(row, column, parent)
+    
     def mapFromSource(self, sourceIndex):
-        # from rawlog index to proxy index  
-        return self.createIndex(self.proxyData.getNextVisibleProxyIndex(sourceIndex), 0)
+        # from rawlog index to proxy index
+        nextVisibleProxyIndex = self.proxyData.getNextVisibleProxyIndex(sourceIndex)
+        return self.createIndex(nextVisibleProxyIndex, 0)
 
     def mapToSource(self, proxyIndex):
         # from proxy index to rawlog index
-        if proxyIndex.row() == -1:
-            return proxyIndex
-        return self.sourceModel().createIndex(self.proxyData.getNextVisibleIndex(proxyIndex.row()), 0)
-    
-    def data(self, index, role):
-        index = self.mapToSource(index)
-        if index.isValid():
-            return self.sourceModel().data(index, role)
-        return None
-    
-    def index(self, row, column, parent=None):
-        return self.createIndex(row, column, parent)
+        if not proxyIndex.isValid():
+            return QtCore.QModelIndex()
+        nextVisibleRow = self.proxyData.getNextVisibleIndex(proxyIndex.row())
+        return self.sourceModel().createIndex(nextVisibleRow, 0)
 
     def rowCount(self, index):
         return self.proxyData.getRowCount()
 
     def columnCount(self, index):
-        return 1
+        return self.sourceModel().columnCount(index)
     
     def setVisible(self, start, end):
-        self.layoutAboutToBeChanged.emit()
+        self.beginInsertRows(self.index(start, 1), start, end);
         self.proxyData.setVisible(start, end)
-        self.layoutChanged.emit()
+        self.endInsertRows();
