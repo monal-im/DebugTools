@@ -19,23 +19,16 @@ class LazyItemModel(QtCore.QAbstractProxyModel):
         # from proxy index to rawlog index
         if proxyIndex.row() == -1:
             return proxyIndex
-
         return self.sourceModel().createIndex(self.proxyData.getNextVisibleIndex(proxyIndex.row()), 0)
     
     def data(self, index, role):
         index = self.mapToSource(index)
         if index.isValid():
-            # data(role) is called on index, because the index also holds the UiItem
-            # Without this the uiItem would be blanc
-            return index.data(role)
+            return self.sourceModel().data(index, role)
         return None
     
     def index(self, row, column, parent=None):
-        # This function is needed to provide the right index for self.data()
-        resultIndex = self.sourceModel().match(self.sourceModel().index(0, 0), QtCore.Qt.DisplayRole, row, flags=QtCore.Qt.MatchExactly)
-        if resultIndex:
-            return resultIndex[0].sibling(resultIndex[0].row(), column)
-        return self.createIndex(row, column)
+        return self.createIndex(row, column, parent)
 
     def rowCount(self, index):
         return self.proxyData.getRowCount()
