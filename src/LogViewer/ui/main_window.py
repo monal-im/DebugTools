@@ -68,7 +68,7 @@ class MainWindow(QtWidgets.QMainWindow):
 
         self.uiButton_goToRow.setIcon(self.style().standardIcon(getattr(QStyle, "SP_CommandLink")))
         self.uiButton_goToRow.clicked.connect(self.goToRow)
-        self.uiSpinBox_goToRow.valueChanged.connect(self.goToRow)
+        #self.uiSpinBox_goToRow.valueChanged.connect(self.goToRow)
         self.uiFrame_goToRow.hide()
 
         self.uiTable_characteristics.doubleClicked.connect(self.pasteDetailItem)
@@ -185,10 +185,11 @@ class MainWindow(QtWidgets.QMainWindow):
         self.rawlogModel = RawlogModel(self.rawlog, self.uiWidget_listView)
         self.lazyItemModel = LazyItemModel(self.rawlogModel)
         self.uiWidget_listView.setModel(self.lazyItemModel)
-        self.lazyItemModel.setVisible(0, 2)
-        self.lazyItemModel.setVisible(8, 10)
-        self.lazyItemModel.setVisible(50, 100)
+        #self.lazyItemModel.setVisible(0, 2)
+        #self.lazyItemModel.setVisible(8, 10)
+        #self.lazyItemModel.setVisible(50, 100)
         #self.lazyItemModel.setVisible(100, 200)
+        self.lazyItemModel.setVisible(0, 100)
 
         progressbar.hide()
 
@@ -497,9 +498,6 @@ class MainWindow(QtWidgets.QMainWindow):
 
     @catch_exceptions(logger=logger)
     def openGoToRowWidget(self, *args):
-        logger.error("Now!")
-        self.lazyItemModel.setVisible(100, 200)
-        return
         if self.uiFrame_goToRow.isHidden():
             self.hideSearchOrGoto()
             self.uiFrame_goToRow.show()
@@ -517,6 +515,7 @@ class MainWindow(QtWidgets.QMainWindow):
         # prevent switching to row if that row is already selected
         rowIndex = self.uiSpinBox_goToRow.value()
         if len(self.getRealSelectedIndexes()) == 0 or rowIndex != self.getRealSelectedIndexes()[0].row():
+            self.lazyItemModel.setVisible(max(0, rowIndex-100), min(rowIndex+100, len(self.rawlog)))
             self._setCurrentRow(rowIndex)
     
     def checkQueryResult(self, error = None, visibleCounter = 0, combobox=None):
@@ -567,52 +566,41 @@ class MainWindow(QtWidgets.QMainWindow):
     @catch_exceptions(logger=logger)
     def goToFirstRow(self, *args):
         # set first row as current row
-        for index in range(len(self.rawlog)):
-            if not self.uiWidget_listView.isRowHidden(index):
-                self._setCurrentRow(index)
-                #self.statusbar.showDynamicText(str("Done ✓ | Switched to first row: %d" % index))
-                break
+        self.uiWidget_listView.scrollToTop()
+        self.uiWidget_listView.setCurrentIndex(self.rawlogModel.createIndex(0, 0))
+        #self.statusbar.showDynamicText(str("Done ✓ | Switched to first row: %d" % index))
 
     @catch_exceptions(logger=logger)
     def goToLastRow(self, *args):
         # set last row as current row 
-        for index in range(len(self.rawlog)-1, -1, -1):
-            self._setCurrentRow(index)
-            #self.statusbar.showDynamicText(str("Done ✓ | Switched to last row: %d" % index))
-            break
+        self.lazyItemModel.setVisible(len(self.rawlog)-100, len(self.rawlog))
+        self.uiWidget_listView.scrollToBottom()
+        self.uiWidget_listView.setCurrentIndex(self.rawlogModel.createIndex(self.lazyItemModel.rowCount(-1)-1, 0))
+
 
     @catch_exceptions(logger=logger)
     def goToFirstRowInViewport(self, *args):
         if len(self.getRealSelectedIndexes()) == 0:
-            return;
-        lastIndex = self.getRealSelectedIndexes()[0].row()
-        # Counts backwards from the current entry
-        for index in range(self.getRealSelectedIndexes()[0].row(), -1, -1):
-            # If the item is not fully visible (e.g. y-position is not in our viewport anymore),
-            # the previous one must have been the last one in our viewport --> use that
-            visualItemRect = self.uiWidget_listView.visualItemRect(self.rawlog[index]["uiItem"])
-            if visualItemRect.y() < 0:
-                break
-            else:
-                lastIndex = index
-        self._setCurrentRow(lastIndex)
+            return
+        startIndex = self.getRealSelectedIndexes()[0].row()
+
+        visualItemRect = self.uiWidget_listView.visualRect(self.rawlogModel.createIndex(startIndex, 0))
+        top = self.uiWidget_listView.indexAt(visualItemRect.topLeft())
+        self._setCurrentRow(top.row())
         #self.statusbar.showDynamicText(str("Done ✓ | Switched to the first line in the viewport: %d" % lastIndex))
 
     @catch_exceptions(logger=logger)
     def goToLastRowInViewport(self, *args):
         if len(self.getRealSelectedIndexes()) == 0:
-            return;
-        lastIndex = self.getRealSelectedIndexes()[0].row()
-        # Counts upwards from the current entry
-        for index in range(self.getRealSelectedIndexes()[0].row(), len(self.rawlog)):
-            # If the item is not fully visible (e.g. y-position + height is not in our viewport anymore),
-            # the previous one must have been the last one in our viewport --> use that
-            visualItemRect = self.uiWidget_listView.visualItemRect(self.rawlog[index]["uiItem"])
-            if visualItemRect.y() + visualItemRect.height() > self.uiWidget_listView.height():
-                break
-            else:
-                lastIndex = index
-        self._setCurrentRow(lastIndex)
+            return
+        startIndex = self.getRealSelectedIndexes()[0].row()
+        
+        visualItemRect = self.uiWidget_listView.visualRect(self.rawlogModel.createIndex(startIndex, 0))
+        #Note that for historical reasons this function returns top() + height() - 1; use y() + height() to retrieve the true y-coordinate.
+        #See: https://doc.qt.io/qtforpython-5/PySide2/QtCore/QRect.html#PySide2.QtCore.PySide2.QtCore.QRect.bottom
+        bottom = self.uiWidget_listView.indexAt(QtCore.QPoint(visualItemRect.y()+visualItemRect.height(), 0))
+
+        self._setCurrentRow(bottom.row())
         #self.statusbar.showDynamicText(str("Done ✓ | Switched to the last line in the viewport: %d" % lastIndex))
     
     def cancelFilter(self):
@@ -804,10 +792,10 @@ class MainWindow(QtWidgets.QMainWindow):
             self.statusbar.showDynamicText(str("Done ✓ | Copied to clipboard"))
 
     def _setCurrentRow(self, row):
-        index = self.rawlogModel.createIndex(row, 0)
+        index = self.lazyItemModel.createIndex(row, 0)
         logger.info(f"Setting row {row} to index {index.row()}")
-        self.uiWidget_listView.scrollTo(index)
-        self.uiWidget_listView.setCurrentIndex(index)
+        #self.uiWidget_listView.scrollTo(index, hint=QtWidgets.QAbstractItemView.PositionAtCenter)
+        self.uiWidget_listView.setCurrentIndex(self.lazyItemModel.mapFromSource(index))
     
     def getRealSelectedIndexes(self):
         return [self._resolveIndex(self.uiWidget_listView.model(), index) for index in self.uiWidget_listView.selectedIndexes()]
