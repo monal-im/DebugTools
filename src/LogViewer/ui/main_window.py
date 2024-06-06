@@ -175,11 +175,21 @@ class MainWindow(QtWidgets.QMainWindow):
             return {"data": entry, "visible": True}
         
         progressbar, updateProgressbar = self.progressDialog("Opening File...", "Opening File: %s" % os.path.basename(file), True)
-        # don't pretend something was loaded if the loading was aborted
-        if self.rawlog.load_file(file, progress_callback=updateProgressbar, custom_load_callback=loader) != True:
-            self.closeFile()        # reset our ui to a sane state
+        try:
+            # don't pretend something was loaded if the loading was aborted
+            if self.rawlog.load_file(file, progress_callback=updateProgressbar, custom_load_callback=loader) != True:
+                self.closeFile()        # reset our ui to a sane state
+                progressbar.hide()
+                self.statusbar.setText("")
+                return
+        except Exception as error:
             progressbar.hide()
-            self.statusbar.setText("")
+            QtWidgets.QMessageBox.critical(
+                self,
+                "Monal Log Viewer | ERROR", 
+                "Exception in query:\n%s: %s" % (str(type(error).__name__), str(error)),
+                QtWidgets.QMessageBox.Ok
+            )
             return
         
         self.rawlogModel = RawlogModel(self.rawlog, self.uiWidget_listView)
