@@ -366,9 +366,9 @@ class MainWindow(QtWidgets.QMainWindow):
                 self.searchPrevious()
         else:
             if result != None:
-                loadRows = QtCore.QModelIndex()
-                loadRows.child(result, 1)
+                self.lazyItemModel.setVisible(max(0, result-100), min(result+100, len(self.rawlog)))
                 self._setCurrentRow(result)
+
                 self.uiWidget_listView.setFocus()
         
                 self._updateStatusbar()
