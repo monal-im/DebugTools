@@ -592,25 +592,18 @@ class MainWindow(QtWidgets.QMainWindow):
     def goToFirstRowInViewport(self, *args):
         if len(self.getRealSelectedIndexes()) == 0:
             return
-        startIndex = self.getRealSelectedIndexes()[0].row()
 
-        visualItemRect = self.uiWidget_listView.visualRect(self.rawlogModel.createIndex(startIndex, 0))
-        top = self.uiWidget_listView.indexAt(visualItemRect.topLeft())
-        self._setCurrentRow(top.row())
+        visualItemRect = self.uiWidget_listView.indexAt(self.uiWidget_listView.viewport().contentsRect().topLeft()).row()
+        self._setCurrentRow(visualItemRect)
         #self.statusbar.showDynamicText(str("Done ✓ | Switched to the first line in the viewport: %d" % lastIndex))
 
     @catch_exceptions(logger=logger)
     def goToLastRowInViewport(self, *args):
         if len(self.getRealSelectedIndexes()) == 0:
             return
-        startIndex = self.getRealSelectedIndexes()[0].row()
         
-        visualItemRect = self.uiWidget_listView.visualRect(self.rawlogModel.createIndex(startIndex, 0))
-        #Note that for historical reasons this function returns top() + height() - 1; use y() + height() to retrieve the true y-coordinate.
-        #See: https://doc.qt.io/qtforpython-5/PySide2/QtCore/QRect.html#PySide2.QtCore.PySide2.QtCore.QRect.bottom
-        bottom = self.uiWidget_listView.indexAt(QtCore.QPoint(visualItemRect.y()+visualItemRect.height(), 0))
-
-        self._setCurrentRow(bottom.row())
+        visualItemRect = self.uiWidget_listView.indexAt(self.uiWidget_listView.viewport().contentsRect().bottomLeft()).row()
+        self._setCurrentRow(visualItemRect)
         #self.statusbar.showDynamicText(str("Done ✓ | Switched to the last line in the viewport: %d" % lastIndex))
     
     def cancelFilter(self):
