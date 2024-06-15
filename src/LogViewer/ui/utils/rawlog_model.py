@@ -85,3 +85,6 @@ class RawlogModel(QtCore.QAbstractListModel):
             raise RuntimeError("Log formatter MUST define a function following this signature: formatter(e, **g)")
         # bind all local variables (code imported, other defined functions etc.) onto our log formatter to be used later
         return functools.partial(loc["formatter"], **loc)
+
+    def listView(self):
+        return self.parent

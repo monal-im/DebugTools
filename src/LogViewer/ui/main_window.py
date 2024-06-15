@@ -195,12 +195,9 @@ class MainWindow(QtWidgets.QMainWindow):
         self.rawlogModel = RawlogModel(self.rawlog, self.uiWidget_listView)
         self.lazyItemModel = LazyItemModel(self.rawlogModel)
         self.uiWidget_listView.setModel(self.lazyItemModel)
-        #self.lazyItemModel.setVisible(0, 2)
-        #self.lazyItemModel.setVisible(8, 10)
-        #self.lazyItemModel.setVisible(50, 100)
-        #self.lazyItemModel.setVisible(100, 200)
-        self.lazyItemModel.setVisible(0, 100)
-
+        self.lazyItemModel.setVisible(0, 150)
+        self.uiWidget_listView.verticalScrollBar().actionTriggered.connect(self.lazyItemModel.scrollbarMoved)
+        
         progressbar.hide()
 
         if self.file != file:
@@ -376,8 +373,10 @@ class MainWindow(QtWidgets.QMainWindow):
                 self.searchPrevious()
         else:
             if result != None:
+                self.lazyItemModel.changeTriggeredProgramatically(True)
                 self.lazyItemModel.setVisible(max(0, result-100), min(result+100, len(self.rawlog)))
                 self._setCurrentRow(result)
+                self.lazyItemModel.changeTriggeredProgramatically(False)
 
                 self.uiWidget_listView.setFocus()
         
@@ -576,17 +575,20 @@ class MainWindow(QtWidgets.QMainWindow):
     @catch_exceptions(logger=logger)
     def goToFirstRow(self, *args):
         # set first row as current row
+        self.lazyItemModel.changeTriggeredProgramatically(True)
         self.uiWidget_listView.scrollToTop()
         self.uiWidget_listView.setCurrentIndex(self.rawlogModel.createIndex(0, 0))
+        self.lazyItemModel.changeTriggeredProgramatically(False)
         #self.statusbar.showDynamicText(str("Done ✓ | Switched to first row: %d" % index))
 
     @catch_exceptions(logger=logger)
     def goToLastRow(self, *args):
         # set last row as current row 
-        self.lazyItemModel.setVisible(len(self.rawlog)-100, len(self.rawlog))
+        self.lazyItemModel.changeTriggeredProgramatically(True)
+        self.lazyItemModel.setVisible(len(self.rawlog)-150, len(self.rawlog))
         self.uiWidget_listView.scrollToBottom()
         self.uiWidget_listView.setCurrentIndex(self.rawlogModel.createIndex(self.lazyItemModel.rowCount(-1)-1, 0))
-
+        self.lazyItemModel.changeTriggeredProgramatically(False)
 
     @catch_exceptions(logger=logger)
     def goToFirstRowInViewport(self, *args):
@@ -798,7 +800,9 @@ class MainWindow(QtWidgets.QMainWindow):
         index = self.lazyItemModel.createIndex(row, 0)
         logger.info(f"Setting row {row} to index {index.row()}")
         #self.uiWidget_listView.scrollTo(index, hint=QtWidgets.QAbstractItemView.PositionAtCenter)
+        self.lazyItemModel.changeTriggeredProgramatically(True)
         self.uiWidget_listView.setCurrentIndex(self.lazyItemModel.mapFromSource(index))
+        self.lazyItemModel.changeTriggeredProgramatically(False)
     
     def getRealSelectedIndexes(self):
         return [self._resolveIndex(self.uiWidget_listView.model(), index) for index in self.uiWidget_listView.selectedIndexes()]
