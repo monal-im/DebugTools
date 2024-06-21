@@ -45,3 +45,9 @@ class ProxyData():
             if self.visibility[index] == True:
                 visible += 1
         return visible
+
+    def clear(self, standardValue = False):
+        self.visibility = collections.defaultdict(lambda: standardValue)
+
+    def setVisibilityAtIndex(self, index, visibility):
+        self.visibility[index] = visibility

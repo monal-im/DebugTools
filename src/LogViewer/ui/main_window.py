@@ -5,7 +5,7 @@ import sys, os, functools
 from LogViewer.storage import SettingsSingleton
 from LogViewer.utils import Search, AbortSearch, QueryStatus, matchQuery
 import LogViewer.utils.helpers as helpers
-from .utils import Completer, MagicLineEdit, Statusbar, RawlogModel, LazyItemModel
+from .utils import Completer, MagicLineEdit, Statusbar, RawlogModel, LazyItemModel, FilterModel
 from .preferences_dialog import PreferencesDialog
 from shared.storage import Rawlog
 from shared.ui.utils import UiAutoloader
@@ -193,7 +193,8 @@ class MainWindow(QtWidgets.QMainWindow):
             return
         
         self.rawlogModel = RawlogModel(self.rawlog, self.uiWidget_listView)
-        self.lazyItemModel = LazyItemModel(self.rawlogModel)
+        self.filterModel = FilterModel(self.rawlogModel)
+        self.lazyItemModel = LazyItemModel(self.filterModel)
         self.uiWidget_listView.setModel(self.lazyItemModel)
         self.lazyItemModel.setVisible(0, 150)
         self.uiWidget_listView.verticalScrollBar().actionTriggered.connect(self.lazyItemModel.scrollbarMoved)
@@ -365,7 +366,7 @@ class MainWindow(QtWidgets.QMainWindow):
             self.setComboboxStatusColor(self.uiCombobox_searchInput, self.search.getStatus())
 
         # if current line is hidden switch to next line
-        if self.uiWidget_listView.isRowHidden(result):
+        if not self.filterModel.isRowVisible(result):
             result = None
             if func == Search.next:
                 self.searchNext()
@@ -374,8 +375,10 @@ class MainWindow(QtWidgets.QMainWindow):
         else:
             if result != None:
                 self.lazyItemModel.changeTriggeredProgramatically(True)
-                self.lazyItemModel.setVisible(max(0, result-100), min(result+100, len(self.rawlog)))
-                self._setCurrentRow(result)
+                start = self.filterModel.mapFromSource(self.filterModel.createIndex(max(0, result-100), 0)).row()
+                end = self.filterModel.mapFromSource(self.filterModel.createIndex(min(result+100, self.filterModel.rowCount(None)), 0)).row()
+                self.lazyItemModel.setVisible(start, end)
+                self._setCurrentRow(self.filterModel.mapFromSource(self.filterModel.createIndex(result, 0)).row())
                 self.lazyItemModel.changeTriggeredProgramatically(False)
 
                 self.uiWidget_listView.setFocus()
@@ -475,11 +478,12 @@ class MainWindow(QtWidgets.QMainWindow):
         QtWidgets.QApplication.processEvents()
         
         # this has to be done outside of our filter loop above, to not slow down our filter process significantly
-        for rawlogPosition, hidden in filterMapping.items():
-            self.uiWidget_listView.setRowHidden(rawlogPosition, hidden)
+        self.filterModel.setVisibility(filterMapping)
+        self.lazyItemModel.clear()
+        self.lazyItemModel.setVisible(0, 150)
         
-        if self.currentDetailIndex != None and self.uiWidget_listView.isRowHidden(self.currentDetailIndex):
-            self.hideInspectLine()
+        #if self.currentDetailIndex != None and self.uiWidget_listView.isRowHidden(self.currentDetailIndex):
+        #    self.hideInspectLine()
 
         progressbar.hide()
 
@@ -523,10 +527,16 @@ class MainWindow(QtWidgets.QMainWindow):
         
         # prevent switching to row if that row is already selected
         rowIndex = self.uiSpinBox_goToRow.value()
-        if len(self.getRealSelectedIndexes()) == 0 or rowIndex != self.getRealSelectedIndexes()[0].row():
-            self.lazyItemModel.setVisible(max(0, rowIndex-100), min(rowIndex+100, len(self.rawlog)))
-            self._setCurrentRow(rowIndex)
-    
+        if self.filterModel.isRowVisible(rowIndex):
+            self.lazyItemModel.changeTriggeredProgramatically(True)
+            start = self.filterModel.mapFromSource(self.filterModel.createIndex(max(0, rowIndex-100), 0)).row()
+            end = self.filterModel.mapFromSource(self.filterModel.createIndex(min(rowIndex+100, self.filterModel.rowCount(None)), 0)).row()
+            self.lazyItemModel.setVisible(start, end)
+            self._setCurrentRow(self.filterModel.mapFromSource(self.filterModel.createIndex(rowIndex, 0)).row())
+            self.lazyItemModel.changeTriggeredProgramatically(False)
+        else:
+            self.statusbar.showDynamicText(str("Error ✗ | This is not visible"))   
+
     def checkQueryResult(self, error = None, visibleCounter = 0, combobox=None):
         if error != None:
             QtWidgets.QMessageBox.critical(
@@ -584,10 +594,10 @@ class MainWindow(QtWidgets.QMainWindow):
     @catch_exceptions(logger=logger)
     def goToLastRow(self, *args):
         # set last row as current row 
+        self.lazyItemModel.setVisible(self.filterModel.rowCount(None)-150, self.filterModel.rowCount(None))
         self.lazyItemModel.changeTriggeredProgramatically(True)
-        self.lazyItemModel.setVisible(len(self.rawlog)-150, len(self.rawlog))
         self.uiWidget_listView.scrollToBottom()
-        self.uiWidget_listView.setCurrentIndex(self.rawlogModel.createIndex(self.lazyItemModel.rowCount(-1)-1, 0))
+        self.uiWidget_listView.setCurrentIndex(self.lazyItemModel.mapFromSource(self.filterModel.createIndex(self.filterModel.rowCount(None)-1, 0)))
         self.lazyItemModel.changeTriggeredProgramatically(False)
 
     @catch_exceptions(logger=logger)
@@ -609,9 +619,9 @@ class MainWindow(QtWidgets.QMainWindow):
         #self.statusbar.showDynamicText(str("Done ✓ | Switched to the last line in the viewport: %d" % lastIndex))
     
     def cancelFilter(self):
-        for index in range(len(self.rawlog)):
-            if self.uiWidget_listView.isRowHidden(index):
-                self.uiWidget_listView.setRowHidden(index, False)
+        self.filterModel.clearFilter()
+        self.lazyItemModel.clear()
+        self.lazyItemModel.setVisible(0, 150)
             # this slows down significantly
             #update_progressbar(index, len(self.rawlog))
         self.currentFilterQuery = None
