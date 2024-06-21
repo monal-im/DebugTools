@@ -1,12 +1,15 @@
 from PyQt5 import QtWidgets, QtGui, QtCore
 from PyQt5.QtWidgets import QStyle
 import sys, os, functools
+import datetime
 
 from LogViewer.storage import SettingsSingleton
 from LogViewer.utils import Search, AbortSearch, QueryStatus, matchQuery
 import LogViewer.utils.helpers as helpers
 from .utils import Completer, MagicLineEdit, Statusbar, RawlogModel, LazyItemModel, FilterModel
 from .preferences_dialog import PreferencesDialog
+from .stack_pop_window import StackPopWindow
+from .stack_push_window import StackPushWindow
 from shared.storage import Rawlog
 from shared.ui.utils import UiAutoloader
 from shared.utils import catch_exceptions
@@ -25,7 +28,7 @@ class MainWindow(QtWidgets.QMainWindow):
         self.search = None
         self.statusbar = Statusbar(self.uiStatusbar_main, self.uiMenuBar_main)
         self.currentFilterQuery = None
-        self.stack = []
+        self.stack = {}
         self.selectedCombobox = self.uiCombobox_filterInput
 
         self.queryStatus2colorMapping = {
@@ -642,6 +645,7 @@ class MainWindow(QtWidgets.QMainWindow):
         filterSelectionLength = self.uiCombobox_filterInput.lineEdit().selectionLength()
 
         state = {
+            "timeStamp": datetime.datetime.now().strftime("%H:%M:%S"),
             "selectedLine": selectedLine,
             "scrollPosVertical": self.uiWidget_listView.verticalScrollBar().value(),
             "scrollPosHorizontal": self.uiWidget_listView.horizontalScrollBar().value(),
@@ -669,18 +673,34 @@ class MainWindow(QtWidgets.QMainWindow):
                 "currentInt": self.uiSpinBox_goToRow.value(),
             }
         }
-        self.stack.append(state)
-        self._updateStatusbar()
-        self.statusbar.showDynamicText("State saved ✓")
-        self.toggleUiItems()
+
+        self.stackPushWindow = StackPushWindow(list(self.stack.keys()))
+        self.stackPushWindow.show()
+        result = self.stackPushWindow .exec_()
+        if result:
+            name = self.stackPushWindow.getName()
+            self.stack[name] = state
+            self._updateStatusbar()
+            self.statusbar.showDynamicText("State saved ✓")
+            self.toggleUiItems()
+        else:
+            self.statusbar.showDynamicText("Failed to save state ✗")
     
     @catch_exceptions(logger=logger)
     def popStack(self, *args):
         if len(self.stack) < 1:
-            self.statusbar.showDynamicText("Unable to load state ✗")
+            self.statusbar.showDynamicText("No state saved ✗")
             return
-        
-        stack = self.stack.pop()
+
+        self.stackPopWindow = StackPopWindow({k:self.stack[k]["timeStamp"] for k in self.stack})
+        self.stackPopWindow.show()
+        result = self.stackPopWindow.exec_()
+        if not result:
+            self.statusbar.showDynamicText("Failed to load state ✗")
+            return
+
+        stack = self.stack[self.stackPopWindow.getIndex()]
+        self.statusbar.showDynamicText("State loaded ✓")
 
         # unpacking filter
         self.uiCombobox_filterInput.setCurrentText(stack["filter"]["currentText"])
