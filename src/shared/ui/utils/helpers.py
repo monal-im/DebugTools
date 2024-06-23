@@ -30,7 +30,6 @@ def applyStyle(style):
     
 # see https://stackoverflow.com/a/3943023
 def getCssContrastColor(*args):
-    logger.debug("Got args: %s" % str(args))
     if len(args) == 1 and (type(args[0]) == list or type(args[0]) == tuple):
         r, g, b = args[0]
     elif len(args) == 3:

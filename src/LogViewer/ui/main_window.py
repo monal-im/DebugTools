@@ -4,7 +4,7 @@ import sys, os, functools
 import datetime
 
 from LogViewer.storage import SettingsSingleton
-from LogViewer.utils import Search, AbortSearch, QueryStatus, matchQuery
+from LogViewer.utils import Search, AbortSearch, QueryStatus
 import LogViewer.utils.helpers as helpers
 from .utils import Completer, MagicLineEdit, Statusbar, RawlogModel, LazyItemModel, FilterModel
 from .preferences_dialog import PreferencesDialog
@@ -18,6 +18,8 @@ from shared.utils.constants import LOGLEVELS
                 
 import logging
 logger = logging.getLogger(__name__)
+
+LOAD_CONTEXT = 150
 
 @UiAutoloader
 class MainWindow(QtWidgets.QMainWindow):
@@ -195,12 +197,15 @@ class MainWindow(QtWidgets.QMainWindow):
             )
             return
         
+        # List reasons why it is stacked like this
         self.rawlogModel = RawlogModel(self.rawlog, self.uiWidget_listView)
         self.filterModel = FilterModel(self.rawlogModel)
         self.lazyItemModel = LazyItemModel(self.filterModel)
         self.uiWidget_listView.setModel(self.lazyItemModel)
-        self.lazyItemModel.setVisible(0, 150)
-        self.uiWidget_listView.verticalScrollBar().actionTriggered.connect(self.lazyItemModel.scrollbarMoved)
+        self.lazyItemModel.setVisible(0, 100)
+        self.uiWidget_listView.verticalScrollBar().valueChanged.connect(self.lazyItemModel.scrollbarMoved)
+        self.lazyItemModel.setVisible(500, 1550)
+        self._setCurrentRow(1100)
         
         progressbar.hide()
 
@@ -377,12 +382,7 @@ class MainWindow(QtWidgets.QMainWindow):
                 self.searchPrevious()
         else:
             if result != None:
-                self.lazyItemModel.changeTriggeredProgramatically(True)
-                start = self.filterModel.mapFromSource(self.filterModel.createIndex(max(0, result-100), 0)).row()
-                end = self.filterModel.mapFromSource(self.filterModel.createIndex(min(result+100, self.filterModel.rowCount(None)), 0)).row()
-                self.lazyItemModel.setVisible(start, end)
                 self._setCurrentRow(self.filterModel.mapFromSource(self.filterModel.createIndex(result, 0)).row())
-                self.lazyItemModel.changeTriggeredProgramatically(False)
 
                 self.uiWidget_listView.setFocus()
         
@@ -456,34 +456,13 @@ class MainWindow(QtWidgets.QMainWindow):
             selectedLine = self.getRealSelectedIndexes()[0].row()
 
         progressbar, update_progressbar = self.progressDialog("Filtering...", query, True)
-        error = None
-        visibleCounter = 0
-        filterMapping = {}
-        for rawlogPosition in range(len(self.rawlog)):
-            # To achieve a successful filter every row has to be loaded 
-            loadRows = QtCore.QModelIndex()
-            loadRows.child(rawlogPosition, 1)
-            self.rawlogModel.fetchMore(loadRows)
 
-            result = matchQuery(query, self.rawlog, rawlogPosition, usePython=SettingsSingleton()["usePythonFilter"])
-            if result["status"] == QueryStatus.QUERY_OK:
-                filterMapping[rawlogPosition] = not result["matching"]
-            else:
-                error = result["error"]
-                filterMapping[rawlogPosition] = True            # hide all entries having filter errors
-            visibleCounter += 1 if result["matching"] else 0
-            if update_progressbar(rawlogPosition, len(self.rawlog)) == True:
-                self.cancelFilter()
-                break
+        error, visibleCounter = self.filterModel.filter(query, update_progressbar)
+
         self.checkQueryResult(error, visibleCounter, self.uiCombobox_filterInput)
         
         progressbar.setLabelText("Rendering Filter...")
         QtWidgets.QApplication.processEvents()
-        
-        # this has to be done outside of our filter loop above, to not slow down our filter process significantly
-        self.filterModel.setVisibility(filterMapping)
-        self.lazyItemModel.clear()
-        self.lazyItemModel.setVisible(0, 150)
         
         #if self.currentDetailIndex != None and self.uiWidget_listView.isRowHidden(self.currentDetailIndex):
         #    self.hideInspectLine()
@@ -531,12 +510,7 @@ class MainWindow(QtWidgets.QMainWindow):
         # prevent switching to row if that row is already selected
         rowIndex = self.uiSpinBox_goToRow.value()
         if self.filterModel.isRowVisible(rowIndex):
-            self.lazyItemModel.changeTriggeredProgramatically(True)
-            start = self.filterModel.mapFromSource(self.filterModel.createIndex(max(0, rowIndex-100), 0)).row()
-            end = self.filterModel.mapFromSource(self.filterModel.createIndex(min(rowIndex+100, self.filterModel.rowCount(None)), 0)).row()
-            self.lazyItemModel.setVisible(start, end)
             self._setCurrentRow(self.filterModel.mapFromSource(self.filterModel.createIndex(rowIndex, 0)).row())
-            self.lazyItemModel.changeTriggeredProgramatically(False)
         else:
             self.statusbar.showDynamicText(str("Error ✗ | This is not visible"))   
 
@@ -623,8 +597,6 @@ class MainWindow(QtWidgets.QMainWindow):
     
     def cancelFilter(self):
         self.filterModel.clearFilter()
-        self.lazyItemModel.clear()
-        self.lazyItemModel.setVisible(0, 150)
             # this slows down significantly
             #update_progressbar(index, len(self.rawlog))
         self.currentFilterQuery = None
@@ -830,9 +802,12 @@ class MainWindow(QtWidgets.QMainWindow):
         index = self.lazyItemModel.createIndex(row, 0)
         logger.info(f"Setting row {row} to index {index.row()}")
         #self.uiWidget_listView.scrollTo(index, hint=QtWidgets.QAbstractItemView.PositionAtCenter)
-        self.lazyItemModel.changeTriggeredProgramatically(True)
-        self.uiWidget_listView.setCurrentIndex(self.lazyItemModel.mapFromSource(index))
-        self.lazyItemModel.changeTriggeredProgramatically(False)
+        with self.lazyItemModel.triggerScrollChanges():
+            start = self.filterModel.mapFromSource(self.filterModel.createIndex(max(0, row-LOAD_CONTEXT), 0)).row()
+            end = self.filterModel.mapFromSource(self.filterModel.createIndex(min(row+LOAD_CONTEXT, self.filterModel.rowCount(None)), 0)).row()
+            self.lazyItemModel.setVisible(start, end)
+
+            self.uiWidget_listView.setCurrentIndex(self.lazyItemModel.mapFromSource(index))
     
     def getRealSelectedIndexes(self):
         return [self._resolveIndex(self.uiWidget_listView.model(), index) for index in self.uiWidget_listView.selectedIndexes()]

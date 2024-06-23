@@ -1,45 +1,60 @@
-from PyQt5 import QtCore
+from PyQt5 import QtWidgets
 
 from .proxy_model import ProxyModel
 
 import logging
 logger = logging.getLogger(__name__)
 
+LAZY_DISTANCE = 400
+LAZY_LOADING = 200
+
 class LazyItemModel(ProxyModel):
+    class ChangeTriggeredFlag:
+        def __init__(self, model):
+            self.model = model
+        def __enter__(self):
+            self.model.triggeredProgramatically = True
+        def __exit__(self, type, value, traceback):
+            self.model.triggeredProgramatically = False
+            
     def __init__(self, baseModel, parent=None):
         super().__init__(parent)
         self.setSourceModel(baseModel)
-        self.scrollbarData = {"top": 0, "bottom": 0, "triggeredProgramatically": False}
-    
+        self.triggeredProgramatically = False
+
     def setVisible(self, start, end):
+        logger.debug(f"{start = } {end = }")
         self.beginInsertRows(self.index(start, 1), start, end);
         self.proxyData.setVisible(start, end)
         self.endInsertRows();
 
-    def scrollbarMoved(self):
+    def scrollbarMoved(self, scrollValue):
         # If triggeredProgramatically is True the scrollbar wasn't moved by the user and shouldn't load anymore rows
         # This is used for example by goToLastRow, which scrolls to the bottom 
-        if self.scrollbarData["triggeredProgramatically"] != False:
+        if self.triggeredProgramatically != False:
             return
         
-        topItem     = self.sourceModel().listView().indexAt(self.sourceModel().listView().viewport().contentsRect().topLeft()).row()
-        topIndex    = self.mapToSource(self.createIndex(topItem, 0)).row()
+        logger.debug(f"---- {scrollValue = }")
 
-        bottomItem  = self.sourceModel().listView().indexAt(self.sourceModel().listView().viewport().contentsRect().bottomLeft()).row()
-        bottomIndex  = self.mapToSource(self.createIndex(bottomItem, 0)).row()
+        topIndex     = self.mapToSource(self.listView().indexAt(self.listView().viewport().contentsRect().topLeft()))
+        bottomIndex  = self.mapToSource(self.listView().indexAt(self.listView().viewport().contentsRect().bottomLeft()))
 
-        self.changeTriggeredProgramatically(True)
-        if self.scrollbarData["top"]-110 >= topIndex:
-            self.setVisible(max(topIndex-150, 0), topIndex)
-            self.scrollbarData = {"top": topIndex, "bottom": bottomIndex}
+        with self.triggerScrollChanges():
+            previousIndex = self.proxyData.getPreviousIndexWithState(topIndex, False)
+            logger.debug(f"+++ {topIndex.row() = } {(topIndex.row() - previousIndex if previousIndex != None else 'end') = } {previousIndex = }")
+            if previousIndex != None and topIndex.row() - previousIndex <= LAZY_DISTANCE:
+                self.setVisible(max(previousIndex - LAZY_LOADING, 0), topIndex.row())
+                #self.listView().scrollTo(, hint=QtWidgets.QAbstractItemView.PositionAtCenter)
+                QtWidgets.QApplication.processEvents()
+                self.listView().scrollContentsBy(scrollValue - self.listView().verticalScrollBar().value(), 0)
+                return
 
-        if self.scrollbarData["bottom"]+110 <= bottomIndex:
-            self.setVisible(bottomIndex, min(bottomIndex+150, self.sourceModel().rowCount(None)))
-            self.scrollbarData = {"top": topIndex, "bottom": bottomIndex}
-        self.changeTriggeredProgramatically(False)
+            nextIndex = self.proxyData.getNextIndexWithState(bottomIndex, False)          
+            if nextIndex != None and nextIndex - bottomIndex.row() <= LAZY_DISTANCE:
+                self.setVisible(bottomIndex.row(), min(nextIndex + LAZY_LOADING, self.sourceModel().rowCount(None)))
 
-    def changeTriggeredProgramatically(self, value):
-        self.scrollbarData["triggeredProgramatically"] = value
+    def triggerScrollChanges(self):
+        return self.ChangeTriggeredFlag(self)
 
     def clear(self):
         self.beginRemoveRows(self.index(0, 1), 0, self.sourceModel().rowCount(None));

@@ -15,6 +15,18 @@ class ProxyData():
                 return False
         return True  
 
+    def getPreviousIndexWithState(self, realIndex, state=False):
+        for index in range(realIndex.row(), -1, -1):
+            if self.visibility[index] == state:
+                return index
+        return None  
+
+    def getNextIndexWithState(self, realIndex, state=False):
+        for index in range(realIndex.row(), self.proxyModel.sourceModel().rowCount(None)):
+            if self.visibility[index] == state:
+                return index
+        return None
+    
     def getNextVisibleIndex(self, proxyIndex):
         # from proxy index to real index
         counter = 0
