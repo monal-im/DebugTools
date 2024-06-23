@@ -203,7 +203,6 @@ class MainWindow(QtWidgets.QMainWindow):
         self.lazyItemModel = LazyItemModel(self.filterModel)
         self.uiWidget_listView.setModel(self.lazyItemModel)
         self.lazyItemModel.setVisible(0, 100)
-        self.uiWidget_listView.verticalScrollBar().valueChanged.connect(self.lazyItemModel.scrollbarMoved)
         self.lazyItemModel.setVisible(500, 1550)
         self._setCurrentRow(1100)
         
@@ -759,6 +758,8 @@ class MainWindow(QtWidgets.QMainWindow):
 
         if preInstance["style"] != SettingsSingleton()["uiStyle"]:
             sharedUiHelpers.applyStyle(SettingsSingleton()["uiStyle"])
+        
+        self.rawlogModel.reloadSettings()
     
     def loadComboboxHistory(self, combobox):
         combobox.clear()

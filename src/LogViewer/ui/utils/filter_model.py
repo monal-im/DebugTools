@@ -7,9 +7,8 @@ logger = logging.getLogger(__name__)
 from .proxy_model import ProxyModel
 
 class FilterModel(ProxyModel):
-    def __init__(self, baseModel, parent=None):
-        super().__init__(parent)
-        self.setSourceModel(baseModel)
+    def __init__(self, sourceModel, parent=None):
+        super().__init__(sourceModel, parent)
         self.proxyData.clear(True)
         self.visibleCounter = self.sourceModel().rowCount(None)
 

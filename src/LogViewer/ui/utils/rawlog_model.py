@@ -1,15 +1,19 @@
 from PyQt5 import QtWidgets, QtCore, QtGui
 import functools
+import inspect
 
 from LogViewer.storage import SettingsSingleton
 import LogViewer.utils.helpers as helpers
 from shared.utils.constants import LOGLEVELS
-from shared.storage import AbortRawlogLoading
+from shared.utils import catch_exceptions
 
 import logging
 logger = logging.getLogger(__name__)
 
+LRU_MAXSIZE = 1024*1024
+
 class RawlogModel(QtCore.QAbstractListModel):
+    @catch_exceptions(logger=logger)
     def __init__(self, rawlog, parent=None):
         super().__init__(parent)
         self.parent = parent
@@ -17,32 +21,70 @@ class RawlogModel(QtCore.QAbstractListModel):
         self.rawlog = rawlog
         self.formatter = self.createFormatter()
     
+    @catch_exceptions(logger=logger)
+    def reloadSettings(self):
+        self.layoutAboutToBeChanged.emit()
+        self.formatter = self.createFormatter()
+        for entry in self.rawlog:
+            if "__formattedMessage" in entry["data"]:
+                del entry["data"]["__formattedMessage"]
+        for name, member in inspect.getmembers(self, predicate=inspect.ismethod):
+            if hasattr(member, "cache_parameters"):
+                logger.debug(f"Cache effects for {member.__name__}: {member.cache_info()}")
+                member.cache_clear()
+        self.layoutChanged.emit()
+    
+    @functools.lru_cache(maxsize=LRU_MAXSIZE, typed=True)
+    @catch_exceptions(logger=logger)
+    def _getQFont(self):
+        return SettingsSingleton().getQFont()
+    
+    @functools.lru_cache(maxsize=LRU_MAXSIZE, typed=True)
+    @catch_exceptions(logger=logger)
+    def _getQColorTuple(self, flag):
+        return SettingsSingleton().getQColorTuple(self.logflag2colorMapping[flag])
+    
+    @catch_exceptions(logger=logger)
+    def headerData(self, *args):
+        return None
+    
+    @functools.lru_cache(maxsize=LRU_MAXSIZE, typed=True)
+    @catch_exceptions(logger=logger)
     def data(self, index, role):
         if index.isValid() or (0 <= index.row() < len(self.rawlog)):
             if role == QtCore.Qt.DisplayRole:
                 entry = self.rawlog[index.row()]
-                formattedEntry = self.createFormatterText(self.formatter, entry["data"])
-                entry["data"]["__formattedMessage"] = formattedEntry
-                return helpers.wordWrapLogline(formattedEntry)
+                if "__formattedMessage" not in entry["data"]:
+                    try:
+                        formattedEntry = self.createFormatterText(self.formatter, entry["data"])
+                        entry["data"]["__formattedMessage"] = formattedEntry
+                    except:
+                        # ignore error and return empty string (already catched and displayed to user by createFormatterText() itself)
+                        return ""
+                else:
+                    formattedEntry = entry["data"]["__formattedMessage"]
+                return helpers.wordWrapLogline(formattedEntry, SettingsSingleton()["staticLineWrap"])
             elif role == QtCore.Qt.FontRole:
-                return SettingsSingleton().getQFont()
+                return self._getQFont()
             elif role == QtCore.Qt.BackgroundRole:
                 entry = self.rawlog[index.row()]
-                fg, bg = SettingsSingleton().getQColorTuple(self.logflag2colorMapping[entry["data"]["flag"]])
+                fg, bg = self._getQColorTuple(entry["data"]["flag"])
                 if bg == None:
                     bg = QtGui.QBrush()     # default color (usually transparent)
                 return bg
             elif role == QtCore.Qt.ForegroundRole:
                 entry = self.rawlog[index.row()]
-                fg, bg = SettingsSingleton().getQColorTuple(self.logflag2colorMapping[entry["data"]["flag"]])
+                fg, bg = self._getQColorTuple(entry["data"]["flag"])
                 return fg
         else:
             logger.info(f"data called with invalid index: {index.row()}")
         return None
     
+    @catch_exceptions(logger=logger)
     def rowCount(self, index):
         return len(self.rawlog)
 
+    @catch_exceptions(logger=logger)
     def columnCount(self, index):
         return 1
 
@@ -60,7 +102,7 @@ class RawlogModel(QtCore.QAbstractListModel):
                     "Exception in formatter code:\n%s: %s\n%s" % (str(type(e).__name__), str(e), entry),
                     QtWidgets.QMessageBox.Ok
                 )
-            raise AbortRawlogLoading()       # abort loading
+            raise
 
     def createFormatter(self):
         # first of all: try to compile our log formatter code and abort, if this isn't generating a callable formatter function
@@ -86,5 +128,6 @@ class RawlogModel(QtCore.QAbstractListModel):
         # bind all local variables (code imported, other defined functions etc.) onto our log formatter to be used later
         return functools.partial(loc["formatter"], **loc)
 
+    @catch_exceptions(logger=logger)
     def listView(self):
         return self.parent
