@@ -84,7 +84,7 @@ class MainWindow(QtWidgets.QMainWindow):
         self.uiCombobox_filterInput.currentTextChanged.connect(self.uiCombobox_inputChanged)
 
         self.loadComboboxHistory(self.uiCombobox_searchInput)
-        QtWidgets.QShortcut(QtGui.QKeySequence("ESC"), self).activated.connect(self.hideSearchOrGoto)
+        QtWidgets.QShortcut(QtGui.QKeySequence("ESC"), self).activated.connect(self.hideSearchAndGoToRow)
         self.uiCombobox_searchInput.activated[str].connect(self.searchNext)
 
         self.loadComboboxHistory(self.uiCombobox_filterInput)
@@ -304,7 +304,7 @@ class MainWindow(QtWidgets.QMainWindow):
     @catch_exceptions(logger=logger)
     def closeFile(self, *args):
         self.rawlog = Rawlog()
-        self.hideSearchOrGoto()
+        self.hideSearchAndGoToRow()
         self.selectedCombobox = self.uiCombobox_filterInput
         self.file = None
         self.currentFilterQuery = None
@@ -406,12 +406,18 @@ class MainWindow(QtWidgets.QMainWindow):
         self.updateComboboxHistory(query, self.uiCombobox_searchInput)
     
     @catch_exceptions(logger=logger)
-    def hideSearchOrGoto(self):
+    def hideSearchAndGoToRow(self):
         self.uiFrame_search.hide()
         self.uiFrame_goToRow.hide()
         self.search = None
         self.uiCombobox_searchInput.setStyleSheet("")
         self._updateStatusbar()
+
+    def cancelFilter(self):
+        self.filterModel.clearFilter()
+            # this slows down significantly
+            #update_progressbar(index, len(self.rawlog))
+        self.currentFilterQuery = None
     
     @catch_exceptions(logger=logger)
     def clearFilter(self, *args):
@@ -538,7 +544,6 @@ class MainWindow(QtWidgets.QMainWindow):
     @catch_exceptions(logger=logger)
     def openGoToRowWidget(self, *args):
         if self.uiFrame_goToRow.isHidden():
-            self.hideSearchOrGoto()
             self.uiFrame_goToRow.show()
             self.uiSpinBox_goToRow.setFocus()
             self.uiSpinBox_goToRow.selectAll()
@@ -557,7 +562,7 @@ class MainWindow(QtWidgets.QMainWindow):
             self._setCurrentRow(rowIndex)
         else:
             self.statusbar.showDynamicText(str("Error ✗ | This is not visible"))  
-             
+
     @catch_exceptions(logger=logger)
     def goToFirstRow(self, *args):
         # set first row as current row
@@ -594,12 +599,6 @@ class MainWindow(QtWidgets.QMainWindow):
         visualItemRect = self.uiWidget_listView.indexAt(self.uiWidget_listView.viewport().contentsRect().bottomLeft()).row()
         self._setCurrentRow(visualItemRect)
         #self.statusbar.showDynamicText(str("Done ✓ | Switched to the last line in the viewport: %d" % lastIndex))
-    
-    def cancelFilter(self):
-        self.filterModel.clearFilter()
-            # this slows down significantly
-            #update_progressbar(index, len(self.rawlog))
-        self.currentFilterQuery = None
     
     @catch_exceptions(logger=logger)
     def pushStack(self, *args):
