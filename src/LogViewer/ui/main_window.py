@@ -490,29 +490,6 @@ class MainWindow(QtWidgets.QMainWindow):
 
         self._updateStatusbar()
 
-    @catch_exceptions(logger=logger)
-    def openGoToRowWidget(self, *args):
-        if self.uiFrame_goToRow.isHidden():
-            self.hideSearchOrGoto()
-            self.uiFrame_goToRow.show()
-            self.uiSpinBox_goToRow.setFocus()
-            self.uiSpinBox_goToRow.selectAll()
-        else:
-            self.uiFrame_goToRow.hide()
-            self.selectedCombobox.setFocus()
-
-    @catch_exceptions(logger=logger)
-    def goToRow(self, *args):
-        if self.uiFrame_goToRow.isHidden():
-            return
-        
-        # prevent switching to row if that row is already selected
-        rowIndex = self.uiSpinBox_goToRow.value()
-        if self.filterModel.isRowVisible(rowIndex):
-            self._setCurrentRow(self.filterModel.mapFromSource(self.filterModel.createIndex(rowIndex, 0)).row())
-        else:
-            self.statusbar.showDynamicText(str("Error ✗ | This is not visible"))   
-
     def checkQueryResult(self, error = None, visibleCounter = 0, combobox=None):
         if error != None:
             QtWidgets.QMessageBox.critical(
@@ -559,22 +536,46 @@ class MainWindow(QtWidgets.QMainWindow):
         return (progressbar, update_progressbar)
     
     @catch_exceptions(logger=logger)
+    def openGoToRowWidget(self, *args):
+        if self.uiFrame_goToRow.isHidden():
+            self.hideSearchOrGoto()
+            self.uiFrame_goToRow.show()
+            self.uiSpinBox_goToRow.setFocus()
+            self.uiSpinBox_goToRow.selectAll()
+        else:
+            self.uiFrame_goToRow.hide()
+            self.selectedCombobox.setFocus()
+
+    @catch_exceptions(logger=logger)
+    def goToRow(self, *args):
+        if self.uiFrame_goToRow.isHidden():
+            return
+        
+        # prevent switching to row if that row is already selected
+        rowIndex = self.filterModel.mapFromSource(self.filterModel.createIndex(self.uiSpinBox_goToRow.value(), 0)).row()
+        if self.filterModel.isRowVisible(rowIndex):
+            self._setCurrentRow(rowIndex)
+        else:
+            self.statusbar.showDynamicText(str("Error ✗ | This is not visible"))  
+             
+    @catch_exceptions(logger=logger)
     def goToFirstRow(self, *args):
         # set first row as current row
-        self.lazyItemModel.changeTriggeredProgramatically(True)
-        self.uiWidget_listView.scrollToTop()
-        self.uiWidget_listView.setCurrentIndex(self.rawlogModel.createIndex(0, 0))
-        self.lazyItemModel.changeTriggeredProgramatically(False)
-        #self.statusbar.showDynamicText(str("Done ✓ | Switched to first row: %d" % index))
+        for index in range(len(self.rawlog)):
+            if self.filterModel.isRowVisible(index):
+                break
+        with self.lazyItemModel.triggerScrollChanges():
+            self._setCurrentRow(index)
+            self.uiWidget_listView.scrollToTop()
+            #self.statusbar.showDynamicText(str("Done ✓ | Switched to first row: %d" % index))
 
     @catch_exceptions(logger=logger)
     def goToLastRow(self, *args):
-        # set last row as current row 
-        self.lazyItemModel.setVisible(self.filterModel.rowCount(None)-150, self.filterModel.rowCount(None))
-        self.lazyItemModel.changeTriggeredProgramatically(True)
-        self.uiWidget_listView.scrollToBottom()
-        self.uiWidget_listView.setCurrentIndex(self.lazyItemModel.mapFromSource(self.filterModel.createIndex(self.filterModel.rowCount(None)-1, 0)))
-        self.lazyItemModel.changeTriggeredProgramatically(False)
+        # set last row as current row
+        with self.lazyItemModel.triggerScrollChanges():
+            self._setCurrentRow(self.filterModel.rowCount(None)-1)
+            self.uiWidget_listView.scrollToBottom()
+            #self.statusbar.showDynamicText(str("Done ✓ | Switched to first row: %d" % index))
 
     @catch_exceptions(logger=logger)
     def goToFirstRowInViewport(self, *args):
