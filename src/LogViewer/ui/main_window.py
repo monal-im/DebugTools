@@ -758,8 +758,6 @@ class MainWindow(QtWidgets.QMainWindow):
 
         if preInstance["style"] != SettingsSingleton()["uiStyle"]:
             sharedUiHelpers.applyStyle(SettingsSingleton()["uiStyle"])
-        
-        self.rawlogModel.reloadSettings()
     
     def loadComboboxHistory(self, combobox):
         combobox.clear()
@@ -804,9 +802,8 @@ class MainWindow(QtWidgets.QMainWindow):
         logger.info(f"Setting row {row} to index {index.row()}")
         #self.uiWidget_listView.scrollTo(index, hint=QtWidgets.QAbstractItemView.PositionAtCenter)
         with self.lazyItemModel.triggerScrollChanges():
-            start = self.filterModel.mapFromSource(self.filterModel.createIndex(max(0, row-LOAD_CONTEXT), 0)).row()
-            end = self.filterModel.mapFromSource(self.filterModel.createIndex(min(row+LOAD_CONTEXT, self.filterModel.rowCount(None)), 0)).row()
-            self.lazyItemModel.setVisible(start, end)
+            # No mapFromSource required, because it sets the real index start and end points visible
+            self.lazyItemModel.setVisible(max(0, row-LOAD_CONTEXT), min(row+LOAD_CONTEXT, self.filterModel.rowCount(None)))
 
             self.uiWidget_listView.setCurrentIndex(self.lazyItemModel.mapFromSource(index))
     
