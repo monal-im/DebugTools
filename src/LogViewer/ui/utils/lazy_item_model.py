@@ -19,9 +19,11 @@ class LazyItemModel(ProxyModel):
             self.model.triggeredProgramatically = False
     
     @catch_exceptions(logger=logger)
-    def __init__(self, sourceModel, parent=None):
+    def __init__(self, sourceModel, loadContext, parent=None):
         super().__init__(sourceModel, parent)
         self.triggeredProgramatically = False
+        self.loadContext = loadContext
+
         self.listView().verticalScrollBar().valueChanged.connect(self.scrollbarMovedHandler)
         self.sourceModel().layoutAboutToBeChanged.connect(self.layoutAboutToBeChangedHandler)
         self.sourceModel().layoutChanged.connect(self.layoutChangedHandler)
@@ -101,3 +103,15 @@ class LazyItemModel(ProxyModel):
         self.beginRemoveRows(self.createIndex(0, 0), 0, self.sourceModel().rowCount(None));
         self.proxyData.clear(False)
         self.endRemoveRows()
+
+    @catch_exceptions(logger=logger)
+    def setCurrentRow(self, row):
+        index = self.createIndex(row, 0)
+        logger.info(f"Setting row {row} to index {index.row()}")
+        #self.uiWidget_listView.scrollTo(index, hint=QtWidgets.QAbstractItemView.PositionAtCenter)
+        with self.triggerScrollChanges():
+            # No mapFromSource required, because it sets the real index start and end points visible
+            self.setVisible(max(0, row-self.loadContext), min(row+self.loadContext, self.sourceModel().rowCount(None)))
+
+            self.listView().setCurrentIndex(self.mapFromSource(index))
+    

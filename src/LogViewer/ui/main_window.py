@@ -200,11 +200,11 @@ class MainWindow(QtWidgets.QMainWindow):
         # List reasons why it is stacked like this
         self.rawlogModel = RawlogModel(self.rawlog, self.uiWidget_listView)
         self.filterModel = FilterModel(self.rawlogModel)
-        self.lazyItemModel = LazyItemModel(self.filterModel)
+        self.lazyItemModel = LazyItemModel(self.filterModel, LOAD_CONTEXT)
         self.uiWidget_listView.setModel(self.lazyItemModel)
         self.lazyItemModel.setVisible(0, 100)
         self.lazyItemModel.setVisible(500, 1550)
-        self._setCurrentRow(1100)
+        self.lazyItemModel.setCurrentRow(1100)
         
         progressbar.hide()
 
@@ -381,7 +381,7 @@ class MainWindow(QtWidgets.QMainWindow):
                 self.searchPrevious()
         else:
             if result != None:
-                self._setCurrentRow(self.filterModel.mapFromSource(self.filterModel.createIndex(result, 0)).row())
+                self.lazyItemModel.setCurrentRow(self.filterModel.mapFromSource(self.filterModel.createIndex(result, 0)).row())
 
                 self.uiWidget_listView.setFocus()
         
@@ -440,7 +440,7 @@ class MainWindow(QtWidgets.QMainWindow):
             self._updateStatusbar()
 
             if currentSelectetLine:
-                self._setCurrentRow(currentSelectetLine)
+                self.lazyItemModel.setCurrentRow(currentSelectetLine)
 
             self.toggleUiItems()
     
@@ -482,13 +482,13 @@ class MainWindow(QtWidgets.QMainWindow):
             found = False
             for index in range(selectedLine, len(self.rawlog), 1):
                 if self.uiWidget_listView.isRowHidden(index) == False:
-                    self._setCurrentRow(index)
+                    self.lazyItemModel.setCurrentRow(index)
                     found = True
                     break 
             if not found:
                 for index in range(len(self.rawlog)-1, selectedLine, -1):
                     if self.uiWidget_listView.isRowHidden(index) == False:
-                        self._setCurrentRow(index)
+                        self.lazyItemModel.setCurrentRow(index)
                         found = True
                         break 
             if not found:
@@ -559,7 +559,7 @@ class MainWindow(QtWidgets.QMainWindow):
         # prevent switching to row if that row is already selected
         rowIndex = self.filterModel.mapFromSource(self.filterModel.createIndex(self.uiSpinBox_goToRow.value(), 0)).row()
         if self.filterModel.isRowVisible(rowIndex):
-            self._setCurrentRow(rowIndex)
+            self.lazyItemModel.setCurrentRow(rowIndex)
         else:
             self.statusbar.showDynamicText(str("Error ✗ | This is not visible"))  
 
@@ -570,7 +570,7 @@ class MainWindow(QtWidgets.QMainWindow):
             if self.filterModel.isRowVisible(index):
                 break
         with self.lazyItemModel.triggerScrollChanges():
-            self._setCurrentRow(index)
+            self.lazyItemModel.setCurrentRow(index)
             self.uiWidget_listView.scrollToTop()
             #self.statusbar.showDynamicText(str("Done ✓ | Switched to first row: %d" % index))
 
@@ -578,7 +578,7 @@ class MainWindow(QtWidgets.QMainWindow):
     def goToLastRow(self, *args):
         # set last row as current row
         with self.lazyItemModel.triggerScrollChanges():
-            self._setCurrentRow(self.filterModel.rowCount(None)-1)
+            self.lazyItemModel.setCurrentRow(self.filterModel.rowCount(None)-1)
             self.uiWidget_listView.scrollToBottom()
             #self.statusbar.showDynamicText(str("Done ✓ | Switched to first row: %d" % index))
 
@@ -588,7 +588,7 @@ class MainWindow(QtWidgets.QMainWindow):
             return
 
         visualItemRect = self.uiWidget_listView.indexAt(self.uiWidget_listView.viewport().contentsRect().topLeft()).row()
-        self._setCurrentRow(visualItemRect)
+        self.lazyItemModel.setCurrentRow(visualItemRect)
         #self.statusbar.showDynamicText(str("Done ✓ | Switched to the first line in the viewport: %d" % lastIndex))
 
     @catch_exceptions(logger=logger)
@@ -597,7 +597,7 @@ class MainWindow(QtWidgets.QMainWindow):
             return
         
         visualItemRect = self.uiWidget_listView.indexAt(self.uiWidget_listView.viewport().contentsRect().bottomLeft()).row()
-        self._setCurrentRow(visualItemRect)
+        self.lazyItemModel.setCurrentRow(visualItemRect)
         #self.statusbar.showDynamicText(str("Done ✓ | Switched to the last line in the viewport: %d" % lastIndex))
     
     @catch_exceptions(logger=logger)
@@ -685,7 +685,7 @@ class MainWindow(QtWidgets.QMainWindow):
             self.uiCombobox_searchInput.lineEdit().setSelection(stack["search"]["selection"]["start"], stack["search"]["selection"]["length"])
             if stack["search"]["instance"]:
                 # Before continuing the search, we set the row so that the search starts at the correct index
-                self._setCurrentRow(stack["search"]["currentLine"])
+                self.lazyItemModel.setCurrentRow(stack["search"]["currentLine"])
                 self.search = stack["search"]["instance"]
                 self.searchNext()
                 self.searchPrevious()
@@ -697,7 +697,7 @@ class MainWindow(QtWidgets.QMainWindow):
                 
         # unpacking details
         if stack["detail"]["isOpen"]:
-            self._setCurrentRow(stack["detail"]["currentDetailIndex"])
+            self.lazyItemModel.setCurrentRow(stack["detail"]["currentDetailIndex"])
             self.inspectLine()
             self.uiTable_characteristics.setFixedHeight(stack["detail"]["size"])
             if stack["detail"]["size"] == 0:
@@ -705,7 +705,7 @@ class MainWindow(QtWidgets.QMainWindow):
 
         # unpacking selected items and scroll position
         if stack["selectedLine"]:
-            self._setCurrentRow(stack["selectedLine"])
+            self.lazyItemModel.setCurrentRow(stack["selectedLine"])
         self.uiWidget_listView.verticalScrollBar().setValue(stack["scrollPosVertical"])
         self.uiWidget_listView.horizontalScrollBar().setValue(stack["scrollPosHorizontal"])
 
@@ -797,16 +797,6 @@ class MainWindow(QtWidgets.QMainWindow):
             clipboard.setText(data, mode=clipboard.Clipboard)
             self.statusbar.showDynamicText(str("Done ✓ | Copied to clipboard"))
 
-    def _setCurrentRow(self, row):
-        index = self.lazyItemModel.createIndex(row, 0)
-        logger.info(f"Setting row {row} to index {index.row()}")
-        #self.uiWidget_listView.scrollTo(index, hint=QtWidgets.QAbstractItemView.PositionAtCenter)
-        with self.lazyItemModel.triggerScrollChanges():
-            # No mapFromSource required, because it sets the real index start and end points visible
-            self.lazyItemModel.setVisible(max(0, row-LOAD_CONTEXT), min(row+LOAD_CONTEXT, self.filterModel.rowCount(None)))
-
-            self.uiWidget_listView.setCurrentIndex(self.lazyItemModel.mapFromSource(index))
-    
     def getRealSelectedIndexes(self):
         return [self._resolveIndex(self.uiWidget_listView.model(), index) for index in self.uiWidget_listView.selectedIndexes()]
     
