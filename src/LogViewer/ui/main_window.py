@@ -203,7 +203,6 @@ class MainWindow(QtWidgets.QMainWindow):
         self.lazyItemModel = LazyItemModel(self.filterModel, LOAD_CONTEXT)
         self.uiWidget_listView.setModel(self.lazyItemModel)
         self.lazyItemModel.setVisible(0, 100)
-        self.lazyItemModel.setVisible(500, 1550)
         self.lazyItemModel.setCurrentRow(1100)
         
         progressbar.hide()
@@ -414,10 +413,8 @@ class MainWindow(QtWidgets.QMainWindow):
         self._updateStatusbar()
 
     def cancelFilter(self):
-        self.filterModel.clearFilter()
-            # this slows down significantly
-            #update_progressbar(index, len(self.rawlog))
         self.currentFilterQuery = None
+        self.filterModel.clearFilter()
     
     @catch_exceptions(logger=logger)
     def clearFilter(self, *args):
@@ -460,11 +457,12 @@ class MainWindow(QtWidgets.QMainWindow):
         if len(self.getRealSelectedIndexes()) != 0:
             selectedLine = self.getRealSelectedIndexes()[0].row()
 
+        # !!! STILL NOT LAZY
         progressbar, update_progressbar = self.progressDialog("Filtering...", query, True)
-
+        self.lazyItemModel.clear() #WIP
         error, visibleCounter = self.filterModel.filter(query, update_progressbar)
-
         self.checkQueryResult(error, visibleCounter, self.uiCombobox_filterInput)
+        self.lazyItemModel.setVisible(0, 150) #WIP
         
         progressbar.setLabelText("Rendering Filter...")
         QtWidgets.QApplication.processEvents()

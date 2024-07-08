@@ -100,6 +100,7 @@ class LazyItemModel(ProxyModel):
 
     @catch_exceptions(logger=logger)
     def clear(self):
+        self.setCurrentRow(0)
         self.beginRemoveRows(self.createIndex(0, 0), 0, self.sourceModel().rowCount(None));
         self.proxyData.clear(False)
         self.endRemoveRows()
