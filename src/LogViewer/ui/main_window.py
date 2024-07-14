@@ -453,16 +453,11 @@ class MainWindow(QtWidgets.QMainWindow):
         self.updateComboboxHistory(query, self.uiCombobox_filterInput)
         self.currentFilterQuery = query
 
-        selectedLine = None
-        if len(self.getRealSelectedIndexes()) != 0:
-            selectedLine = self.getRealSelectedIndexes()[0].row()
+        currentIndexBefore = self.uiWidget_listView.model().mapToSource(self.uiWidget_listView.currentIndex())
 
-        # !!! STILL NOT LAZY
         progressbar, update_progressbar = self.progressDialog("Filtering...", query, True)
-        self.lazyItemModel.clear() #WIP
         error, visibleCounter = self.filterModel.filter(query, update_progressbar)
         self.checkQueryResult(error, visibleCounter, self.uiCombobox_filterInput)
-        self.lazyItemModel.setVisible(0, 150) #WIP
         
         progressbar.setLabelText("Rendering Filter...")
         QtWidgets.QApplication.processEvents()
@@ -471,27 +466,14 @@ class MainWindow(QtWidgets.QMainWindow):
         #    self.hideInspectLine()
 
         progressbar.hide()
-
         self.toggleUiItems()
 
         # scroll to selected line, if still visible or to next visible line, if not
         # (if there is no next visible line, scroll to previous visible line)
-        if selectedLine != None:
-            found = False
-            for index in range(selectedLine, len(self.rawlog), 1):
-                if self.uiWidget_listView.isRowHidden(index) == False:
-                    self.lazyItemModel.setCurrentRow(index)
-                    found = True
-                    break 
-            if not found:
-                for index in range(len(self.rawlog)-1, selectedLine, -1):
-                    if self.uiWidget_listView.isRowHidden(index) == False:
-                        self.lazyItemModel.setCurrentRow(index)
-                        found = True
-                        break 
-            if not found:
-                logger.debug("No visible line to scroll to!")
-
+        if currentIndexBefore.isValid():
+            self.uiWidget_listView.setCurrentIndex(self.uiWidget_listView.model().mapFromSource(currentIndexBefore))
+        
+        self.triggeredProgramatically = False
         self._updateStatusbar()
 
     def checkQueryResult(self, error = None, visibleCounter = 0, combobox=None):
