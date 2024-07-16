@@ -199,6 +199,8 @@ class MainWindow(QtWidgets.QMainWindow):
         
         # List reasons why it is stacked like this
         self.rawlogModel = RawlogModel(self.rawlog, self.uiWidget_listView)
+        # To apply the right formatter the rawlogModel is reloaded
+        self.rawlogModel.reloadSettings()
         self.filterModel = FilterModel(self.rawlogModel)
         self.lazyItemModel = LazyItemModel(self.filterModel, LOAD_CONTEXT)
         self.uiWidget_listView.setModel(self.lazyItemModel)
@@ -738,6 +740,11 @@ class MainWindow(QtWidgets.QMainWindow):
 
         if preInstance["style"] != SettingsSingleton()["uiStyle"]:
             sharedUiHelpers.applyStyle(SettingsSingleton()["uiStyle"])
+
+        try:
+            self.rawlogModel.reloadSettings()
+        except:
+            logger.debug("rawlogModel isn't defined yet!")
     
     def loadComboboxHistory(self, combobox):
         combobox.clear()
