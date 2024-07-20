@@ -59,6 +59,11 @@ class ProxyData():
         for index in range(start, end):
             self.visibility[index] = True
     
+    def setInvisible(self, start, end):
+        self._clearAllCaches()
+        for index in range(start, end):
+            self.visibility[index] = False
+    
     @functools.lru_cache(maxsize=LRU_MAXSIZE, typed=True)
     def getRowCount(self):
         # len(self.visibility) gives the number of items already populated in defaultdict (regardless of it's value)

@@ -67,6 +67,11 @@ class LazyItemModel(ProxyModel):
         self.beginInsertRows(self.createIndex(start, 1), start, end);
         self.proxyData.setVisible(start, end)
         self.endInsertRows();
+    
+    def setInvisible(self, start, end):
+        self.beginRemoveRows(self.createIndex(start, 1), start, end);
+        self.proxyData.setInvisible(start, end)
+        self.endRemoveRows();
 
     @catch_exceptions(logger=logger)
     def scrollbarMovedHandler(self, *args):

@@ -434,7 +434,6 @@ class MainWindow(QtWidgets.QMainWindow):
             self.cancelFilter()
 
             progressbar.hide()
-            self.currentFilterQuery = None
             self.statusbar.showDynamicText("Filter cleared")
             self._updateStatusbar()
 
@@ -461,12 +460,20 @@ class MainWindow(QtWidgets.QMainWindow):
         progressbar, update_progressbar = self.progressDialog("Filtering...", query, True)
         error, visibleCounter = self.filterModel.filter(query, update_progressbar)
         self.checkQueryResult(error, visibleCounter, self.uiCombobox_filterInput)
-        
+
+        if error != None:
+            self.clearFilter()
+            progressbar.hide()
+            return
+
+        if self.filterModel.rowCount(None) < self.lazyItemModel.rowCount(None):
+            logger.debug(f"New rowCount is{self.filterModel.rowCount(None)} but the lazyItemModel rowCount is still {self.lazyItemModel.rowCount(None)}")
+            self.lazyItemModel.setInvisible(self.filterModel.rowCount(None), self.lazyItemModel.rowCount(None)+1)
+            self.uiWidget_listView.setCurrentIndex(self.lazyItemModel.createIndex(0, 0))
+            logger.debug(f"Corrected lazyItemModel rowCount to {self.lazyItemModel.rowCount(None)}")
+
         progressbar.setLabelText("Rendering Filter...")
         QtWidgets.QApplication.processEvents()
-        
-        #if self.currentDetailIndex != None and self.uiWidget_listView.isRowHidden(self.currentDetailIndex):
-        #    self.hideInspectLine()
 
         progressbar.hide()
         self.toggleUiItems()
@@ -711,7 +718,7 @@ class MainWindow(QtWidgets.QMainWindow):
 
         if self.currentFilterQuery != None:
             text += " %d/%d" % (
-                len([index for index in range(len(self.rawlog)) if not self.uiWidget_listView.isRowHidden(index)]),
+                self.filterModel.rowCount(None),
                 len(self.rawlog)
             )
         else:
