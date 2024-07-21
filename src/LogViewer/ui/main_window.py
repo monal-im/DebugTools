@@ -232,6 +232,8 @@ class MainWindow(QtWidgets.QMainWindow):
 
         self.uiSpinBox_goToRow.setMaximum(len(self.rawlog) - 1)
 
+        self.setWindowTitle(f"{file} - Monal Log Viewer")
+
         self._updateStatusbar()
         self.toggleUiItems()
     
@@ -311,6 +313,7 @@ class MainWindow(QtWidgets.QMainWindow):
         self.currentFilterQuery = None
         self.toggleUiItems()
         self.hideInspectLine()
+        self.setWindowTitle(f"Monal Log Viewer")
 
     @catch_exceptions(logger=logger)
     def preferences(self, *args):
