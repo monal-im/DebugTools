@@ -306,6 +306,7 @@ class MainWindow(QtWidgets.QMainWindow):
             
     @catch_exceptions(logger=logger)
     def closeFile(self, *args):
+        self.uiWidget_listView.setModel(None)
         self.rawlog = Rawlog()
         self.hideSearchAndGoToRow()
         self.selectedCombobox = self.uiCombobox_filterInput
