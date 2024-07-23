@@ -396,7 +396,6 @@ class MainWindow(QtWidgets.QMainWindow):
 
     def _prepareSearch(self):
         query = self.uiCombobox_searchInput.currentText().strip()
-        self.updateComboboxHistory(query, self.uiCombobox_searchInput)
 
         progressbar, update_progressbar = self.progressDialog("Searching...", query, True)
         try:
@@ -411,6 +410,7 @@ class MainWindow(QtWidgets.QMainWindow):
             self.search = None
 
         progressbar.hide()
+        self.updateComboboxHistory(query, self.uiCombobox_searchInput)
     
     @catch_exceptions(logger=logger)
     def hideSearchAndGoToRow(self):
@@ -451,14 +451,13 @@ class MainWindow(QtWidgets.QMainWindow):
     @catch_exceptions(logger=logger)
     def filter(self, *args):
         query = self.uiCombobox_filterInput.currentText().strip()
-        self.updateComboboxHistory(query, self.uiCombobox_filterInput)
-
         if query == "":
             self.clearFilter()
             return
         if query == self.currentFilterQuery:
             return
         
+        self.updateComboboxHistory(query, self.uiCombobox_filterInput)
         self.currentFilterQuery = query
 
         currentIndexBefore = self.uiWidget_listView.model().mapToSource(self.uiWidget_listView.currentIndex())
@@ -769,24 +768,16 @@ class MainWindow(QtWidgets.QMainWindow):
             logger.debug("returning early...")
             return
 
-        query = query.strip()
-
-        comboboxHistory = SettingsSingleton().getComboboxHistory(combobox)
-        if query not in comboboxHistory:
-            comboboxHistory.append(query)
+        # remove query from combobox (if it exists) and reinsert it at top position
+        if combobox.findText(query) != -1:
+            combobox.removeItem(combobox.findText(query))
+        combobox.insertItem(0, query)
 
         # store this new combobox ordering into our settings
-        SettingsSingleton().setComboboxHistory(combobox, comboboxHistory)
-
-        # To prevent unwanted entries from remaining in the combobox, the combobox is cleared
-        combobox.clear()
-
+        SettingsSingleton().setComboboxHistory(combobox, [combobox.itemText(i) for i in range(combobox.count()) if combobox.itemText(i).strip() != ""])
+        
         # make sure that the topmost combobox entry is always an empty string but still select our query
         self.loadComboboxHistory(combobox)  # reload from settings to get rid of empty entries and make sure we always reflect in ui what is saved
-
-        combobox.removeItem(combobox.findText(query)) # remove query at wrong position
-        combobox.insertItem(0, query) # insert query at right position
-
         combobox.insertItem(0, "")
         combobox.setCurrentIndex(1)         # after adding an empty row, the current query is at index 1
 
