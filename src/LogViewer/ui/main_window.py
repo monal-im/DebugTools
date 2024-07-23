@@ -33,6 +33,8 @@ class MainWindow(QtWidgets.QMainWindow):
         self.stack = {}
         self.selectedCombobox = self.uiCombobox_filterInput
 
+        self.rawlogModel = None
+
         self.queryStatus2colorMapping = {
             QueryStatus.EOF_REACHED:    SettingsSingleton().getColor("combobox-eof_reached"),
             QueryStatus.QUERY_ERROR:    SettingsSingleton().getColor("combobox-query_error"),
@@ -753,10 +755,8 @@ class MainWindow(QtWidgets.QMainWindow):
         if preInstance["style"] != SettingsSingleton()["uiStyle"]:
             sharedUiHelpers.applyStyle(SettingsSingleton()["uiStyle"])
 
-        try:
+        if self.rawlogModel != None:
             self.rawlogModel.reloadSettings()
-        except:
-            logger.debug("rawlogModel isn't defined yet!")
     
     def loadComboboxHistory(self, combobox):
         combobox.clear()
