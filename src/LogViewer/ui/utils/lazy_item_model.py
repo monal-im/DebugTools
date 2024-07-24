@@ -27,6 +27,10 @@ class LazyItemModel(ProxyModel):
         self.listView().verticalScrollBar().valueChanged.connect(self.scrollbarMovedHandler)
         self.sourceModel().layoutAboutToBeChanged.connect(self.layoutAboutToBeChangedHandler)
         self.sourceModel().layoutChanged.connect(self.layoutChangedHandler)
+        self.sourceModel().rowsAboutToBeRemoved.connect(self.dropRows)
+        self.sourceModel().rowsAboutToBeInserted.connect(self.addRows)
+
+        self.setVisible(0, 150)
 
     @catch_exceptions(logger=logger)
     def layoutAboutToBeChangedHandler(self, *args):
@@ -120,4 +124,15 @@ class LazyItemModel(ProxyModel):
             self.setVisible(max(0, row-self.loadContext), min(row+self.loadContext, self.sourceModel().rowCount(None)))
 
             self.listView().setCurrentIndex(self.mapFromSource(index))
-    
+        
+    @catch_exceptions(logger=logger)
+    def dropRows(self, parent, start, end):
+        self.beginRemoveRows(self.createIndex(0, 0), start, end)
+        start, end = self.proxyData.removeRows(start, end)
+        self.endRemoveRows()
+
+    @catch_exceptions(logger=logger)
+    def addRows(self, parent, start, end):
+        self.beginInsertRows(self.createIndex(0, 0), start, end)
+        start, end = self.proxyData.insertRows(start, end)
+        self.endInsertRows()

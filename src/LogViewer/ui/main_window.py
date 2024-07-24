@@ -206,8 +206,6 @@ class MainWindow(QtWidgets.QMainWindow):
         self.filterModel = FilterModel(self.rawlogModel)
         self.lazyItemModel = LazyItemModel(self.filterModel, LOAD_CONTEXT)
         self.uiWidget_listView.setModel(self.lazyItemModel)
-        self.lazyItemModel.setVisible(0, 100)
-        self.lazyItemModel.setCurrentRow(1100)
         
         progressbar.hide()
 
@@ -421,6 +419,7 @@ class MainWindow(QtWidgets.QMainWindow):
         self._updateStatusbar()
 
     def cancelFilter(self):
+        self.uiSpinBox_goToRow.setMaximum(len(self.rawlog) - 1)
         self.currentFilterQuery = None
         self.filterModel.clearFilter()
     
@@ -463,19 +462,17 @@ class MainWindow(QtWidgets.QMainWindow):
         currentIndexBefore = self.uiWidget_listView.model().mapToSource(self.uiWidget_listView.currentIndex())
 
         progressbar, update_progressbar = self.progressDialog("Filtering...", query, True)
-        error, visibleCounter = self.filterModel.filter(query, update_progressbar)
+        error, visibleCounter, = self.filterModel.filter(query, update_progressbar)
         self.checkQueryResult(error, visibleCounter, self.uiCombobox_filterInput)
+
+        self.uiSpinBox_goToRow.setMaximum(visibleCounter)
+
+        self.lazyItemModel.setVisible(0, 150)
 
         if error != None:
             self.clearFilter()
             progressbar.hide()
             return
-
-        if self.filterModel.rowCount(None) < self.lazyItemModel.rowCount(None):
-            logger.debug(f"New rowCount is{self.filterModel.rowCount(None)} but the lazyItemModel rowCount is still {self.lazyItemModel.rowCount(None)}")
-            self.lazyItemModel.setInvisible(self.filterModel.rowCount(None), self.lazyItemModel.rowCount(None)+1)
-            self.uiWidget_listView.setCurrentIndex(self.lazyItemModel.createIndex(0, 0))
-            logger.debug(f"Corrected lazyItemModel rowCount to {self.lazyItemModel.rowCount(None)}")
 
         progressbar.setLabelText("Rendering Filter...")
         QtWidgets.QApplication.processEvents()

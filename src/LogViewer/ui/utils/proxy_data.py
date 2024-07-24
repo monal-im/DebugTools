@@ -88,3 +88,15 @@ class ProxyData():
             if hasattr(member, "cache_parameters"):
                 logger.debug(f"Cache effects for {self.proxyModel.__class__.__name__}.{member.__name__}: {member.cache_info()}")
                 member.cache_clear()
+
+    def removeRows(self, start, end):
+        for index in range(start, end):
+            if index in self.visibility.keys():
+                del self.visibility[index]
+        return start, end
+    
+    def insertRows(self, start, end):
+        for index in range(start, end):
+            if index not in self.visibility.keys():
+                self.visibility[index] = self.visibility[index]
+        return start, end
