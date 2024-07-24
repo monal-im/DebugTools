@@ -21,8 +21,6 @@ class FilterModel(ProxyModel):
         return self.proxyData.getVisibility(index, index+1)
 
     def filter(self, query, update_progressbar):
-        if len(self.visibilityList) != 0:
-            self.clearFilter()
         self.visibleCounter = 0        
         error = None
 
@@ -73,8 +71,12 @@ class FilterModel(ProxyModel):
         self.endInsertRows()
 
     def addToVisibilityList(self, index, visibility):
-        if len(self.visibilityList) == 0:
-            self.visibilityList.append({"start": index, "end": None, "visibility": visibility})
-        elif self.visibilityList[-1]["visibility"] != visibility:
+        if self.proxyData.getVisibility(index, index+1) != visibility:
+            if len(self.visibilityList) == 0:
+                self.visibilityList.append({"start": index, "end": None, "visibility": visibility})
+            elif self.visibilityList[-1]["visibility"] != visibility:
+                if self.visibilityList[-1]["end"] == None:
+                    self.visibilityList[-1]["end"] = index-1
+                self.visibilityList.append({"start": index, "end": None, "visibility": visibility})
+        else:
             self.visibilityList[-1]["end"] = index-1
-            self.visibilityList.append({"start": index, "end": None, "visibility": visibility})

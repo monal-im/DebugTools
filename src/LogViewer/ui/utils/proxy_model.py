@@ -56,7 +56,7 @@ class ProxyModel(QtCore.QAbstractProxyModel):
             return self.sourceModel().createIndex(nextVisibleRow, 0)
         except:
             #logger.exception(f"Exception with data: {nextVisibleRow = } {proxyIndex.row() = }")
-            return self.sourceModel().createIndex(-1, -1)
+            return QtCore.QModelIndex()
 
     @catch_exceptions(logger=logger)
     def rowCount(self, index):
