@@ -462,11 +462,12 @@ class MainWindow(QtWidgets.QMainWindow):
         currentIndexBefore = self.uiWidget_listView.model().mapToSource(self.uiWidget_listView.currentIndex())
 
         progressbar, update_progressbar = self.progressDialog("Filtering...", query, True)
-        error, visibleCounter, = self.filterModel.filter(query, update_progressbar)
+        error, visibleCounter = self.filterModel.filter(query, update_progressbar)
         self.checkQueryResult(error, visibleCounter, self.uiCombobox_filterInput)
 
         self.uiSpinBox_goToRow.setMaximum(visibleCounter)
 
+        # TODO: move to lazyItemModel
         self.lazyItemModel.setVisible(0, 150)
 
         if error != None:

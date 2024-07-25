@@ -1,4 +1,5 @@
 from PyQt5 import QtCore, QtWidgets
+import functools
 
 from .proxy_model import ProxyModel
 from shared.utils import catch_exceptions
@@ -27,10 +28,17 @@ class LazyItemModel(ProxyModel):
         self.listView().verticalScrollBar().valueChanged.connect(self.scrollbarMovedHandler)
         self.sourceModel().layoutAboutToBeChanged.connect(self.layoutAboutToBeChangedHandler)
         self.sourceModel().layoutChanged.connect(self.layoutChangedHandler)
-        self.sourceModel().rowsAboutToBeRemoved.connect(self.dropRows)
-        self.sourceModel().rowsAboutToBeInserted.connect(self.addRows)
+        self.sourceModel().rowsRemoved.connect(functools.partial(self._rowsChangedHandler, visibility=False))
+        self.sourceModel().rowsInserted.connect(functools.partial(self._rowsChangedHandler, visibility=True))
+
+        
+        self.timerTimer = QtCore.QTimer()
+        self.timerTimer.setSingleShot(True)
+        self.timerTimer.timeout.connect(self.timerTimerHandler)
+        self.timerTimer.start(0)
 
         self.setVisible(0, 150)
+
 
     @catch_exceptions(logger=logger)
     def layoutAboutToBeChangedHandler(self, *args):
@@ -124,15 +132,27 @@ class LazyItemModel(ProxyModel):
             self.setVisible(max(0, row-self.loadContext), min(row+self.loadContext, self.sourceModel().rowCount(None)))
 
             self.listView().setCurrentIndex(self.mapFromSource(index))
-        
-    @catch_exceptions(logger=logger)
-    def dropRows(self, parent, start, end):
-        self.beginRemoveRows(self.createIndex(0, 0), start, end)
-        start, end = self.proxyData.removeRows(start, end)
-        self.endRemoveRows()
 
     @catch_exceptions(logger=logger)
-    def addRows(self, parent, start, end):
-        self.beginInsertRows(self.createIndex(0, 0), start, end)
-        start, end = self.proxyData.insertRows(start, end)
-        self.endInsertRows()
+    def _rowsChangedHandler(self, parent, start, end, visibility):
+        logger.debug("CALLED!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!1")
+        logger.debug(f"started with: {start = } » {end = }")
+        self._initVisibilityList()
+        for index in range(start, end+1):
+            self._addToVisibilityList(index, visibility)
+        visiblityList = self._sealVisibilityList(index)
+
+        if visibility == True:
+            for item in visiblityList:
+                self.beginInsertRows(parent, item["start"], item["end"])
+                logger.debug(f"Inserted with: {item['start'] = } » {item['end'] = }")
+                for index in range(item["start"], item["end"]):
+                    self.proxyData.insertRows(item["start"], item["end"])
+                self.endInsertRows()
+        else:
+            for item in visiblityList:
+                self.beginRemoveRows(parent, item["start"], item["end"])
+                logger.debug(f"Removed with: {item['start'] = } » {item['end'] = }")
+                for index in range(item["start"], item["end"]):
+                    self.proxyData.removeRows(item["start"], item["end"])
+                self.endRemoveRows()

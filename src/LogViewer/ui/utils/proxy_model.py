@@ -31,7 +31,7 @@ class ProxyModel(QtCore.QAbstractProxyModel):
 
     @functools.lru_cache(typed=True)
     @catch_exceptions(logger=logger)
-    def parent(self, index):
+    def parent(self, index=None):
         # this method logs errors if not implemented, so simply return an invalid index to make qt happy
         return QtCore.QModelIndex()
     
@@ -71,3 +71,24 @@ class ProxyModel(QtCore.QAbstractProxyModel):
     @catch_exceptions(logger=logger)
     def listView(self):
         return self.sourceModel().listView()
+
+    def _initVisibilityList(self):
+        self.visibilityList = []
+
+    def _addToVisibilityList(self, index, visibility):
+        if self.proxyData.getVisibility(index, index+1) != visibility:
+            if len(self.visibilityList) == 0:
+                self.visibilityList.append({"start": index, "end": None, "visibility": visibility})
+            elif self.visibilityList[-1]["visibility"] != visibility:
+                if self.visibilityList[-1]["end"] == None:
+                    self.visibilityList[-1]["end"] = index-1
+                self.visibilityList.append({"start": index, "end": None, "visibility": visibility})
+        elif len(self.visibilityList) != 0:
+            if self.visibilityList[-1]["end"] == None:
+                self.visibilityList[-1]["end"] = index-1
+
+    def _sealVisibilityList(self, index):
+        if self.visibilityList[-1]["end"] == None:
+            self.visibilityList[-1]["end"] = index
+
+        return self.visibilityList

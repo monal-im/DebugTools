@@ -93,10 +93,9 @@ class ProxyData():
         for index in range(start, end):
             if index in self.visibility.keys():
                 del self.visibility[index]
-        return start, end
     
     def insertRows(self, start, end):
         for index in range(start, end):
             if index not in self.visibility.keys():
                 self.visibility[index] = self.visibility[index]
-        return start, end
+                
