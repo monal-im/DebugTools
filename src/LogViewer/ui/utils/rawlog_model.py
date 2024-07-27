@@ -30,7 +30,7 @@ class RawlogModel(QtCore.QAbstractListModel):
                 del entry["data"]["__formattedMessage"]
         for name, member in inspect.getmembers(self, predicate=inspect.ismethod):
             if hasattr(member, "cache_parameters"):
-                logger.debug(f"Cache effects for {member.__name__}: {member.cache_info()}")
+                #logger.debug(f"Cache effects for {member.__name__}: {member.cache_info()}")
                 member.cache_clear()
         self.layoutChanged.emit()
     
@@ -77,7 +77,7 @@ class RawlogModel(QtCore.QAbstractListModel):
                 fg, bg = self._getQColorTuple(entry["data"]["flag"])
                 return fg
         else:
-            logger.info(f"data called with invalid index: {index.row()}")
+            logger.info(f"Data called with invalid index: {index.row()}")
         return None
     
     @catch_exceptions(logger=logger)

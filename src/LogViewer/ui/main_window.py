@@ -20,6 +20,8 @@ import logging
 logger = logging.getLogger(__name__)
 
 LOAD_CONTEXT = 150
+LAZY_DISTANCE = 400
+LAZY_LOADING = 100
 
 @UiAutoloader
 class MainWindow(QtWidgets.QMainWindow):
@@ -204,7 +206,7 @@ class MainWindow(QtWidgets.QMainWindow):
         # To apply the right formatter the rawlogModel is reloaded
         self.rawlogModel.reloadSettings()
         self.filterModel = FilterModel(self.rawlogModel)
-        self.lazyItemModel = LazyItemModel(self.filterModel, LOAD_CONTEXT)
+        self.lazyItemModel = LazyItemModel(self.filterModel, LOAD_CONTEXT, LAZY_DISTANCE, LAZY_LOADING)
         self.uiWidget_listView.setModel(self.lazyItemModel)
         
         progressbar.hide()
@@ -466,9 +468,6 @@ class MainWindow(QtWidgets.QMainWindow):
         self.checkQueryResult(error, visibleCounter, self.uiCombobox_filterInput)
 
         self.uiSpinBox_goToRow.setMaximum(visibleCounter)
-
-        # TODO: move to lazyItemModel
-        self.lazyItemModel.setVisible(0, 150)
 
         if error != None:
             self.clearFilter()

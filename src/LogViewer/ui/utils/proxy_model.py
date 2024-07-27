@@ -10,7 +10,7 @@ logger = logging.getLogger(__name__)
 # this class only caches methods that return static values
 class ProxyModel(QtCore.QAbstractProxyModel):
     @catch_exceptions(logger=logger)
-    def __init__(self, sourceModel, parent=None):
+    def __init__(self, sourceModel, parent=None, handledSignals=None):
         super().__init__(parent)
         self.setSourceModel(sourceModel)
         self.proxyData = ProxyData(self)
@@ -22,10 +22,11 @@ class ProxyModel(QtCore.QAbstractProxyModel):
             "rowsAboutToBeInserted", "rowsAboutToBeMoved", "rowsAboutToBeRemoved", "rowsInserted",
             "rowsMoved", "rowsRemoved",
         ]
+        if handledSignals != None:
+            signals = [signal for signal in signals if not signal in handledSignals]
         def emitter(signal, *args):
             logger.debug(f"Proxying signal '{signal}' from parent model with args: {args}")
             getattr(self, signal).emit(*args)
-        
         for signal in signals:
             getattr(sourceModel, signal).connect(functools.partial(emitter, signal))
 
@@ -76,19 +77,28 @@ class ProxyModel(QtCore.QAbstractProxyModel):
         self.visibilityList = []
 
     def _addToVisibilityList(self, index, visibility):
-        if self.proxyData.getVisibility(index, index+1) != visibility:
-            if len(self.visibilityList) == 0:
+        logger.debug(f"{index = }, {visibility = }")
+        if self.proxyData.getVisibility(index) != visibility:
+            logger.debug(f"visibility is different to before: {self.proxyData.getVisibility(index) = } != {visibility = }...")
+            if len(self.visibilityList) == 0 or self.visibilityList[-1]["end"] != None:
+                logger.debug(f"adding new block at {index = }...")
                 self.visibilityList.append({"start": index, "end": None, "visibility": visibility})
             elif self.visibilityList[-1]["visibility"] != visibility:
+                logger.debug(f"visibility flipped: {self.visibilityList[-1]['visibility'] = } != {visibility = }...")
                 if self.visibilityList[-1]["end"] == None:
+                    logger.debug(f"ending previous block: {self.visibilityList[-1] = }")
                     self.visibilityList[-1]["end"] = index-1
+                logger.debug(f"adding next block at {index = }...")
                 self.visibilityList.append({"start": index, "end": None, "visibility": visibility})
         elif len(self.visibilityList) != 0:
+            logger.debug(f"visibility is equal to before: {self.proxyData.getVisibility(index) = } == {visibility = }...")
             if self.visibilityList[-1]["end"] == None:
+                logger.debug(f"ending previous block: {self.visibilityList[-1] = }")
                 self.visibilityList[-1]["end"] = index-1
+        logger.debug(f"RETURN {self.visibilityList = }")
 
     def _sealVisibilityList(self, index):
-        if self.visibilityList[-1]["end"] == None:
+        if len(self.visibilityList) != 0 and self.visibilityList[-1]["end"] == None:
+            logger.debug(f"ended last block: {self.visibilityList[-1] = }")
             self.visibilityList[-1]["end"] = index
-
         return self.visibilityList

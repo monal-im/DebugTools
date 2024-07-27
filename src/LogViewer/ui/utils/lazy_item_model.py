@@ -7,9 +7,6 @@ from shared.utils import catch_exceptions
 import logging
 logger = logging.getLogger(__name__)
 
-LAZY_DISTANCE = 400
-LAZY_LOADING = 100
-
 class LazyItemModel(ProxyModel):
     class ChangeTriggeredFlag:
         def __init__(self, model):
@@ -20,10 +17,19 @@ class LazyItemModel(ProxyModel):
             self.model.triggeredProgramatically = False
     
     @catch_exceptions(logger=logger)
-    def __init__(self, sourceModel, loadContext, parent=None):
-        super().__init__(sourceModel, parent)
+    def __init__(self, sourceModel, loadContext, load_distance, load_count, parent=None):
+        super().__init__(sourceModel, parent, handledSignals=[
+            "layoutAboutToBeChanged",
+            "layoutChanged",
+            "rowsAboutToBeRemoved",
+            "rowsRemoved",
+            "rowsAboutToBeInserted",
+            "rowsInserted"
+        ])
         self.triggeredProgramatically = False
         self.loadContext = loadContext
+        self.load_distance = load_distance
+        self.load_count = load_count
 
         self.listView().verticalScrollBar().valueChanged.connect(self.scrollbarMovedHandler)
         self.sourceModel().layoutAboutToBeChanged.connect(self.layoutAboutToBeChangedHandler)
@@ -31,14 +37,19 @@ class LazyItemModel(ProxyModel):
         self.sourceModel().rowsRemoved.connect(functools.partial(self._rowsChangedHandler, visibility=False))
         self.sourceModel().rowsInserted.connect(functools.partial(self._rowsChangedHandler, visibility=True))
 
-        
         self.timerTimer = QtCore.QTimer()
         self.timerTimer.setSingleShot(True)
-        self.timerTimer.timeout.connect(self.timerTimerHandler)
-        self.timerTimer.start(0)
+        self.timerTimer.timeout.connect(self.bla)
+        self.timerTimer.start(8000)
 
-        self.setVisible(0, 150)
-
+        self.setVisible(0, self.loadContext)
+    
+    def bla(self, *args, **kwargs):
+        logger.debug("BLAAA")
+        self.beginRemoveRows(self.parent(), 6, 22)
+        self.proxyData.removeRows(6, 22)
+        self.endRemoveRows()
+        logger.debug("BLUUUB")
 
     @catch_exceptions(logger=logger)
     def layoutAboutToBeChangedHandler(self, *args):
@@ -76,14 +87,14 @@ class LazyItemModel(ProxyModel):
     
     def setVisible(self, start, end):
         logger.debug(f"Setting visibility of rows in interval: {start = }, {end = }")
-        self.beginInsertRows(self.createIndex(start, 1), start, end);
+        self.beginInsertRows(self.parent(), start, end)
         self.proxyData.setVisible(start, end)
-        self.endInsertRows();
+        self.endInsertRows()
     
     def setInvisible(self, start, end):
-        self.beginRemoveRows(self.createIndex(start, 1), start, end);
+        self.beginRemoveRows(self.parent(), start, end)
         self.proxyData.setInvisible(start, end)
-        self.endRemoveRows();
+        self.endRemoveRows()
 
     @catch_exceptions(logger=logger)
     def scrollbarMovedHandler(self, *args):
@@ -95,22 +106,22 @@ class LazyItemModel(ProxyModel):
         bottomIndex  = self.mapToSource(self.listView().indexAt(self.listView().viewport().contentsRect().bottomLeft()))
 
         previousIndex = self.proxyData.getPreviousIndexWithState(topIndex, False)
-        if previousIndex != None and topIndex.row() - previousIndex <= LAZY_DISTANCE:
+        if previousIndex != None and topIndex.row() - previousIndex <= self.load_distance:
             # don't use the context manager because we have to set it to false in the timer
             self.triggeredProgramatically = True
             
             self.layoutAboutToBeChangedHandler()
             # this is the actual loading and will move all indexes to other positions
-            self.setVisible(max(previousIndex - LAZY_LOADING, 0), topIndex.row())
+            self.setVisible(max(previousIndex - self.load_count, 0), topIndex.row())
             self.layoutChangedHandler()
             
             # we don't need to check if we have to lazy load rows below us, if we already had to load rows above us --> just return
             return
         
         nextIndex = self.proxyData.getNextIndexWithState(bottomIndex, False)
-        if nextIndex != None and nextIndex - bottomIndex.row() <= LAZY_DISTANCE:
+        if nextIndex != None and nextIndex - bottomIndex.row() <= self.load_distance:
             with self.triggerScrollChanges():
-                self.setVisible(bottomIndex.row(), min(nextIndex + LAZY_LOADING, self.sourceModel().rowCount(None)))
+                self.setVisible(bottomIndex.row(), min(nextIndex + self.load_count, self.sourceModel().rowCount(None)))
     
     def triggerScrollChanges(self):
         return self.ChangeTriggeredFlag(self)
@@ -118,7 +129,7 @@ class LazyItemModel(ProxyModel):
     @catch_exceptions(logger=logger)
     def clear(self):
         self.setCurrentRow(0)
-        self.beginRemoveRows(self.createIndex(0, 0), 0, self.sourceModel().rowCount(None))
+        self.beginRemoveRows(self.parent(), 0, self.sourceModel().rowCount(None))
         self.proxyData.clear(False)
         self.endRemoveRows()
 
@@ -136,23 +147,35 @@ class LazyItemModel(ProxyModel):
     @catch_exceptions(logger=logger)
     def _rowsChangedHandler(self, parent, start, end, visibility):
         logger.debug("CALLED!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!1")
+        self.beginRemoveRows(parent, 6, 22)
+        self.proxyData.removeRows(6, 22)
+        self.endRemoveRows()
+        return
+    
         logger.debug(f"started with: {start = } » {end = }")
         self._initVisibilityList()
         for index in range(start, end+1):
             self._addToVisibilityList(index, visibility)
         visiblityList = self._sealVisibilityList(index)
-
-        if visibility == True:
-            for item in visiblityList:
-                self.beginInsertRows(parent, item["start"], item["end"])
-                logger.debug(f"Inserted with: {item['start'] = } » {item['end'] = }")
-                for index in range(item["start"], item["end"]):
-                    self.proxyData.insertRows(item["start"], item["end"])
+        
+        logger.debug(f"LAZY {visiblityList = }")
+        
+        for item in visiblityList:
+            proxyStart = self.mapFromSource(self.createIndex(item["start"], 0)).row()
+            proxyEnd = self.mapFromSource(self.createIndex(item["end"], 0)).row()
+            logger.debug(f"Handling: {item['start'] = }, {item['end'] = }, {proxyStart = }, {proxyEnd = }")
+            if visibility == True:
+                logger.debug(f"Inserting with: {item['start'] = } » {item['end'] = }")
+                self.beginInsertRows(parent, self.mapFromSource(self.createIndex(item["start"], 0)).row(), self.mapFromSource(self.createIndex(item["end"], 0)).row())
+                self.proxyData.insertRows(item["start"], item["end"], True)
                 self.endInsertRows()
-        else:
-            for item in visiblityList:
-                self.beginRemoveRows(parent, item["start"], item["end"])
-                logger.debug(f"Removed with: {item['start'] = } » {item['end'] = }")
-                for index in range(item["start"], item["end"]):
-                    self.proxyData.removeRows(item["start"], item["end"])
+                logger.debug(f"Inserted with: {item['start'] = } » {item['end'] = }")
+            else:
+                logger.debug(f"Removing with: {item['start'] = } » {item['end'] = }")
+                self.beginRemoveRows(parent, proxyStart, proxyEnd)
+                self.proxyData.removeRows(item["start"], item["end"])
                 self.endRemoveRows()
+                logger.debug(f"Removed with: {item['start'] = } » {item['end'] = }")
+        
+        # trigger scrollbarMovedHandler to make sure enough rows are visible
+        #self.scrollbarMovedHandler()

@@ -8,17 +8,14 @@ logger = logging.getLogger(__name__)
 LRU_MAXSIZE = 1024*1024
 
 class ProxyData():
-    def __init__(self, proxyModel):
+    def __init__(self, proxyModel, standardValue=False):
         super().__init__()
-        self.visibility = collections.defaultdict(lambda: False)
         self.proxyModel = proxyModel
+        self.clear(standardValue)
 
     @functools.lru_cache(maxsize=LRU_MAXSIZE, typed=True)
-    def getVisibility(self, start, end):
-        for index in range(start, end):
-            if self.visibility[index] == False:
-                return False
-        return True  
+    def getVisibility(self, index):
+        return self.visibility[index]
 
     @functools.lru_cache(maxsize=LRU_MAXSIZE, typed=True)
     def getPreviousIndexWithState(self, realIndex, state=False):
@@ -74,8 +71,9 @@ class ProxyData():
                 visible += 1
         return visible
 
-    def clear(self, standardValue = False):
+    def clear(self, standardValue=False):
         logger.debug(f"Clearing proxy_data of {self.proxyModel.__class__.__name__}...")
+        self.standardValue = standardValue
         self._clearAllCaches()
         self.visibility = collections.defaultdict(lambda: standardValue)
 
@@ -86,16 +84,28 @@ class ProxyData():
     def _clearAllCaches(self):
         for name, member in inspect.getmembers(self, predicate=inspect.ismethod):
             if hasattr(member, "cache_parameters"):
-                logger.debug(f"Cache effects for {self.proxyModel.__class__.__name__}.{member.__name__}: {member.cache_info()}")
+                #logger.debug(f"Cache effects for {self.proxyModel.__class__.__name__}.{member.__name__}: {member.cache_info()}")
                 member.cache_clear()
 
     def removeRows(self, start, end):
-        for index in range(start, end):
-            if index in self.visibility.keys():
+        keys = list(self.visibility.keys())
+        for index in range(start, end+1):
+            if index in keys:
                 del self.visibility[index]
+        values = list(self.visibility.values())
+        self.clear(self.standardValue)
+        self.visibility |= {k: values[k] for k in range(len(values))}
+        logger.debug(f"removeRows: {self.visibility = }")
     
-    def insertRows(self, start, end):
-        for index in range(start, end):
-            if index not in self.visibility.keys():
-                self.visibility[index] = self.visibility[index]
-                
+    def insertRows(self, start, end, value):
+        old = self.visibility.copy()
+        count = end - start + 1
+        keys = list(self.visibility.keys())
+        self.clear(self.standardValue)
+        for k in keys:
+            if k < start:
+                self.visibility[k] = old[k]
+            else:
+                self.visibility[k+count] = old[k]
+        for k in range(start, end+1):
+            self.visibility[k] = value

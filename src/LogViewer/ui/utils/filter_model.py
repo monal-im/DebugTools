@@ -8,7 +8,7 @@ from .proxy_model import ProxyModel
 
 class FilterModel(ProxyModel):
     def __init__(self, sourceModel, parent=None):
-        super().__init__(sourceModel, parent)
+        super().__init__(sourceModel, parent, handledSignals=[])
         self.clearFilter()
 
     def rowCount(self, index):
@@ -17,7 +17,7 @@ class FilterModel(ProxyModel):
     def isRowVisible(self, index):
         if index < 0 or index >= self.sourceModel().rowCount(None):
             return False
-        return self.proxyData.getVisibility(index, index+1)
+        return self.proxyData.getVisibility(index)
 
     def filter(self, query, update_progressbar):
         self.visibleCounter = 0        
@@ -28,7 +28,6 @@ class FilterModel(ProxyModel):
             result = matchQuery(query, self.sourceModel().rawlog, rawlogPosition, usePython=SettingsSingleton()["usePythonFilter"])
             if result["status"] == QueryStatus.QUERY_OK:
                 self._addToVisibilityList(rawlogPosition, result["matching"])
-
             else:
                 error = result["error"]
                 self._addToVisibilityList(rawlogPosition, False)
@@ -47,22 +46,21 @@ class FilterModel(ProxyModel):
             if item["visibility"]:
                 self.beginInsertRows(self.parent(), item["start"], item["end"])
                 for index in range(item["start"], item["end"]):
-                    if self.proxyData.getVisibility(index, index+1) != item["visibility"]:
+                    if self.proxyData.getVisibility(index) != item["visibility"]:
                         self.proxyData.setVisibilityAtIndex(index, item["visibility"])
                 self.endInsertRows()                    
             else:
                 self.beginRemoveRows(self.parent(), item["start"], item["end"])
                 for index in range(item["start"], item["end"]):
-                    if self.proxyData.getVisibility(index, index+1) != item["visibility"]:
+                    if self.proxyData.getVisibility(index) != item["visibility"]:
                         self.proxyData.setVisibilityAtIndex(index, item["visibility"])
                 self.endRemoveRows()
+                return (error, self.visibleCounter) 
 
         return (error, self.visibleCounter) 
     
     def clearFilter(self):
         self.visibleCounter = self.sourceModel().rowCount(None)
-
         self.beginInsertRows(self.parent(), 0, self.visibleCounter+1)
         self.proxyData.clear(True)
         self.endInsertRows()
-
