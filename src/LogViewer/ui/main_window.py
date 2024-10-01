@@ -206,8 +206,10 @@ class MainWindow(QtWidgets.QMainWindow):
         # To apply the right formatter the rawlogModel is reloaded
         self.rawlogModel.reloadSettings()
         self.filterModel = FilterModel(self.rawlogModel)
-        self.lazyItemModel = LazyItemModel(self.filterModel, LOAD_CONTEXT, LAZY_DISTANCE, LAZY_LOADING)
-        self.uiWidget_listView.setModel(self.lazyItemModel)
+        # Disable functions that use the lazyItemModel until it is fixed
+        #self.lazyItemModel = LazyItemModel(self.filterModel, LOAD_CONTEXT, LAZY_DISTANCE, LAZY_LOADING)
+        #self.uiWidget_listView.setModel(self.lazyItemModel)
+        self.uiWidget_listView.setModel(self.filterModel)
         
         progressbar.hide()
 

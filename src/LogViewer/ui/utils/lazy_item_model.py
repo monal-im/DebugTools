@@ -146,7 +146,6 @@ class LazyItemModel(ProxyModel):
 
     @catch_exceptions(logger=logger)
     def _rowsChangedHandler(self, parent, start, end, visibility):
-        logger.debug("CALLED!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!1")
         self.beginRemoveRows(parent, 6, 22)
         self.proxyData.removeRows(6, 22)
         self.endRemoveRows()
