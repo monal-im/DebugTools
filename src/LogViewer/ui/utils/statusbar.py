@@ -1,14 +1,16 @@
 from PyQt5 import QtCore, QtWidgets, QtGui
 from shared.utils import catch_exceptions
+from .toasts import Toast
 
 import logging
 logger = logging.getLogger(__name__)
 
 class Statusbar(QtCore.QObject):
-    def __init__(self, statusbar, menu=None):
+    def __init__(self, window, menu=None):
         super().__init__()
         self.statusbarText = {"static": "", "dynamic": []}
-        self.statusbar = statusbar
+        self.statusbar = window.statusBar()
+        self.window = window
         self.menu = menu
         self.dynamic_timer = QtCore.QTimer()
         self.dynamic_timer.stop()
@@ -27,11 +29,13 @@ class Statusbar(QtCore.QObject):
     
     def setText(self, text):
         self.statusbarText["static"] = str(text)
+
         if not self.dynamic_timer.isActive():
             self._update()
 
     def showDynamicText(self, text, time=3000):
         self.statusbarText["dynamic"].append((text, time))
+        self.toast = Toast(self.window, text, time)
         if not self.dynamic_timer.isActive():
             self._update()
     
