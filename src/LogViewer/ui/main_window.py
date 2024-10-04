@@ -30,7 +30,7 @@ class MainWindow(QtWidgets.QMainWindow):
         self.rawlog = Rawlog()
         self.file = None
         self.search = None
-        self.statusbar = Statusbar(self.uiStatusbar_main, self.uiMenuBar_main)
+        self.statusbar = Statusbar(self, self.uiMenuBar_main)
         self.currentFilterQuery = None
         self.stack = {}
         self.selectedCombobox = self.uiCombobox_filterInput

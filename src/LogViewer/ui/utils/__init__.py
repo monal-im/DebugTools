@@ -7,3 +7,4 @@ from .rawlog_model import RawlogModel
 from .lazy_item_model import LazyItemModel
 from .filter_model import FilterModel
 from .proxy_model import ProxyModel
+from .toasts import Toast
