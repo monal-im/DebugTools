@@ -272,7 +272,7 @@ class PreferencesDialog(QtWidgets.QDialog):
             QtWidgets.QMessageBox.Yes | QtWidgets.QMessageBox.No
         )
         def deleteSettings():
-            os.remove(Paths.get_conf_filepath("settings.json"))
+            os.remove(Paths.get_default_conf_filepath("profile.generic.json"))
             sys.exit()
         if msgBox == QtWidgets.QMessageBox.Yes:
             deleteSettings()

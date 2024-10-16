@@ -4,7 +4,6 @@ import inspect
 
 from LogViewer.storage import SettingsSingleton
 import LogViewer.utils.helpers as helpers
-from shared.utils.constants import LOGLEVELS
 from shared.utils import catch_exceptions
 
 import logging
@@ -17,7 +16,7 @@ class RawlogModel(QtCore.QAbstractListModel):
     def __init__(self, rawlog, parent=None):
         super().__init__(parent)
         self.parent = parent
-        self.logflag2colorMapping = {v: "logline-%s" % k.lower() for k, v in LOGLEVELS.items()}
+        self.logflag2colorMapping = {v: "logline-%s" % k.lower() for k, v in SettingsSingleton().getLoglevels().items()}
         self.rawlog = rawlog
         self.formatter = self.createFormatter()
     
@@ -42,7 +41,9 @@ class RawlogModel(QtCore.QAbstractListModel):
     @functools.lru_cache(maxsize=LRU_MAXSIZE, typed=True)
     @catch_exceptions(logger=logger)
     def _getQColorTuple(self, flag):
-        return SettingsSingleton().getQColorTuple(self.logflag2colorMapping[flag])
+        if flag in self.logflag2colorMapping:
+            return SettingsSingleton().getQColorTuple(self.logflag2colorMapping[flag])
+        return (QtGui.QColor(0, 0, 0), None)
     
     @catch_exceptions(logger=logger)
     def headerData(self, *args):
@@ -68,13 +69,13 @@ class RawlogModel(QtCore.QAbstractListModel):
                 return self._getQFont()
             elif role == QtCore.Qt.BackgroundRole:
                 entry = self.rawlog[index.row()]
-                fg, bg = self._getQColorTuple(entry["data"]["flag"])
+                fg, bg = self._getQColorTuple(entry["data"][SettingsSingleton().getLoglevel()])
                 if bg == None:
                     bg = QtGui.QBrush()     # default color (usually transparent)
                 return bg
             elif role == QtCore.Qt.ForegroundRole:
                 entry = self.rawlog[index.row()]
-                fg, bg = self._getQColorTuple(entry["data"]["flag"])
+                fg, bg = self._getQColorTuple(entry["data"][SettingsSingleton().getLoglevel()])
                 return fg
         else:
             logger.info(f"Data called with invalid index: {index.row()}")

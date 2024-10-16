@@ -2,6 +2,7 @@ import json
 from PyQt5 import QtGui, QtCore
 
 from shared.utils import Paths
+from .globalSettings import GlobalSettingsSingleton
 
 import logging
 logger = logging.getLogger(__name__)
@@ -12,11 +13,17 @@ class SettingsSingleton():
     def __new__(cls):
         if cls._instance is None:
             cls._instance = super(SettingsSingleton, cls).__new__(cls)
-            cls._instance.path = Paths.get_conf_filepath("settings.json")
-            cls._instance.defaultPath = Paths.get_default_conf_filepath("settings.json")
+            cls._instance.path = Paths.get_conf_filepath(GlobalSettingsSingleton().getActiveProfile())
+            cls._instance.defaultPath = Paths.get_default_conf_filepath("profile.generic.json")
             cls._instance._load()
             logger.debug("Instanciated SettingsSingleton...")
         return cls._instance
+
+    def reload(cls):
+        logger.debug("Reload SettingsSingleton")
+        cls._instance.path = Paths.get_conf_filepath(GlobalSettingsSingleton().getActiveProfile())
+        cls._instance.defaultPath = Paths.get_default_conf_filepath("profile.generic.json")
+        cls._instance._load()
     
     def __setitem__(self, key, value):
         self.data["misc"][key] = value
@@ -176,6 +183,30 @@ class SettingsSingleton():
                 self.data["color"][name]["data"].append(None)
         self._store()
 
+    def deleteColorName(self, name):
+        del self.data["color"][name]
+        self._store()
+
+    def addColorName(self, name):
+        self.data["color"][f"logline-{name.lower()}"] = {"len": 2, "data": [[0, 0, 0], None]}
+        self._store()
+
+    def getLoglevel(self):
+        return self.data["loglevel"]
+
+    def setLoglevel(self, loglevel):
+        self.data["loglevel"] = loglevel
+        self._store()
+
+    def getLoglevels(self):
+        return self.data["loglevels"]
+
+    def setLoglevels(self, loglevels):
+        self.data["loglevels"] = loglevels
+
+    def getLoglevelNames(self):
+        return list(self.data["loglevels"].keys())
+
     def _widgetName(self, widget):
         names = []
         obj = widget
@@ -184,7 +215,7 @@ class SettingsSingleton():
             obj = obj.parent()
         name = ".".join(names[::-1])
         return name
-    
+        
     def _load(self):
         logger.info("Loading default settings from '%s'..." % self.defaultPath)
         with open(self.defaultPath, 'rb') as fp:
@@ -194,6 +225,7 @@ class SettingsSingleton():
             with open(self.path, 'rb') as fp:
                 self.data = json.load(fp)
             
+            '''
             # apply new defaults not yet stored in settings json
             for section in defaults:
                 for key in defaults[section]:
@@ -215,6 +247,7 @@ class SettingsSingleton():
                         if key not in defaults[section]:
                             logger.debug("Removing settings key '%s' in section '%s'..." % (key, section))
                             del self.data[section][key]
+            '''
         except:
             logger.info("File not loadable or does not exist: '%s', loading default config." % self.path)
             self.data = defaults

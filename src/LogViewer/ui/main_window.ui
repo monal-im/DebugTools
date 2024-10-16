@@ -7,7 +7,7 @@
     <x>0</x>
     <y>0</y>
     <width>451</width>
-    <height>369</height>
+    <height>380</height>
    </rect>
   </property>
   <property name="windowTitle">
@@ -293,7 +293,7 @@
      <x>0</x>
      <y>0</y>
      <width>451</width>
-     <height>27</height>
+     <height>30</height>
     </rect>
    </property>
    <widget class="QMenu" name="menuFile">
@@ -330,8 +330,17 @@
     </property>
     <addaction name="uiAction_about"/>
    </widget>
+   <widget class="QMenu" name="uiMenu_profiles">
+    <property name="title">
+     <string>Profiles</string>
+    </property>
+    <addaction name="uiAction_cloneCurrentProfile"/>
+    <addaction name="uiAction_addNewProfile"/>
+    <addaction name="separator"/>
+   </widget>
    <addaction name="menuFile"/>
    <addaction name="menuEdit"/>
+   <addaction name="uiMenu_profiles"/>
    <addaction name="menuHelp"/>
   </widget>
   <widget class="QStatusBar" name="uiStatusbar_main"/>
@@ -497,6 +506,16 @@
    </property>
    <property name="shortcut">
     <string>End</string>
+   </property>
+  </action>
+  <action name="uiAction_cloneCurrentProfile">
+   <property name="text">
+    <string>Clone current</string>
+   </property>
+  </action>
+  <action name="uiAction_addNewProfile">
+   <property name="text">
+    <string>Add new</string>
    </property>
   </action>
  </widget>

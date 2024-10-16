@@ -1,1 +1,2 @@
 from .settings import SettingsSingleton
+from .globalSettings import GlobalSettingsSingleton
