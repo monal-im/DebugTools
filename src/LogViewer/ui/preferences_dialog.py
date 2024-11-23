@@ -21,11 +21,13 @@ class PreferencesDialog(QtWidgets.QDialog):
         self.history = {}
         self.misc = {}
         self.formatter = {}
+        self.loglevels = []
 
         self._createUiTab_color()
         self._createUiTab_history()
         self._createUiTab_misc()
         self._createUiTab_formatter()
+        self._createUiTab_loglevels()
 
         self.buttonBox.button(QtWidgets.QDialogButtonBox.RestoreDefaults).clicked.connect(self._restoreDefaults)
         self.buttonBox.button(QtWidgets.QDialogButtonBox.Discard).clicked.connect(self.reject)
@@ -42,6 +44,12 @@ class PreferencesDialog(QtWidgets.QDialog):
         SettingsSingleton().clearAllFormatters()
         for formatterNameLineEdit in self.formatter:
             SettingsSingleton().setFormatter(formatterNameLineEdit.text(), self.formatter[formatterNameLineEdit].toPlainText())
+        loglevels = {}
+        for loglevel in self.loglevels:
+            loglevels = loglevels | {
+                loglevel["fieldName"].text(): {"query": loglevel["query"].text(), "data": [loglevel["buttons"][button] for button in loglevel["buttons"]]}
+            }
+        SettingsSingleton().setLoglevels(loglevels)
         super().accept()
 
     def _getMiscWidgetValue(self, miscName):
@@ -72,24 +80,6 @@ class PreferencesDialog(QtWidgets.QDialog):
                 self.uiGridLayout_colorTab.addWidget(buttons[buttonIndex], colorIndex, buttonIndex+1)
         self.update()
 
-    def _createColorButton(self, colorName):
-        colorTuple = SettingsSingleton().getCssColorTuple(colorName)
-        rgbTuple = SettingsSingleton().getColorTuple(colorName)
-        buttons = []
-        for index in range(len(colorTuple)):
-            button = QtWidgets.QPushButton(self.uiTab_color)
-            if colorTuple[index] != None:
-                button.setText("rgb(%d, %d, %d)" % tuple(rgbTuple[index]))
-                logger.debug("rgbTuple: %s" % str(rgbTuple[index]))
-                button.setStyleSheet("background-color: %s; color: %s;" % (colorTuple[index], sharedUiHelpers.getCssContrastColor(*rgbTuple[index])))
-            else:
-                button.setText("Add")
-            button.clicked.connect(functools.partial(self._openColorPicker, colorName, index, button))
-            button.setContextMenuPolicy(QtCore.Qt.CustomContextMenu)
-            button.customContextMenuRequested.connect(functools.partial(self._delColor, colorName, index, button))
-            buttons.append(button)
-        return buttons
-
     def _openColorPicker(self, colorName, index, button):
         if self.colors[colorName][index] != None:
             color = QtWidgets.QColorDialog.getColor(self.colors[colorName][index], parent=self)
@@ -104,11 +94,13 @@ class PreferencesDialog(QtWidgets.QDialog):
             button.setText("rgb(%d, %d, %d)" % tuple(rgbColor))
             button.setStyleSheet("background-color: %s; color: %s;" % (colorTuple[index].name(), sharedUiHelpers.getCssContrastColor(*rgbColor)))
 
-    def _delColor(self, colorName, index, button):
-        self.colors[colorName][index] = None
+    def _delColor(self, colorName, index, button, colorType="color"):
+        if colorType != "loglevel":
+            self.colors[colorName][index] = None
+
         button.setStyleSheet("")
         button.setText("Add")
-    
+
     def _createUiTab_misc(self):
         miscSection = QtWidgets.QFormLayout()
         for miscName, miscValue in SettingsSingleton().items():
@@ -184,9 +176,8 @@ class PreferencesDialog(QtWidgets.QDialog):
 
             addSection = QtWidgets.QHBoxLayout()
             lineEdit = QtWidgets.QLineEdit()
-            button = QtWidgets.QPushButton()
+            button = QtWidgets.QPushButton("Add")
             button.clicked.connect(functools.partial(self._addComboboxItem, deletableQListWidget, lineEdit, combobox))
-            button.setText("Add")
             addSection.addWidget(button)
             addSection.addWidget(lineEdit) 
             historySection.addWidget(QtWidgets.QLabel(combobox, self))
@@ -240,13 +231,12 @@ class PreferencesDialog(QtWidgets.QDialog):
         code = QtWidgets.QPlainTextEdit()
         code.setPlaceholderText("def formatter(e, **g):\n\tglobals().update(g)\n\treturn \"%s %s\" % (e[\"timestamp\"], e[\"message\"])")
         self.syntaxHighlighters[""] = PythonHighlighter(code.document())
-        button = QtWidgets.QPushButton()
+        button = QtWidgets.QPushButton("Create")
         horizonalLayout = QtWidgets.QHBoxLayout()
         verticalLayout = QtWidgets.QVBoxLayout()
 
         verticalLayout.setAlignment(QtCore.Qt.AlignTop)
 
-        button.setText("Create")
         button.setIcon(self.style().standardIcon(getattr(QtWidgets.QStyle, "SP_DialogApplyButton")))
         button.clicked.connect(functools.partial(self._addFormatter, lineEdit, code, button))
 
@@ -262,6 +252,140 @@ class PreferencesDialog(QtWidgets.QDialog):
         self.uiVLayout_formatTabs.addLayout(horizonalLayout)
 
         return (lineEdit, button, code)
+
+    def _createUiTab_loglevels(self):
+        self.uiButton_addLoglevel.clicked.connect(self.addLoglevel)
+
+        fieldNames = SettingsSingleton().getFieldNames()
+        for fieldIndex in range(len(fieldNames)):
+            fieldName = fieldNames[fieldIndex]
+            uiLineEdit_fieldName = QtWidgets.QLineEdit()
+            uiLineEdit_fieldName.setText(fieldName)
+            self.uiGridLayout_loglevelsTab.addWidget(uiLineEdit_fieldName, fieldIndex, 0)
+            uiLineEdit_query = QtWidgets.QLineEdit()
+            uiLineEdit_query.setText(SettingsSingleton().getLoglevel(fieldName))
+            self.uiGridLayout_loglevelsTab.addWidget(uiLineEdit_query, fieldIndex, 1)
+
+            colorNames = SettingsSingleton().getLoglevelColorNames()
+            buttons = self._createLoglevelColorButton(colorNames[fieldIndex])
+            for buttonIndex in range(len(buttons)):
+                self.uiGridLayout_loglevelsTab.addWidget(list(buttons.keys())[buttonIndex], fieldIndex, buttonIndex+2)
+
+            delButton = QtWidgets.QPushButton()
+            delButton.setText("Del")
+            self.uiGridLayout_loglevelsTab.addWidget(delButton, fieldIndex, 5)
+
+            uiItems = {
+                "fieldName": uiLineEdit_fieldName,
+                "query": uiLineEdit_query, 
+                "buttons": buttons, 
+                "delButton": delButton
+            }
+            self.loglevels.append(uiItems)
+            delButton.clicked.connect(functools.partial(self.deleteLoglevel, uiItems))
+        self.update()
+
+    def deleteLoglevel(self, uiItems):
+        for itemName in uiItems:
+            if type(uiItems[itemName]) == dict:
+                for button in list(uiItems[itemName].keys()):
+                    button.hide()
+            else:
+                uiItems[itemName].hide()
+        del self.loglevels[self.loglevels.index(uiItems)]
+
+    def addLoglevel(self):
+        lastRowIndex = self.uiGridLayout_loglevelsTab.rowCount()
+
+        uiLineEdit_fieldName = QtWidgets.QLineEdit()
+        self.uiGridLayout_loglevelsTab.addWidget(uiLineEdit_fieldName, lastRowIndex, 0)
+        uiLineEdit_query = QtWidgets.QLineEdit()
+        self.uiGridLayout_loglevelsTab.addWidget(uiLineEdit_query, lastRowIndex, 1)
+
+        buttons = self._createLoglevelColorButton(None) #get index of item in dict in dict
+        for buttonIndex in range(len(buttons)):
+            self.uiGridLayout_loglevelsTab.addWidget(list(buttons.keys())[buttonIndex], lastRowIndex, buttonIndex+2)
+
+        delButton = QtWidgets.QPushButton("Del")
+        self.uiGridLayout_loglevelsTab.addWidget(delButton, lastRowIndex, 5)
+
+        uiItems = {
+            "fieldName": uiLineEdit_fieldName,
+            "query": uiLineEdit_query, 
+            "buttons": buttons, 
+            "delButton": delButton
+        }
+        self.loglevels.append(uiItems)
+        delButton.clicked.connect(functools.partial(self.deleteLoglevel, uiItems))
+        self.update()
+
+    def _createLoglevelColorButton(self, colorName):
+        buttons = {}
+        if colorName != None:
+            colorTuple = SettingsSingleton().getLoglevelCssColorTuple(colorName)
+            rgbTuple = SettingsSingleton().getLoglevelColorTuple(colorName)
+            for index in range(len(colorTuple)):
+                button = QtWidgets.QPushButton(self.uiTab_color)
+                if colorTuple[index] != None:
+                    button.setText("rgb(%d, %d, %d)" % tuple(rgbTuple[index]))
+                    logger.debug("rgbTuple: %s" % str(rgbTuple[index]))
+                    button.setStyleSheet("background-color: %s; color: %s;" % (colorTuple[index], sharedUiHelpers.getCssContrastColor(*rgbTuple[index])))
+                else:
+                    button.setText("Transperent")
+                button.setContextMenuPolicy(QtCore.Qt.CustomContextMenu)
+                button.clicked.connect(functools.partial(self._openLoglevelColorPicker, button))
+                button.customContextMenuRequested.connect(functools.partial(self._delLoglevelColor, button))
+                buttons[button] = rgbTuple[index]
+        else:
+            for index in range(2):
+                button = QtWidgets.QPushButton("Transperent", self.uiTab_color)
+                button.setContextMenuPolicy(QtCore.Qt.CustomContextMenu)
+                button.clicked.connect(functools.partial(self._openLoglevelColorPicker, button))
+                button.customContextMenuRequested.connect(functools.partial(self._delLoglevelColor, button))
+                buttons[button] = None
+        return buttons
+
+    def _createColorButton(self, colorName):
+        colorTuple = SettingsSingleton().getCssColorTuple(colorName)
+        rgbTuple = SettingsSingleton().getColorTuple(colorName)
+        buttons = []
+        for index in range(len(colorTuple)):
+            button = QtWidgets.QPushButton(self.uiTab_color)
+            if colorTuple[index] != None:
+                button.setText("rgb(%d, %d, %d)" % tuple(rgbTuple[index]))
+                logger.debug("rgbTuple: %s" % str(rgbTuple[index]))
+                button.setStyleSheet("background-color: %s; color: %s;" % (colorTuple[index], sharedUiHelpers.getCssContrastColor(*rgbTuple[index])))
+            else:
+                button.setText("Transperent")
+            button.setContextMenuPolicy(QtCore.Qt.CustomContextMenu)
+            button.clicked.connect(functools.partial(self._openColorPicker, colorName, index, button))
+            button.customContextMenuRequested.connect(functools.partial(self._delColor, colorName, index, button))
+            buttons.append(button)
+        return buttons
+
+    def _openLoglevelColorPicker(self, button):
+        loglevelIndex = None
+        for index in range(len(self.loglevels)):
+            if button in self.loglevels[index]["buttons"]:
+                color = self.loglevels[index]["buttons"][button]
+                loglevelIndex = index
+        if color != None:
+            color = QtWidgets.QColorDialog.getColor(QtGui.QColor(*color), parent=self)
+        else:
+            color = QtWidgets.QColorDialog.getColor(parent=self)
+
+        if color.isValid():
+            rgbColor = [color.red(), color.green(), color.blue()]
+            self.loglevels[loglevelIndex]["buttons"][button] = rgbColor
+            button.setText("rgb(%d, %d, %d)" % tuple(rgbColor))
+            button.setStyleSheet("background-color: %s; color: %s;" % ("#{:02x}{:02x}{:02x}".format(*rgbColor), sharedUiHelpers.getCssContrastColor(*rgbColor)))
+
+    def _delLoglevelColor(self, button):
+        for index in range(len(self.loglevels)):
+            if button in self.loglevels[index]["buttons"]:
+                self.loglevels[index]["buttons"][button] = None
+        button.setText("Transperent")
+        button.setStyleSheet("")
 
     @catch_exceptions(logger=logger)
     def _restoreDefaults(self, *args):

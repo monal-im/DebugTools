@@ -334,8 +334,12 @@
     <property name="title">
      <string>Profiles</string>
     </property>
+    <addaction name="uiAction_deleteCurrentProfile"/>
     <addaction name="uiAction_cloneCurrentProfile"/>
     <addaction name="uiAction_addNewProfile"/>
+    <addaction name="separator"/>
+    <addaction name="uiAction_exportCurrentProfile"/>
+    <addaction name="uiAction_importCurrentProfile"/>
     <addaction name="separator"/>
    </widget>
    <addaction name="menuFile"/>
@@ -510,12 +514,27 @@
   </action>
   <action name="uiAction_cloneCurrentProfile">
    <property name="text">
-    <string>Clone current</string>
+    <string>Clone Current Profile</string>
    </property>
   </action>
   <action name="uiAction_addNewProfile">
    <property name="text">
-    <string>Add new</string>
+    <string>Add New Profile</string>
+   </property>
+  </action>
+  <action name="uiAction_deleteCurrentProfile">
+   <property name="text">
+    <string>Delete Current Profile</string>
+   </property>
+  </action>
+  <action name="uiAction_exportCurrentProfile">
+   <property name="text">
+    <string>Export Current Profile</string>
+   </property>
+  </action>
+  <action name="uiAction_importCurrentProfile">
+   <property name="text">
+    <string>Import New Profile</string>
    </property>
   </action>
  </widget>

@@ -12,7 +12,6 @@ from .preferences_dialog import PreferencesDialog
 from .stack_pop_window import StackPopWindow
 from .stack_push_window import StackPushWindow
 from .new_profile_dialog import NewProfileDialog
-from .change_current_profile import ChangeCurrentProfile
 from shared.storage import Rawlog
 from shared.ui.utils import UiAutoloader
 from shared.utils import catch_exceptions
@@ -106,15 +105,20 @@ class MainWindow(QtWidgets.QMainWindow):
 
         self.uiAction_cloneCurrentProfile.triggered.connect(self.cloneCurrentProfile)
         self.uiAction_addNewProfile.triggered.connect(self.addNewProfile)
+        self.uiAction_deleteCurrentProfile.triggered.connect(self.deleteCurrentProfile)
 
         self.profiles = {}
         for name in GlobalSettingsSingleton().getProfiles():
-            profileAction = QtWidgets.QAction(name,self)
-            profileAction.triggered.connect(functools.partial(self.changeProfile, name)) 
+            displayName = GlobalSettingsSingleton().getProfileDisplayName(name)
+            profileAction = QtWidgets.QAction(displayName,self)
+            profileAction.triggered.connect(functools.partial(self.switchToProfile, name)) 
             self.uiMenu_profiles.addAction(profileAction)
-            self.profiles[name] = profileAction
+            self.profiles[name] = {"profileAction": profileAction, "displayName": displayName}
 
         self.switchToProfile(GlobalSettingsSingleton().getActiveProfile())
+
+        #uiAction_exportCurrentProfile
+        #uiAction_importCurrentProfile
 
     @catch_exceptions(logger=logger)
     def quit(self):
@@ -258,7 +262,7 @@ class MainWindow(QtWidgets.QMainWindow):
     
     def setCompleter(self, combobox):
         wordlist = self.rawlog.getCompleterList(lambda entry: entry["data"])
-        wordlist += ["True", "False", "true", "false"] + list(SettingsSingleton().getLoglevels().keys())
+        wordlist += ["True", "False", "true", "false"] + list(SettingsSingleton().getFieldNames())
 
         completer = Completer(wordlist, self)
         combobox.setCompleter(completer)
@@ -817,26 +821,14 @@ class MainWindow(QtWidgets.QMainWindow):
 
     def addNewProfile(self):
         self._createNewProfile(Paths.get_default_conf_filepath("profile.generic.json"))
-            
-    def changeProfile(self, profile):
-        self.switchToProfile(profile)
-        self.ChangeCurrentProfile = ChangeCurrentProfile()
-        self.ChangeCurrentProfile.show()
-        result = self.ChangeCurrentProfile.exec_()
-        if result == True:
-            # reload again if the loglevels changed
-            self.switchToProfile(profile)
-        
-        logger.debug(f"Changed to profile: {profile}")
 
     def switchToProfile(self, profile):
         # remove all icons
         for profileName in self.profiles:
-            self.profiles[profileName].setIcon(QtGui.QIcon(""))
+            self.profiles[profileName]["profileAction"].setIcon(QtGui.QIcon(""))
             # set icon for active profile
             if profileName == profile:
-                self.profiles[profile].setIcon(self.style().standardIcon(getattr(QStyle, "SP_DialogYesButton")))
-
+                self.profiles[profile]["profileAction"].setIcon(self.style().standardIcon(getattr(QStyle, "SP_DialogYesButton")))
         GlobalSettingsSingleton().setActiveProfile(profile)
 
         # reload ui
@@ -850,20 +842,35 @@ class MainWindow(QtWidgets.QMainWindow):
         self.newProfileDialog.show()
         result = self.newProfileDialog.exec_()
         if result:
-            profileName = f"profile.{self.newProfileDialog.getName()}.json"
+            displayName = self.newProfileDialog.getName()
+            profileName = f'profile.{"".join(character if (character.isalnum() or character in "_- ") else "_" for character in displayName)}.json'
 
             with open(pathToParentProfile, 'rb') as fp:
                 data = json.load(fp)
+                data["displayName"] = displayName
 
             with open(Paths.get_conf_filepath(profileName), 'w+') as fp:
                 json.dump(data, fp)
 
-            profileAction = QtWidgets.QAction(profileName, self)
-            profileAction.triggered.connect(functools.partial(self.changeProfile, profileName)) 
+            profileAction = QtWidgets.QAction(displayName, self)
+            profileAction.triggered.connect(functools.partial(self.switchToProfile, profileName)) 
             self.uiMenu_profiles.addAction(profileAction)
-            self.profiles[profileName] = profileAction
+            self.profiles[profileName] = {}
+            self.profiles[profileName]["profileAction"] = profileAction
+            self.profiles[profileName]["displayName"] = displayName
 
             self.switchToProfile(profileName)
+
+    def deleteCurrentProfile(self, profile):
+        if len(self.profiles) > 1:
+            profileName = GlobalSettingsSingleton().getActiveProfile()
+            self.profiles[profileName]["profileAction"].setVisible(False)
+            del self.profiles[profileName]
+            self.switchToProfile(list(self.profiles.keys())[0])
+            os.remove(Paths.get_conf_filepath(profileName))
+            self.statusbar.showDynamicText(str("Done ✓ | Profile deleted!"))  
+        else:
+            self.statusbar.showDynamicText(str("Error ✗ | You need more than one profile to delete one!"))  
 
     def _resolveIndex(self, model, index):
         # recursively map index in proxy model chain to get real rawlog index

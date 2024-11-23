@@ -7,6 +7,10 @@ from .globalSettings import GlobalSettingsSingleton
 import logging
 logger = logging.getLogger(__name__)
 
+class ColorType():
+    COLOR = 0
+    LOGLEVEL = 1
+
 class SettingsSingleton():
     _instance = None
 
@@ -137,75 +141,135 @@ class SettingsSingleton():
         
     def getColor(self, name):
         return self.getColorTuple(name)[0]
-    
+
     def getQColorTuple(self, name):
-        colorList = list(self.getColorTuple(name))
-        for color in range(len(colorList)):
-            if colorList[color] != None:
-                colorList[color] = QtGui.QColor(*colorList[color])
-        return colorList
-    
+        return self._getQColorTuple(name)
+
     def setQColorTuple(self, name, colors):
-        for color in range(len(colors)):
-            if colors[color] == None:
-                colors[color] = None
-            else:
-                colors[color] = colors[color].getRgb()[:3]
-        self.setColorTuple(name, colors)
+        self._setQColorTuple(name, colors)
 
     def getCssColorTuple(self, name):
-        colorList = list(self.getColorTuple(name))
+        return self._getCssColorTuple(name)
+
+    def setCssColorTuple(self, name, colors):
+        self._setCssColorTuple(name, colors)
+
+    def getColorTuple(self, name):
+        return self._getColorTuple(name)
+
+    def setColorTuple(self, name, colors):
+        self._setColorTuple(name, colors)
+
+    def getFieldNames(self):
+        return list(self.data["loglevel"].keys())
+
+    def getLoglevel(self, fieldName):
+        return self.data["loglevel"][fieldName]["query"]
+
+    def getLoglevelQColor(self, name):
+        return self.getLoglevelQColorTuple(name)[0]
+    
+    def getLoglevelCssColor(self, name):
+        return self.getLoglevelCssColorTuple(name)[0]
+    
+    def getLoglevelColorNames(self):
+        return list(self.data["loglevel"].keys())
+        
+    def getLoglevelColor(self, name):
+        return self.getLoglevelColorTuple(name)[0]
+
+    def getLoglevelQColorTuple(self, name):
+        return self._getQColorTuple(name, colorType=ColorType.LOGLEVEL)
+
+    def getLoglevelCssColorTuple(self, name):
+        return self._getCssColorTuple(name, colorType=ColorType.LOGLEVEL)
+
+    def getLoglevelColorTuple(self, name):
+        return self._getColorTuple(name, colorType=ColorType.LOGLEVEL)
+
+    def setLoglevelQColorTuple(self, name, colors):
+        self._setQColorTuple(name, colors, colorType=ColorType.LOGLEVEL)
+
+    def setLoglevelCssColorTuple(self, name, colors):
+        self._setCssColorTuple(name, colors, colorType=ColorType.LOGLEVEL)
+
+    def setLoglevelColorTuple(self, name, colors):
+        self._setColorTuple(name, colors, colorType=ColorType.LOGLEVEL)
+
+    def _getColorTuple(self, name, colorType=ColorType.COLOR):
+        colorList = []
+        if colorType == ColorType.LOGLEVEL:
+            for color in self.data["loglevel"][name]["data"]:
+                colorList.append(color)
+        if colorType == ColorType.COLOR:
+            for color in self.data["color"][name]["data"]:
+                colorList.append(color)
+        return colorList
+
+    def _getCssColorTuple(self, name, colorType=ColorType.COLOR):
+        if colorType == ColorType.LOGLEVEL:
+            colorList = list(self.getLoglevelColorTuple(name))
+        if colorType == ColorType.COLOR:
+            colorList = list(self.getColorTuple(name))
+
         for color in range(len(colorList)):
             if colorList[color] != None:
                 colorList[color] = "#{:02x}{:02x}{:02x}".format(*colorList[color])
         return colorList
 
-    def setCssColorTuple(self, name, colors):
+    def _getQColorTuple(self, name, colorType=ColorType.COLOR):
+        if colorType == ColorType.LOGLEVEL:
+            colorList = list(self.getLoglevelColorTuple(name))
+        if colorType == ColorType.COLOR:
+            colorList = list(self.getColorTuple(name))
+
+        for color in range(len(colorList)):
+            if colorList[color] != None:
+                colorList[color] = QtGui.QColor(*colorList[color])
+        return colorList
+
+    def setLoglevels(self, data):
+        self.data["loglevel"] = data
+        self._store()
+
+    def _setQColorTuple(self, name, colors, colorType=ColorType.COLOR):
+        for color in range(len(colors)):
+            if colors[color] == None:
+                colors[color] = None
+            else:
+                colors[color] = colors[color].getRgb()[:3]
+        if colorType == ColorType.COLOR:
+            self.setColorTuple(name, colors)
+        if colorType == ColorType.LOGLEVEL:
+            self.setLoglevelColorTuple(name, colors)
+
+    def _setCssColorTuple(self, name, colors, colorType=ColorType.COLOR):
         for color in range(len(colors)):
             if colors[color] == None:
                 colors[color] = None
             else:
                 colors[color] = [int(colors[color].lstrip('#')[i:i+2], 16) for i in (0, 2, 4)]
-        self.setColorTuple(name, colors)
+        if colorType == ColorType.COLOR:
+            self.setColorTuple(name, colors)
+        if colorType == ColorType.LOGLEVEL:
+            self.setLoglevelColorTuple(name, colors)
 
-    def getColorTuple(self, name):
-        colorList = []
-        for color in self.data["color"][name]["data"]:
-            colorList.append(color)
-        return colorList
-
-    def setColorTuple(self, name, colors):
-        self.data["color"][name]["data"] = []
-        for color in range(self.data["color"][name]["len"]):
-            if name in self.data["color"]:
-                self.data["color"][name]["data"].append(colors[color])
-            else:
-                self.data["color"][name]["data"].append(None)
+    def _setColorTuple(self, name, colors, colorType=ColorType.COLOR):
+        if colorType == ColorType.COLOR:
+            self.data["color"][name]["data"] = []
+            for color in range(self.data["color"][name]["len"]):
+                if name in self.data["color"]:
+                    self.data["color"][name]["data"].append(colors[color])
+                else:
+                    self.data["color"][name]["data"].append(None)
+        if colorType == ColorType.LOGLEVEL:
+            self.data["loglevel"][name]["data"] = []
+            for color in range(self.data["loglevel"][name]["len"]):
+                if name in self.data["loglevel"]:
+                    self.data["loglevel"][name]["data"].append(colors[color])
+                else:
+                    self.data["loglevel"][name]["data"].append(None)
         self._store()
-
-    def deleteColorName(self, name):
-        del self.data["color"][name]
-        self._store()
-
-    def addColorName(self, name):
-        self.data["color"][f"logline-{name.lower()}"] = {"len": 2, "data": [[0, 0, 0], None]}
-        self._store()
-
-    def getLoglevel(self):
-        return self.data["loglevel"]
-
-    def setLoglevel(self, loglevel):
-        self.data["loglevel"] = loglevel
-        self._store()
-
-    def getLoglevels(self):
-        return self.data["loglevels"]
-
-    def setLoglevels(self, loglevels):
-        self.data["loglevels"] = loglevels
-
-    def getLoglevelNames(self):
-        return list(self.data["loglevels"].keys())
 
     def _widgetName(self, widget):
         names = []
@@ -225,32 +289,36 @@ class SettingsSingleton():
             with open(self.path, 'rb') as fp:
                 self.data = json.load(fp)
             
-            '''
             # apply new defaults not yet stored in settings json
             for section in defaults:
-                for key in defaults[section]:
-                    if section not in self.data:
-                        logger.debug("Adding whole new settings section '%s'..." % section)
-                        self.data[section] = defaults[section]
-                    elif key not in self.data[section]:
-                        logger.debug("Adding settings key '%s' in section '%s'..." % (key, section))
-                        self.data[section][key] = defaults[section][key]
+                if section != "loglevel":
+                    for key in defaults[section]:
+                        if section not in self.data:
+                            logger.debug("Adding whole new settings section '%s'..." % section)
+                            self.data[section] = defaults[section]
+                        elif key not in self.data[section]:
+                            logger.debug("Adding settings key '%s' in section '%s'..." % (key, section))
+                            self.data[section][key] = defaults[section][key]
             
             # remove settings not specified in defaults
             for section in list(self.data.keys()):
-                if section not in defaults:
-                    logger.debug("Removing whole settings section '%s'..." % section)
-                    del self.data[section]
+                if section != "loglevel":
+                    if section not in defaults:
+                        logger.debug("Removing whole settings section '%s'..." % section)
+                        del self.data[section]
                 # we don't want to delete settings keys in other sections because only misc values have a default value
                 if section == "misc":
                     for key in list(self.data[section].keys()):
                         if key not in defaults[section]:
                             logger.debug("Removing settings key '%s' in section '%s'..." % (key, section))
                             del self.data[section][key]
-            '''
+            
         except:
             logger.info("File not loadable or does not exist: '%s', loading default config." % self.path)
             self.data = defaults
+            if len(GlobalSettingsSingleton().getProfiles()) == 0:
+                GlobalSettingsSingleton().setActiveProfile("profile.generic.json")
+                self.path = Paths.get_conf_filepath("profile.generic.json")
             with open(self.path, 'w+') as fp:
                 json.dump(self.data, fp)
 

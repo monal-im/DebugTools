@@ -28,6 +28,10 @@ class GlobalSettingsSingleton():
     def getProfiles(self):
         return [item for item in os.listdir(Paths.user_data_dir()) if item[:8] == "profile." and item[-5:] == ".json"]
 
+    def getProfileDisplayName(self, name):
+        with open(Paths.get_conf_filepath(name), 'rb') as fp:
+            return json.load(fp)["displayName"]
+
     def _load(self):
         logger.info("Loading default globalSettings from '%s'..." % self.defaultPath)
         with open(self.defaultPath, 'rb') as fp:
