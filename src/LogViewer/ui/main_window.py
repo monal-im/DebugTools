@@ -106,6 +106,8 @@ class MainWindow(QtWidgets.QMainWindow):
         self.uiAction_cloneCurrentProfile.triggered.connect(self.cloneCurrentProfile)
         self.uiAction_addNewProfile.triggered.connect(self.addNewProfile)
         self.uiAction_deleteCurrentProfile.triggered.connect(self.deleteCurrentProfile)
+        self.uiAction_exportCurrentProfile.triggered.connect(self.exportCurrentProfile)
+        self.uiAction_importCurrentProfile.triggered.connect(self.importCurrentProfile)
 
         self.profiles = {}
         for name in GlobalSettingsSingleton().getProfiles():
@@ -116,9 +118,6 @@ class MainWindow(QtWidgets.QMainWindow):
             self.profiles[name] = {"profileAction": profileAction, "displayName": displayName}
 
         self.switchToProfile(GlobalSettingsSingleton().getActiveProfile())
-
-        #uiAction_exportCurrentProfile
-        #uiAction_importCurrentProfile
 
     @catch_exceptions(logger=logger)
     def quit(self):
@@ -871,6 +870,27 @@ class MainWindow(QtWidgets.QMainWindow):
             self.statusbar.showDynamicText(str("Done ✓ | Profile deleted!"))  
         else:
             self.statusbar.showDynamicText(str("Error ✗ | You need more than one profile to delete one!"))  
+
+    def exportCurrentProfile(self):
+        file, check = QtWidgets.QFileDialog.getSaveFileName(None, "Export Profile", SettingsSingleton().getLastPath(), "Json (*.json);;All files (*)")
+        if check:
+            fileName = file.split("/")[-1]
+            with open(Paths.get_conf_filepath(GlobalSettingsSingleton().getActiveProfile()), 'rb') as fp:
+                data = json.load(fp)
+                data["displayName"] = fileName
+
+            with open(file, 'w+') as fp:
+                json.dump(data, fp)
+
+            self.statusbar.showDynamicText(str("Done ✓ | Profile exported!"))
+        else:
+            self.statusbar.showDynamicText(str("Error ✗ | Something went wrong exporting the profile!"))
+
+    def importCurrentProfile(self):
+        file, check = QtWidgets.QFileDialog.getOpenFileName(None, "Import Profile", SettingsSingleton().getLastPath(), "Json (*.json);;All files (*)")
+        if check:
+            self._createNewProfile(file)
+            self.statusbar.showDynamicText(str("Done ✓ | Profile imported!"))
 
     def _resolveIndex(self, model, index):
         # recursively map index in proxy model chain to get real rawlog index
