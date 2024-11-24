@@ -1,5 +1,6 @@
 import json
 from PyQt5 import QtGui, QtCore
+import enum
 
 from shared.utils import Paths
 from .globalSettings import GlobalSettingsSingleton
@@ -7,9 +8,9 @@ from .globalSettings import GlobalSettingsSingleton
 import logging
 logger = logging.getLogger(__name__)
 
-class ColorType():
-    COLOR = 0
-    LOGLEVEL = 1
+class ColorType(enum.Enum):
+    GLOBAL = enum.auto()
+    LOGLEVEL = enum.auto()
 
 class SettingsSingleton():
     _instance = None
@@ -18,7 +19,7 @@ class SettingsSingleton():
         if cls._instance is None:
             cls._instance = super(SettingsSingleton, cls).__new__(cls)
             cls._instance.path = Paths.get_conf_filepath(GlobalSettingsSingleton().getActiveProfile())
-            cls._instance.defaultPath = Paths.get_default_conf_filepath("profile.generic.json")
+            cls._instance.defaultPath = Paths.get_default_conf_filepath(GlobalSettingsSingleton().getDefaultProfile())
             cls._instance._load()
             logger.debug("Instanciated SettingsSingleton...")
         return cls._instance
@@ -26,7 +27,7 @@ class SettingsSingleton():
     def reload(cls):
         logger.debug("Reload SettingsSingleton")
         cls._instance.path = Paths.get_conf_filepath(GlobalSettingsSingleton().getActiveProfile())
-        cls._instance.defaultPath = Paths.get_default_conf_filepath("profile.generic.json")
+        cls._instance.defaultPath = Paths.get_default_conf_filepath(GlobalSettingsSingleton().getDefaultProfile())
         cls._instance._load()
     
     def __setitem__(self, key, value):
@@ -143,22 +144,22 @@ class SettingsSingleton():
         return self.getColorTuple(name)[0]
 
     def getQColorTuple(self, name):
-        return self._getQColorTuple(name)
+        return self.getGenericQColorTuple(name, ColorType.GLOBAL)
 
     def setQColorTuple(self, name, colors):
-        self._setQColorTuple(name, colors)
+        self.setGenericQColorTuple(name, colors, ColorType.GLOBAL)
 
     def getCssColorTuple(self, name):
-        return self._getCssColorTuple(name)
+        return self.getGenericCssColorTuple(name, ColorType.GLOBAL)
 
     def setCssColorTuple(self, name, colors):
-        self._setCssColorTuple(name, colors)
+        self.setGenericCssColorTuple(name, colors, ColorType.GLOBAL)
 
     def getColorTuple(self, name):
-        return self._getColorTuple(name)
+        return self.getGenericColorTuple(name, ColorType.GLOBAL)
 
     def setColorTuple(self, name, colors):
-        self._setColorTuple(name, colors)
+        self.setGenericColorTuple(name, colors, ColorType.GLOBAL)
 
     def getFieldNames(self):
         return list(self.data["loglevel"].keys())
@@ -179,37 +180,37 @@ class SettingsSingleton():
         return self.getLoglevelColorTuple(name)[0]
 
     def getLoglevelQColorTuple(self, name):
-        return self._getQColorTuple(name, colorType=ColorType.LOGLEVEL)
+        return self.getGenericQColorTuple(name, colorType=ColorType.LOGLEVEL)
 
     def getLoglevelCssColorTuple(self, name):
-        return self._getCssColorTuple(name, colorType=ColorType.LOGLEVEL)
+        return self.getGenericCssColorTuple(name, colorType=ColorType.LOGLEVEL)
 
     def getLoglevelColorTuple(self, name):
-        return self._getColorTuple(name, colorType=ColorType.LOGLEVEL)
+        return self.getGenericColorTuple(name, colorType=ColorType.LOGLEVEL)
 
     def setLoglevelQColorTuple(self, name, colors):
-        self._setQColorTuple(name, colors, colorType=ColorType.LOGLEVEL)
+        self.setGenericQColorTuple(name, colors, colorType=ColorType.LOGLEVEL)
 
     def setLoglevelCssColorTuple(self, name, colors):
-        self._setCssColorTuple(name, colors, colorType=ColorType.LOGLEVEL)
+        self.setGenericCssColorTuple(name, colors, colorType=ColorType.LOGLEVEL)
 
     def setLoglevelColorTuple(self, name, colors):
-        self._setColorTuple(name, colors, colorType=ColorType.LOGLEVEL)
+        self.setGenericColorTuple(name, colors, colorType=ColorType.LOGLEVEL)
 
-    def _getColorTuple(self, name, colorType=ColorType.COLOR):
+    def getGenericColorTuple(self, name, colorType=ColorType.GLOBAL):
         colorList = []
         if colorType == ColorType.LOGLEVEL:
             for color in self.data["loglevel"][name]["data"]:
                 colorList.append(color)
-        if colorType == ColorType.COLOR:
+        if colorType == ColorType.GLOBAL:
             for color in self.data["color"][name]["data"]:
                 colorList.append(color)
         return colorList
 
-    def _getCssColorTuple(self, name, colorType=ColorType.COLOR):
+    def getGenericCssColorTuple(self, name, colorType=ColorType.GLOBAL):
         if colorType == ColorType.LOGLEVEL:
             colorList = list(self.getLoglevelColorTuple(name))
-        if colorType == ColorType.COLOR:
+        if colorType == ColorType.GLOBAL:
             colorList = list(self.getColorTuple(name))
 
         for color in range(len(colorList)):
@@ -217,10 +218,10 @@ class SettingsSingleton():
                 colorList[color] = "#{:02x}{:02x}{:02x}".format(*colorList[color])
         return colorList
 
-    def _getQColorTuple(self, name, colorType=ColorType.COLOR):
+    def getGenericQColorTuple(self, name, colorType=ColorType.GLOBAL):
         if colorType == ColorType.LOGLEVEL:
             colorList = list(self.getLoglevelColorTuple(name))
-        if colorType == ColorType.COLOR:
+        if colorType == ColorType.GLOBAL:
             colorList = list(self.getColorTuple(name))
 
         for color in range(len(colorList)):
@@ -232,30 +233,30 @@ class SettingsSingleton():
         self.data["loglevel"] = data
         self._store()
 
-    def _setQColorTuple(self, name, colors, colorType=ColorType.COLOR):
+    def setGenericQColorTuple(self, name, colors, colorType=ColorType.GLOBAL):
         for color in range(len(colors)):
             if colors[color] == None:
                 colors[color] = None
             else:
                 colors[color] = colors[color].getRgb()[:3]
-        if colorType == ColorType.COLOR:
+        if colorType == ColorType.GLOBAL:
             self.setColorTuple(name, colors)
         if colorType == ColorType.LOGLEVEL:
             self.setLoglevelColorTuple(name, colors)
 
-    def _setCssColorTuple(self, name, colors, colorType=ColorType.COLOR):
+    def setGenericCssColorTuple(self, name, colors, colorType=ColorType.GLOBAL):
         for color in range(len(colors)):
             if colors[color] == None:
                 colors[color] = None
             else:
                 colors[color] = [int(colors[color].lstrip('#')[i:i+2], 16) for i in (0, 2, 4)]
-        if colorType == ColorType.COLOR:
+        if colorType == ColorType.GLOBAL:
             self.setColorTuple(name, colors)
         if colorType == ColorType.LOGLEVEL:
             self.setLoglevelColorTuple(name, colors)
 
-    def _setColorTuple(self, name, colors, colorType=ColorType.COLOR):
-        if colorType == ColorType.COLOR:
+    def setGenericColorTuple(self, name, colors, colorType=ColorType.GLOBAL):
+        if colorType == ColorType.GLOBAL:
             self.data["color"][name]["data"] = []
             for color in range(self.data["color"][name]["len"]):
                 if name in self.data["color"]:
@@ -316,9 +317,6 @@ class SettingsSingleton():
         except:
             logger.info("File not loadable or does not exist: '%s', loading default config." % self.path)
             self.data = defaults
-            if len(GlobalSettingsSingleton().getProfiles()) == 0:
-                GlobalSettingsSingleton().setActiveProfile("profile.generic.json")
-                self.path = Paths.get_conf_filepath("profile.generic.json")
             with open(self.path, 'w+') as fp:
                 json.dump(self.data, fp)
 

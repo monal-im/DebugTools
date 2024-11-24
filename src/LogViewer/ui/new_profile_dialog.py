@@ -15,7 +15,7 @@ class NewProfileDialog(QtWidgets.QDialog):
 
     def accept(self, *args):
         self.name = self.uiLineEdit_newProfileTitle.text()
-        if f'profile.{"".join(character if (character.isalnum() or character in "_- ") else "_" for character in self.name)}.json' in GlobalSettingsSingleton().getProfiles():
+        if GlobalSettingsSingleton().isNameExisting(self.name):
             self.uiLineEdit_newProfileTitle.setStyleSheet("color: red;")
         else:
             super().accept()

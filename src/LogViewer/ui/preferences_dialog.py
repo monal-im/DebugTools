@@ -331,14 +331,14 @@ class PreferencesDialog(QtWidgets.QDialog):
                     logger.debug("rgbTuple: %s" % str(rgbTuple[index]))
                     button.setStyleSheet("background-color: %s; color: %s;" % (colorTuple[index], sharedUiHelpers.getCssContrastColor(*rgbTuple[index])))
                 else:
-                    button.setText("Transperent")
+                    button.setText("Transparent")
                 button.setContextMenuPolicy(QtCore.Qt.CustomContextMenu)
                 button.clicked.connect(functools.partial(self._openLoglevelColorPicker, button))
                 button.customContextMenuRequested.connect(functools.partial(self._delLoglevelColor, button))
                 buttons[button] = rgbTuple[index]
         else:
             for index in range(2):
-                button = QtWidgets.QPushButton("Transperent", self.uiTab_color)
+                button = QtWidgets.QPushButton("Transparent", self.uiTab_color)
                 button.setContextMenuPolicy(QtCore.Qt.CustomContextMenu)
                 button.clicked.connect(functools.partial(self._openLoglevelColorPicker, button))
                 button.customContextMenuRequested.connect(functools.partial(self._delLoglevelColor, button))
@@ -356,7 +356,7 @@ class PreferencesDialog(QtWidgets.QDialog):
                 logger.debug("rgbTuple: %s" % str(rgbTuple[index]))
                 button.setStyleSheet("background-color: %s; color: %s;" % (colorTuple[index], sharedUiHelpers.getCssContrastColor(*rgbTuple[index])))
             else:
-                button.setText("Transperent")
+                button.setText("Transparent")
             button.setContextMenuPolicy(QtCore.Qt.CustomContextMenu)
             button.clicked.connect(functools.partial(self._openColorPicker, colorName, index, button))
             button.customContextMenuRequested.connect(functools.partial(self._delColor, colorName, index, button))
@@ -384,7 +384,7 @@ class PreferencesDialog(QtWidgets.QDialog):
         for index in range(len(self.loglevels)):
             if button in self.loglevels[index]["buttons"]:
                 self.loglevels[index]["buttons"][button] = None
-        button.setText("Transperent")
+        button.setText("Transparent")
         button.setStyleSheet("")
 
     @catch_exceptions(logger=logger)

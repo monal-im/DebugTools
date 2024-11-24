@@ -26,11 +26,33 @@ class GlobalSettingsSingleton():
         self._store()
 
     def getProfiles(self):
-        return [item for item in os.listdir(Paths.user_data_dir()) if item[:8] == "profile." and item[-5:] == ".json"]
+        profiles = [item for item in os.listdir(Paths.user_data_dir()) if item[:8] == "profile." and item[-5:] == ".json"]
+        if len(profiles) == 0:
+            return [self.getDefaultProfile()]
+        return profiles
 
     def getProfileDisplayName(self, name):
         with open(Paths.get_conf_filepath(name), 'rb') as fp:
             return json.load(fp)["displayName"]
+
+    def getDefaultProfile(self):
+        return "profile.generic.json"
+
+    def getFileNameFromDisplayName(self, displayName):
+        return f'profile.{"".join(character if (character.isalnum() or character in "_- ") else "_" for character in self.name)}.json'
+
+    def isNameExisting(self, displayName):
+        if self.getFileNameFromDisplayName(displayName) in self.getProfiles():
+            return True
+        return False
+
+    def createFileFromParentProfile(pathToParentProfile, displayName):
+        with open(pathToParentProfile, 'rb') as fp:
+            data = json.load(fp)
+            data["displayName"] = displayName
+
+        with open(Paths.get_conf_filepath(self.getFileNameFromDisplayName(displayName)), 'w+') as fp:
+            json.dump(data, fp)
 
     def _load(self):
         logger.info("Loading default globalSettings from '%s'..." % self.defaultPath)

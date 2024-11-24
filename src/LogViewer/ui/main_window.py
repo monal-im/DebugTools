@@ -28,7 +28,6 @@ LAZY_LOADING = 100
 @UiAutoloader
 class MainWindow(QtWidgets.QMainWindow):
     def __init__(self):
-        SettingsSingleton().loadDimensions(self)
         self.rawlog = Rawlog()
         self.file = None
         self.search = None
@@ -38,6 +37,18 @@ class MainWindow(QtWidgets.QMainWindow):
         self.selectedCombobox = self.uiCombobox_filterInput
 
         self.rawlogModel = None
+        
+        SettingsSingleton().loadDimensions(self)
+
+        self.profiles = {}
+        for name in GlobalSettingsSingleton().getProfiles():
+            displayName = GlobalSettingsSingleton().getProfileDisplayName(name)
+            profileAction = QtWidgets.QAction(displayName,self)
+            profileAction.triggered.connect(functools.partial(self.switchToProfile, name)) 
+            self.uiMenu_profiles.addAction(profileAction)
+            self.profiles[name] = {"profileAction": profileAction, "displayName": displayName}
+
+        self.switchToProfile(GlobalSettingsSingleton().getActiveProfile())
 
         self.queryStatus2colorMapping = {
             QueryStatus.EOF_REACHED:    SettingsSingleton().getColor("combobox-eof_reached"),
@@ -108,16 +119,6 @@ class MainWindow(QtWidgets.QMainWindow):
         self.uiAction_deleteCurrentProfile.triggered.connect(self.deleteCurrentProfile)
         self.uiAction_exportCurrentProfile.triggered.connect(self.exportCurrentProfile)
         self.uiAction_importCurrentProfile.triggered.connect(self.importCurrentProfile)
-
-        self.profiles = {}
-        for name in GlobalSettingsSingleton().getProfiles():
-            displayName = GlobalSettingsSingleton().getProfileDisplayName(name)
-            profileAction = QtWidgets.QAction(displayName,self)
-            profileAction.triggered.connect(functools.partial(self.switchToProfile, name)) 
-            self.uiMenu_profiles.addAction(profileAction)
-            self.profiles[name] = {"profileAction": profileAction, "displayName": displayName}
-
-        self.switchToProfile(GlobalSettingsSingleton().getActiveProfile())
 
     @catch_exceptions(logger=logger)
     def quit(self):
@@ -816,10 +817,10 @@ class MainWindow(QtWidgets.QMainWindow):
         return [self._resolveIndex(self.uiWidget_listView.model(), index) for index in self.uiWidget_listView.selectedIndexes()]
 
     def cloneCurrentProfile(self):
-        self._createNewProfile(Paths.get_conf_filepath(GlobalSettingsSingleton().getActiveProfile()))
+        self._createNewProfileFromFile(Paths.get_conf_filepath(GlobalSettingsSingleton().getActiveProfile()))
 
     def addNewProfile(self):
-        self._createNewProfile(Paths.get_default_conf_filepath("profile.generic.json"))
+        self._createNewProfileFromFile(Paths.get_default_conf_filepath(GlobalSettingsSingleton().getDefaultProfile()))
 
     def switchToProfile(self, profile):
         # remove all icons
@@ -836,20 +837,14 @@ class MainWindow(QtWidgets.QMainWindow):
             self.openLogFile(self.file)
         self.update
 
-    def _createNewProfile(self, pathToParentProfile):
+    def _createNewProfileFromFile(self, pathToParentProfile):
         self.newProfileDialog = NewProfileDialog()
         self.newProfileDialog.show()
         result = self.newProfileDialog.exec_()
         if result:
             displayName = self.newProfileDialog.getName()
-            profileName = f'profile.{"".join(character if (character.isalnum() or character in "_- ") else "_" for character in displayName)}.json'
-
-            with open(pathToParentProfile, 'rb') as fp:
-                data = json.load(fp)
-                data["displayName"] = displayName
-
-            with open(Paths.get_conf_filepath(profileName), 'w+') as fp:
-                json.dump(data, fp)
+            profileName = GlobalSettingsSingleton().getFileNameFromDisplayName(displayName)
+            GlobalSettingsSingleton().createFileFromParentProfile(pathToParentProfile, displayName)
 
             profileAction = QtWidgets.QAction(displayName, self)
             profileAction.triggered.connect(functools.partial(self.switchToProfile, profileName)) 
@@ -877,7 +872,6 @@ class MainWindow(QtWidgets.QMainWindow):
             fileName = file.split("/")[-1]
             with open(Paths.get_conf_filepath(GlobalSettingsSingleton().getActiveProfile()), 'rb') as fp:
                 data = json.load(fp)
-                data["displayName"] = fileName
 
             with open(file, 'w+') as fp:
                 json.dump(data, fp)
@@ -889,7 +883,7 @@ class MainWindow(QtWidgets.QMainWindow):
     def importCurrentProfile(self):
         file, check = QtWidgets.QFileDialog.getOpenFileName(None, "Import Profile", SettingsSingleton().getLastPath(), "Json (*.json);;All files (*)")
         if check:
-            self._createNewProfile(file)
+            self._createNewProfileFromFile(file)
             self.statusbar.showDynamicText(str("Done ✓ | Profile imported!"))
 
     def _resolveIndex(self, model, index):

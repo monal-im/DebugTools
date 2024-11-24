@@ -43,10 +43,10 @@ class RawlogModel(QtCore.QAbstractListModel):
         entry = self.rawlog[index]["data"]
         for fieldName in SettingsSingleton().getFieldNames():
             if eval(SettingsSingleton().getLoglevel(fieldName), {
-                    "true" : True,
-                    "false": False,
-                }, entry):
-                    return SettingsSingleton().getLoglevelQColorTuple(fieldName)
+                "true" : True,
+                "false": False,
+            }, entry):
+                return SettingsSingleton().getLoglevelQColorTuple(fieldName)
         return (QtGui.QColor(0, 0, 0), None)
     
     @catch_exceptions(logger=logger)
