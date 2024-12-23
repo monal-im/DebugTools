@@ -409,7 +409,7 @@ class MainWindow(QtWidgets.QMainWindow):
                 self.searchPrevious()
         else:
             if result != None:
-                self.lazyItemModel.setCurrentRow(self.filterModel.mapFromSource(self.filterModel.createIndex(result, 0)).row())
+                self.uiWidget_listView.model().setCurrentRow(self.filterModel.mapFromSource(self.filterModel.createIndex(result, 0)).row())
 
                 self.uiWidget_listView.setFocus()
         
@@ -466,7 +466,7 @@ class MainWindow(QtWidgets.QMainWindow):
             self._updateStatusbar()
 
             if currentSelectetLine:
-                self.lazyItemModel.setCurrentRow(currentSelectetLine)
+                self.uiWidget_listView.model().setCurrentRow(currentSelectetLine)
 
             self.toggleUiItems()
     
@@ -572,7 +572,7 @@ class MainWindow(QtWidgets.QMainWindow):
         # prevent switching to row if that row is already selected
         rowIndex = self.filterModel.mapFromSource(self.filterModel.createIndex(self.uiSpinBox_goToRow.value(), 0)).row()
         if self.filterModel.isRowVisible(rowIndex):
-            self.lazyItemModel.setCurrentRow(rowIndex)
+            self.uiWidget_listView.model().setCurrentRow(rowIndex)
         else:
             self.statusbar.showDynamicText(str("Error ✗ | This is not visible"))  
 
@@ -583,7 +583,7 @@ class MainWindow(QtWidgets.QMainWindow):
             if self.filterModel.isRowVisible(index):
                 break
         with self.lazyItemModel.triggerScrollChanges():
-            self.lazyItemModel.setCurrentRow(index)
+            self.uiWidget_listView.model().setCurrentRow(index)
             self.uiWidget_listView.scrollToTop()
             #self.statusbar.showDynamicText(str("Done ✓ | Switched to first row: %d" % index))
 
@@ -591,7 +591,7 @@ class MainWindow(QtWidgets.QMainWindow):
     def goToLastRow(self, *args):
         # set last row as current row
         with self.lazyItemModel.triggerScrollChanges():
-            self.lazyItemModel.setCurrentRow(self.filterModel.rowCount(None)-1)
+            self.uiWidget_listView.model().setCurrentRow(self.filterModel.rowCount(None)-1)
             self.uiWidget_listView.scrollToBottom()
             #self.statusbar.showDynamicText(str("Done ✓ | Switched to first row: %d" % index))
 
@@ -601,7 +601,7 @@ class MainWindow(QtWidgets.QMainWindow):
             return
 
         visualItemRect = self.uiWidget_listView.indexAt(self.uiWidget_listView.viewport().contentsRect().topLeft()).row()
-        self.lazyItemModel.setCurrentRow(visualItemRect)
+        self.uiWidget_listView.model().setCurrentRow(visualItemRect)
         #self.statusbar.showDynamicText(str("Done ✓ | Switched to the first line in the viewport: %d" % lastIndex))
 
     @catch_exceptions(logger=logger)
@@ -610,7 +610,7 @@ class MainWindow(QtWidgets.QMainWindow):
             return
         
         visualItemRect = self.uiWidget_listView.indexAt(self.uiWidget_listView.viewport().contentsRect().bottomLeft()).row()
-        self.lazyItemModel.setCurrentRow(visualItemRect)
+        self.uiWidget_listView.model().setCurrentRow(visualItemRect)
         #self.statusbar.showDynamicText(str("Done ✓ | Switched to the last line in the viewport: %d" % lastIndex))
     
     @catch_exceptions(logger=logger)
@@ -698,7 +698,7 @@ class MainWindow(QtWidgets.QMainWindow):
             self.uiCombobox_searchInput.lineEdit().setSelection(stack["search"]["selection"]["start"], stack["search"]["selection"]["length"])
             if stack["search"]["instance"]:
                 # Before continuing the search, we set the row so that the search starts at the correct index
-                self.lazyItemModel.setCurrentRow(stack["search"]["currentLine"])
+                self.uiWidget_listView.model().setCurrentRow(stack["search"]["currentLine"])
                 self.search = stack["search"]["instance"]
                 self.searchNext()
                 self.searchPrevious()
@@ -710,7 +710,7 @@ class MainWindow(QtWidgets.QMainWindow):
                 
         # unpacking details
         if stack["detail"]["isOpen"]:
-            self.lazyItemModel.setCurrentRow(stack["detail"]["currentDetailIndex"])
+            self.uiWidget_listView.model().setCurrentRow(stack["detail"]["currentDetailIndex"])
             self.inspectLine()
             self.uiTable_characteristics.setFixedHeight(stack["detail"]["size"])
             if stack["detail"]["size"] == 0:
@@ -718,7 +718,7 @@ class MainWindow(QtWidgets.QMainWindow):
 
         # unpacking selected items and scroll position
         if stack["selectedLine"]:
-            self.lazyItemModel.setCurrentRow(stack["selectedLine"])
+            self.uiWidget_listView.model().setCurrentRow(stack["selectedLine"])
         self.uiWidget_listView.verticalScrollBar().setValue(stack["scrollPosVertical"])
         self.uiWidget_listView.horizontalScrollBar().setValue(stack["scrollPosHorizontal"])
 

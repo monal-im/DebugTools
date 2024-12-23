@@ -68,6 +68,13 @@ class ProxyModel(QtCore.QAbstractProxyModel):
     def columnCount(self, index):
         return self.sourceModel().columnCount(index)
     
+    @catch_exceptions(logger=logger)
+    def setCurrentRow(self, row):
+        index = self.createIndex(row, 0)
+        logger.info(f"Setting row {row} to index {index.row()}")
+        # No mapFromSource required, because it sets the real index start and end points visible
+        self.listView().setCurrentIndex(self.mapFromSource(index))
+
     @functools.lru_cache(typed=True)
     @catch_exceptions(logger=logger)
     def listView(self):

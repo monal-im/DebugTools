@@ -134,3 +134,9 @@ class RawlogModel(QtCore.QAbstractListModel):
     @catch_exceptions(logger=logger)
     def listView(self):
         return self.parent
+
+    @catch_exceptions(logger=logger)
+    def setCurrentRow(self, row):
+        index = self.createIndex(row, 0)
+        logger.info(f"Setting row {row} to index {index.row()}")
+        self.listView().setCurrentIndex(index)
