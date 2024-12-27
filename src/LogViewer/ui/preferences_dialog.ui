@@ -17,7 +17,7 @@
    <item>
     <widget class="QTabWidget" name="tabWidget">
      <property name="currentIndex">
-      <number>0</number>
+      <number>2</number>
      </property>
      <widget class="QWidget" name="uiTab_color">
       <attribute name="title">
@@ -73,16 +73,6 @@
        </item>
       </layout>
      </widget>
-     <widget class="QWidget" name="uiTab_history">
-      <attribute name="title">
-       <string>&amp;History</string>
-      </attribute>
-      <layout class="QVBoxLayout" name="verticalLayout_3">
-       <item>
-        <layout class="QVBoxLayout" name="uiVLayout_historyTab"/>
-       </item>
-      </layout>
-     </widget>
      <widget class="QWidget" name="tab">
       <attribute name="title">
        <string>Loglevels</string>
@@ -117,6 +107,16 @@
           </widget>
          </item>
         </layout>
+       </item>
+      </layout>
+     </widget>
+     <widget class="QWidget" name="uiTab_history">
+      <attribute name="title">
+       <string>&amp;History</string>
+      </attribute>
+      <layout class="QVBoxLayout" name="verticalLayout_3">
+       <item>
+        <layout class="QVBoxLayout" name="uiVLayout_historyTab"/>
        </item>
       </layout>
      </widget>
