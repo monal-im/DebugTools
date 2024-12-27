@@ -164,6 +164,9 @@ class SettingsSingleton():
     def getFieldNames(self):
         return list(self.data["loglevel"].keys())
 
+    def getLoglevels(self):
+        return {k:self.getLoglevel(k) for k in self.getFieldNames()}  
+
     def getLoglevel(self, fieldName):
         return self.data["loglevel"][fieldName]["query"]
 

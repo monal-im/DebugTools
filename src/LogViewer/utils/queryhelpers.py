@@ -1,7 +1,7 @@
 import logging
 from enum import Enum
 
-from shared.utils.constants import LOGLEVELS
+from LogViewer.storage import SettingsSingleton
 
 logger = logging.getLogger(__name__)
 
@@ -21,7 +21,7 @@ def matchQuery(query, rawlog, index, entry=None, usePython=True):
             entry = rawlog[index]['data']
         if usePython:
             if eval(query, {
-                **LOGLEVELS,
+                **SettingsSingleton().getLoglevels(),
                 "true" : True,
                 "false": False,
             }, entry):

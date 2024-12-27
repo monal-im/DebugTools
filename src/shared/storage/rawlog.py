@@ -8,7 +8,6 @@ from queue import Queue
 import logging
 
 from shared.utils import randread
-from shared.utils.constants import LOGLEVELS
 try:
     from .udp_server import UdpServer
     hasLogserver = True
@@ -156,8 +155,7 @@ class Rawlog:
                                 self._append_entry({
                                     "__warning": True,
                                     "__virtual": True,
-                                    "flag": LOGLEVELS["STATUS"],    # this is status logline (a fake loglevel only used by the logviewer itself)
-                                    "message": message,
+                                    "__message": message,
                                 }, custom_load_callback)
                                 readsize = fp.tell()        # fix readsize value
                                 break
@@ -167,8 +165,7 @@ class Rawlog:
                         message = "Processid changed from %s to %s..." % (old_processid, entry["_processID"])
                         self._append_entry({
                             "__virtual": True,
-                            "flag": LOGLEVELS["STATUS"],    # this is status logline (a fake loglevel only used by the logviewer itself)
-                            "message": message,
+                            "__message": message,
                         }, custom_load_callback)
                     self._append_entry(entry, custom_load_callback)
                     if "_processID" in entry:
