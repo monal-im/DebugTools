@@ -11,6 +11,15 @@ class FilterModel(ProxyModel):
         super().__init__(sourceModel, parent, handledSignals=[])
         self.clearFilter()
 
+        self.rowsAboutToBeInserted.connect(self.processRowsAboutToBeInserted)
+        self.rowsInserted.connect(self.processRowsInserted)
+
+    def processRowsAboutToBeInserted(self):
+        pass
+
+    def processRowsInserted(self):
+        self.filter(self.query, update_progressbar=None)
+
     def rowCount(self, index):
         return self.visibleCounter
     
@@ -19,7 +28,8 @@ class FilterModel(ProxyModel):
             return False
         return self.proxyData.getVisibility(index)
 
-    def filter(self, query, update_progressbar):
+    def filter(self, query, update_progressbar=None):
+        self.query = query
         self.visibleCounter = 0        
         error = None
 
@@ -33,9 +43,10 @@ class FilterModel(ProxyModel):
                 self._addToVisibilityList(rawlogPosition, False)
 
             self.visibleCounter += 1 if result["matching"] else 0
-            if update_progressbar(rawlogPosition, self.sourceModel().rowCount(None)) == True:
-                self.clearFilter()
-                break
+            if update_progressbar != None:
+                if update_progressbar(rawlogPosition, self.sourceModel().rowCount(None)) == True:
+                    self.clearFilter()
+                    break
         visibilityList = self._sealVisibilityList(rawlogPosition)
 
         if error != None:
@@ -60,6 +71,8 @@ class FilterModel(ProxyModel):
         return (error, self.visibleCounter) 
     
     def clearFilter(self):
+        # The query must be of string type
+        self.query = "True"
         self.visibleCounter = self.sourceModel().rowCount(None)
         self.beginInsertRows(self.parent(), 0, self.visibleCounter+1)
         self.proxyData.clear(True)

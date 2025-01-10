@@ -5,7 +5,7 @@ import struct
 import gzip
 import io
 from queue import Queue
-import logging
+from PyQt5 import QtCore
 
 from shared.utils import randread
 try:
@@ -14,7 +14,9 @@ try:
 except ImportError:
     hasLogserver = False
 
+import logging
 logger = logging.getLogger(__name__)
+
 PREFIX_FORMAT = "!L"        # constant defining the struct.{pack,unpack} format of our length prefix
 LENGTH_BITS_NEEDED = 20
 
@@ -22,8 +24,12 @@ LENGTH_BITS_NEEDED = 20
 class AbortRawlogLoading(RuntimeError):
     pass
 
-class Rawlog:
+class Rawlog(QtCore.QObject):
+    beginInsertRows = QtCore.pyqtSignal()
+    endInsertRows = QtCore.pyqtSignal()
+
     def __init__(self, to_load=None, **kwargs):
+        super(Rawlog, self).__init__()
         self.clear()
         if to_load == None:
             return
@@ -60,11 +66,11 @@ class Rawlog:
             self.needs_custom_callbacks = True
         
         queue = Queue(128)
-        server = UdpServer(queue, key, host=host, port=port)
+        self.server = UdpServer(queue, key, host=host, port=port)
         
         def poll(stop=False):
             if stop:
-                server.stop()
+                self.server.stop()
                 return False
             retval = not queue.empty()
             while not queue.empty():
@@ -161,12 +167,8 @@ class Rawlog:
                                 break
                         continue        # continue reading (eof will be automatically handled by our normal code, too)
                     
-                    if old_processid != None and entry["_processID"] != old_processid:
-                        message = "Processid changed from %s to %s..." % (old_processid, entry["_processID"])
-                        self._append_entry({
-                            "__virtual": True,
-                            "__message": message,
-                        }, custom_load_callback)
+                    self._append_entry(self.server.correctProcessId(old_processid, entry["_processID"]))
+
                     self._append_entry(entry, custom_load_callback)
                     if "_processID" in entry:
                         old_processid = entry["_processID"]
@@ -289,6 +291,14 @@ class Rawlog:
         if not custom_entry:
             return
         self.data.append(custom_entry)
+            
+    def appendUdpEntrys(self, entrys, custom_load_callback=None):
+        self.beginInsertRows.emit()
+
+        for entry in entrys:
+            self._append_entry(entry, custom_load_callback)
+
+        self.endInsertRows.emit()
     
     # see https://stackoverflow.com/a/47080739
     def _is_gzip_file(self, fp):

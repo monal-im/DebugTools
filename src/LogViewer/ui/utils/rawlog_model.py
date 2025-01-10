@@ -13,11 +13,15 @@ LRU_MAXSIZE = 1024*1024
 
 class RawlogModel(QtCore.QAbstractListModel):
     @catch_exceptions(logger=logger)
-    def __init__(self, rawlog, parent=None):
+    def __init__(self, rawlog, parent=None, udpStream=True):
         super().__init__(parent)
         self.parent = parent
         self.rawlog = rawlog
         self.formatter = self.createFormatter()
+
+        if udpStream == True:
+            self.rawlog.beginInsertRows.connect(self.beginAppendUdpEntrys)
+            self.rawlog.endInsertRows.connect(self.endAppendUdpEntrys)
     
     @catch_exceptions(logger=logger)
     def reloadSettings(self):
@@ -41,12 +45,15 @@ class RawlogModel(QtCore.QAbstractListModel):
     @catch_exceptions(logger=logger)
     def _getQColorTuple(self, index):
         entry = self.rawlog[index]["data"]
-        for fieldName in SettingsSingleton().getFieldNames():
-            if eval(SettingsSingleton().getLoglevel(fieldName), {
-                "true" : True,
-                "false": False,
-            }, entry):
-                return SettingsSingleton().getLoglevelQColorTuple(fieldName)
+        try:
+            for fieldName in SettingsSingleton().getFieldNames():
+                if eval(SettingsSingleton().getLoglevel(fieldName), {
+                    "true" : True,
+                    "false": False,
+                }, entry):
+                    return SettingsSingleton().getLoglevelQColorTuple(fieldName)
+        except:
+            pass
         return (QtGui.QColor(0, 0, 0), None)
     
     @catch_exceptions(logger=logger)
@@ -140,3 +147,13 @@ class RawlogModel(QtCore.QAbstractListModel):
         index = self.createIndex(row, 0)
         logger.info(f"Setting row {row} to index {index.row()}")
         self.listView().setCurrentIndex(index)
+
+    @catch_exceptions(logger=logger)
+    def beginAppendUdpEntrys(self):
+        self.beginInsertRows(self.createIndex(1, 0), 0, 1)
+
+    @catch_exceptions(logger=logger)
+    def endAppendUdpEntrys(self):
+        self.data(self.createIndex(0, 0), QtCore.Qt.DisplayRole)
+        self.endInsertRows()
+        
