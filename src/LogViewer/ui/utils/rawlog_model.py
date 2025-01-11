@@ -18,6 +18,7 @@ class RawlogModel(QtCore.QAbstractListModel):
         self.parent = parent
         self.rawlog = rawlog
         self.formatter = self.createFormatter()
+        self.lastRowCount = 0
 
         if udpStream == True:
             self.rawlog.beginInsertRows.connect(self.beginAppendUdpEntrys)
@@ -150,10 +151,9 @@ class RawlogModel(QtCore.QAbstractListModel):
 
     @catch_exceptions(logger=logger)
     def beginAppendUdpEntrys(self):
-        self.beginInsertRows(self.createIndex(1, 0), 0, 1)
+        self.beginInsertRows(self.createIndex(len(self.rawlog)-self.lastRowCount, 0), self.lastRowCount, len(self.rawlog))
+        self.lastRowCount = len(self.rawlog)
 
     @catch_exceptions(logger=logger)
     def endAppendUdpEntrys(self):
-        self.data(self.createIndex(0, 0), QtCore.Qt.DisplayRole)
         self.endInsertRows()
-        

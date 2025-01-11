@@ -14,11 +14,8 @@ class FilterModel(ProxyModel):
         self.rowsAboutToBeInserted.connect(self.processRowsAboutToBeInserted)
         self.rowsInserted.connect(self.processRowsInserted)
 
-    def processRowsAboutToBeInserted(self):
-        pass
-
     def processRowsInserted(self):
-        self.filter(self.query, update_progressbar=None)
+        self.filter(self.query)
 
     def rowCount(self, index):
         return self.visibleCounter
