@@ -25,8 +25,7 @@ class AbortRawlogLoading(RuntimeError):
     pass
 
 class Rawlog(QtCore.QObject):
-    beginInsertRows = QtCore.pyqtSignal()
-    endInsertRows = QtCore.pyqtSignal()
+    finishInsertRows = QtCore.pyqtSignal()
 
     def __init__(self, to_load=None, **kwargs):
         super(Rawlog, self).__init__()
@@ -53,6 +52,7 @@ class Rawlog(QtCore.QObject):
     def clear(self):
         self.data = []
         self.needs_custom_callbacks = False
+        self.server = None
     
     def stream_rawlog(self, key, /, host="::", port=5555, custom_load_callback=None):
         if not hasLogserver:
@@ -167,11 +167,13 @@ class Rawlog(QtCore.QObject):
                                 break
                         continue        # continue reading (eof will be automatically handled by our normal code, too)
                     
-                    self._append_entry(self.server.correctProcessId(old_processid, entry["_processID"]))
-
-                    self._append_entry(entry, custom_load_callback)
-                    if "_processID" in entry:
-                        old_processid = entry["_processID"]
+                    # if the udpServer is configured -> get data from udpServer
+                    if self.server != None:
+                        self._append_entry(self.server.correctProcessId(old_processid, entry["_processID"]))
+                    else:
+                        self._append_entry(entry, custom_load_callback)
+                        if "_processID" in entry:
+                            old_processid = entry["_processID"]
                     
                     if progress_callback != None:
                         # the callback returns True if it wants to cancel the loading
@@ -292,13 +294,11 @@ class Rawlog(QtCore.QObject):
             return
         self.data.append(custom_entry)
             
-    def appendUdpEntrys(self, entrys, custom_load_callback=None):
-        self.beginInsertRows.emit()
-
-        for entry in entrys:
+    def appendUdpEntries(self, entries, custom_load_callback=None):
+        for entry in entries:
             self._append_entry(entry, custom_load_callback)
 
-        self.endInsertRows.emit()
+        self.finishInsertRows.emit()
     
     # see https://stackoverflow.com/a/47080739
     def _is_gzip_file(self, fp):

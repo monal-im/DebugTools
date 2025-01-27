@@ -13,16 +13,16 @@ LRU_MAXSIZE = 1024*1024
 
 class RawlogModel(QtCore.QAbstractListModel):
     @catch_exceptions(logger=logger)
-    def __init__(self, rawlog, parent=None, udpStream=True):
+    def __init__(self, rawlog, parent=None, udpServer=None):
         super().__init__(parent)
         self.parent = parent
         self.rawlog = rawlog
         self.formatter = self.createFormatter()
         self.lastRowCount = 0
 
-        if udpStream == True:
-            self.rawlog.beginInsertRows.connect(self.beginAppendUdpEntrys)
-            self.rawlog.endInsertRows.connect(self.endAppendUdpEntrys)
+        if udpServer != None:
+            self.rawlog.finishInsertRows.connect(self.endAppendUdpEntries)
+            udpServer.newMessage.connect(self.beginAppendUdpEntries)
     
     @catch_exceptions(logger=logger)
     def reloadSettings(self):
@@ -150,10 +150,11 @@ class RawlogModel(QtCore.QAbstractListModel):
         self.listView().setCurrentIndex(index)
 
     @catch_exceptions(logger=logger)
-    def beginAppendUdpEntrys(self):
-        self.beginInsertRows(self.createIndex(len(self.rawlog)-self.lastRowCount, 0), self.lastRowCount, len(self.rawlog))
-        self.lastRowCount = len(self.rawlog)
+    def beginAppendUdpEntries(self, entries):
+        newRowCount = len(self.rawlog)+len(entries)
+        self.beginInsertRows(self.createIndex(newRowCount - len(self.rawlog), 0), len(self.rawlog), newRowCount)
+        self.rawlog.appendUdpEntries(entries)
 
     @catch_exceptions(logger=logger)
-    def endAppendUdpEntrys(self):
+    def endAppendUdpEntries(self):
         self.endInsertRows()
