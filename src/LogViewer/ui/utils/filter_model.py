@@ -15,10 +15,10 @@ class FilterModel(ProxyModel):
         self.rowsInserted.connect(self.processRowsInserted)
 
     def processRowsAboutToBeInserted(self):
-        pass
+        self.start = self.sourceModel().rowCount(None)
 
     def processRowsInserted(self):
-        self.filter(self.query)
+        self.filterNewUpdEntries(self.start)
 
     def rowCount(self, index):
         return self.visibleCounter
@@ -27,14 +27,21 @@ class FilterModel(ProxyModel):
         if index < 0 or index >= self.sourceModel().rowCount(None):
             return False
         return self.proxyData.getVisibility(index)
-
+    
+    def filterNewUpdEntries(self, start):
+        self.filterTemplate(self.query, start=start)
+    
     def filter(self, query, update_progressbar=None):
         self.query = query
-        self.visibleCounter = 0        
-        error = None
+        self.visibleCounter = 0   
 
         self._initVisibilityList()
-        for rawlogPosition in range(self.sourceModel().rowCount(None)):
+        return self.filterTemplate(self.query, start=0, update_progressbar=update_progressbar)
+
+    def filterTemplate(self, query, start=0, update_progressbar=None):
+        error = None
+
+        for rawlogPosition in range(start, self.sourceModel().rowCount(None)):
             result = matchQuery(query, self.sourceModel().rawlog, rawlogPosition, usePython=SettingsSingleton()["usePythonFilter"])
             if result["status"] == QueryStatus.QUERY_OK:
                 self._addToVisibilityList(rawlogPosition, result["matching"])
@@ -53,7 +60,7 @@ class FilterModel(ProxyModel):
             self.clearFilter()
             return (error, self.visibleCounter) 
 
-        for item in visibilityList:
+        for item in visibilityList[-start:]:
             if item["visibility"]:
                 self.beginInsertRows(self.parent(), item["start"], item["end"])
                 for index in range(item["start"], item["end"]):
@@ -77,3 +84,4 @@ class FilterModel(ProxyModel):
         self.beginInsertRows(self.parent(), 0, self.visibleCounter+1)
         self.proxyData.clear(True)
         self.endInsertRows()
+        self._initVisibilityList()

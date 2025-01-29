@@ -5,7 +5,7 @@ import datetime
 
 from LogViewer.storage import SettingsSingleton
 from LogViewer.storage import GlobalSettingsSingleton
-from LogViewer.utils import Search, AbortSearch, QueryStatus
+from LogViewer.utils import Search, AbortSearch, QueryStatus, UdpServer
 import LogViewer.utils.helpers as helpers
 from .utils import Completer, MagicLineEdit, Statusbar, RawlogModel, LazyItemModel, FilterModel
 from .preferences_dialog import PreferencesDialog
@@ -30,6 +30,7 @@ class MainWindow(QtWidgets.QMainWindow):
     def __init__(self):
         self.rawlog = Rawlog()
         self.file = None
+        self.udpServer = None
         self.search = None
         self.statusbar = Statusbar(self, self.uiMenuBar_main)
         self.currentFilterQuery = None
@@ -134,28 +135,28 @@ class MainWindow(QtWidgets.QMainWindow):
         SettingsSingleton().storeDimension(self)
     
     def toggleUiItems(self):
-        self.uiAction_close.setEnabled(self.file != None)
+        self.uiAction_close.setEnabled(self.file != None or self.udpServer != None)
         self.uiAction_quit.setEnabled(True)
         self.uiAction_open.setEnabled(True)
-        self.uiAction_inspectLine.setEnabled(self.file != None)
+        self.uiAction_inspectLine.setEnabled(self.file != None or self.udpServer != None)
         self.uiAction_preferences.setEnabled(True)
-        self.uiAction_export.setEnabled(self.file != None)
-        self.uiAction_pushStack.setEnabled(self.file != None)
-        self.uiAction_popStack.setEnabled(self.file != None and len(self.stack) != 0)
-        self.uiAction_search.setEnabled(self.file != None)
-        self.uiAction_save.setEnabled(self.file != None)
-        self.uiAction_goToRow.setEnabled(self.file != None)
-        self.uiAction_firstRow.setEnabled(self.file != None)
-        self.uiAction_lastRow.setEnabled(self.file != None)
-        self.uiButton_previous.setEnabled(self.file != None and len(self.uiCombobox_searchInput.currentText().strip()) != 0)
-        self.uiButton_next.setEnabled(self.file != None and len(self.uiCombobox_searchInput.currentText().strip()) != 0)
-        self.uiButton_filterClear.setEnabled(self.file != None and self.currentFilterQuery != None)
-        self.uiButton_goToRow.setEnabled(self.file != None)
-        self.uiSpinBox_goToRow.setEnabled(self.file != None)
-        self.uiCombobox_searchInput.setEnabled(self.file != None)
-        self.uiCombobox_filterInput.setEnabled(self.file != None)
-        self.uiAction_lastRowInViewport.setEnabled(self.file != None)
-        self.uiAction_firstRowInViewport.setEnabled(self.file != None)
+        self.uiAction_export.setEnabled(self.file != None or self.udpServer != None)
+        self.uiAction_pushStack.setEnabled(self.file != None or self.udpServer != None)
+        self.uiAction_popStack.setEnabled((self.file != None or self.udpServer != None) and len(self.stack) != 0)
+        self.uiAction_search.setEnabled(self.file != None or self.udpServer != None)
+        self.uiAction_save.setEnabled(self.file != None or self.udpServer != None)
+        self.uiAction_goToRow.setEnabled(self.file != None or self.udpServer != None)
+        self.uiAction_firstRow.setEnabled(self.file != None or self.udpServer != None)
+        self.uiAction_lastRow.setEnabled(self.file != None or self.udpServer != None)
+        self.uiButton_previous.setEnabled((self.file != None or self.udpServer != None) and len(self.uiCombobox_searchInput.currentText().strip()) != 0)
+        self.uiButton_next.setEnabled((self.file != None or self.udpServer != None) and len(self.uiCombobox_searchInput.currentText().strip()) != 0)
+        self.uiButton_filterClear.setEnabled((self.file != None or self.udpServer != None) and self.currentFilterQuery != None)
+        self.uiButton_goToRow.setEnabled(self.file != None or self.udpServer != None)
+        self.uiSpinBox_goToRow.setEnabled(self.file != None or self.udpServer != None)
+        self.uiCombobox_searchInput.setEnabled(self.file != None or self.udpServer != None)
+        self.uiCombobox_filterInput.setEnabled(self.file != None or self.udpServer != None)
+        self.uiAction_lastRowInViewport.setEnabled(self.file != None or self.udpServer != None)
+        self.uiAction_firstRowInViewport.setEnabled(self.file != None or self.udpServer != None)
 
     def export(self):
         if self.rawlog:
@@ -189,6 +190,7 @@ class MainWindow(QtWidgets.QMainWindow):
 
     def openLogFile(self, file):
         self.closeFile()
+        self.udpServer = None
         
         self.statusbar.setText("Loading File: '%s'..." % os.path.basename(file))
         self.rawlog = Rawlog()
@@ -736,7 +738,7 @@ class MainWindow(QtWidgets.QMainWindow):
     def _updateStatusbar(self, *args):
         text = ""
 
-        if len(self.rawlog) > 0:
+        if len(self.rawlog) > 0 and self.file != None:
             text += "%s:" % os.path.basename(self.file)
 
         if self.currentFilterQuery != None:
