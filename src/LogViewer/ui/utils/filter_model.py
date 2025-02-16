@@ -18,7 +18,7 @@ class FilterModel(ProxyModel):
         self.start = self.sourceModel().rowCount(None)
 
     def processRowsInserted(self):
-        self.filterNewUpdEntries(self.start)
+        self.filterNewEntries(self.start)
 
     def rowCount(self, index):
         return self.visibleCounter
@@ -28,17 +28,17 @@ class FilterModel(ProxyModel):
             return False
         return self.proxyData.getVisibility(index)
     
-    def filterNewUpdEntries(self, start):
-        self.filterTemplate(self.query, start=start)
+    def filterNewEntries(self, start):
+        self._filterTemplate(self.query, start=start)
     
     def filter(self, query, update_progressbar=None):
         self.query = query
         self.visibleCounter = 0   
 
         self._initVisibilityList()
-        return self.filterTemplate(self.query, start=0, update_progressbar=update_progressbar)
+        return self._filterTemplate(self.query, start=0, update_progressbar=update_progressbar)
 
-    def filterTemplate(self, query, start=0, update_progressbar=None):
+    def _filterTemplate(self, query, start=0, update_progressbar=None):
         error = None
 
         for rawlogPosition in range(start, self.sourceModel().rowCount(None)):

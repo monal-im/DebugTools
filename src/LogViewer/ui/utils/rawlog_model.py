@@ -21,8 +21,8 @@ class RawlogModel(QtCore.QAbstractListModel):
         self.lastRowCount = 0
 
         if udpServer != None:
-            self.rawlog.finishInsertRows.connect(self.endAppendUdpEntries)
-            udpServer.newMessage.connect(self.beginAppendUdpEntries)
+            self.rawlog.finishInsertRows.connect(self.endAppendEntries)
+            udpServer.newMessage.connect(self.beginAppendEntries)
     
     @catch_exceptions(logger=logger)
     def reloadSettings(self):
@@ -150,11 +150,11 @@ class RawlogModel(QtCore.QAbstractListModel):
         self.listView().setCurrentIndex(index)
 
     @catch_exceptions(logger=logger)
-    def beginAppendUdpEntries(self, entries):
+    def beginAppendEntries(self, entries):
         newRowCount = len(self.rawlog)+len(entries)
         self.beginInsertRows(self.createIndex(newRowCount - len(self.rawlog), 0), len(self.rawlog), newRowCount)
-        self.rawlog.appendUdpEntries(entries)
+        self.rawlog.appendEntries(entries)
 
     @catch_exceptions(logger=logger)
-    def endAppendUdpEntries(self):
+    def endAppendEntries(self):
         self.endInsertRows()

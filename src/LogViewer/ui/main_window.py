@@ -740,6 +740,9 @@ class MainWindow(QtWidgets.QMainWindow):
 
         if len(self.rawlog) > 0 and self.file != None:
             text += "%s:" % os.path.basename(self.file)
+        elif self.udpServer != None:
+            text += "%s:" % "UDP Server" #TODO: Insert UDP Server here
+
 
         if self.currentFilterQuery != None:
             text += " %d/%d" % (

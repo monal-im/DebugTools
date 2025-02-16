@@ -167,14 +167,14 @@ class Rawlog(QtCore.QObject):
                                 break
                         continue        # continue reading (eof will be automatically handled by our normal code, too)
                     
-                    # if the udpServer is configured -> get data from udpServer
-                    if self.server != None:
-                        self._append_entry(self.server.correctProcessId(old_processid, entry["_processID"]))
-                    else:
-                        self._append_entry(entry, custom_load_callback)
-                        if "_processID" in entry:
-                            old_processid = entry["_processID"]
                     
+                    self._append_entry(self.correctProcessId(old_processid, entry["_processID"]))
+
+                    self._append_entry(entry, custom_load_callback)
+                    if "_processID" in entry:
+                        old_processid = entry["_processID"]
+                    self.oldprocessid = old_processid
+
                     if progress_callback != None:
                         # the callback returns True if it wants to cancel the loading
                         if progress_callback(readsize, filesize) == True:
@@ -294,7 +294,7 @@ class Rawlog(QtCore.QObject):
             return
         self.data.append(custom_entry)
             
-    def appendUdpEntries(self, entries, custom_load_callback=None):
+    def appendEntries(self, entries, custom_load_callback=None):
         for entry in entries:
             self._append_entry(entry, custom_load_callback)
 
@@ -322,3 +322,12 @@ class Rawlog(QtCore.QObject):
                 retval += self._completerList_recursor(parts, entry[key])
             retval.append("".join(parts))
         return retval
+
+    def correctProcessId(self, last_processID, decoded):
+        if last_processID != None and decoded != last_processID:
+            message = "Processid changed from %s to %s..." % (last_processID, decoded)
+            return {
+                #"__warning": True,
+                "__virtual": True,
+                "__message": message,
+            }
