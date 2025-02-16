@@ -275,6 +275,27 @@ class SettingsSingleton():
                     self.data["loglevel"][name]["data"].append(None)
         self._store()
 
+    def getUdpEncryptionKey(self):
+        return self.data["udpCredentials"]["encryptionKeys"]
+
+    def getUdpHost(self):
+        return self.data["udpCredentials"]["hosts"]
+
+    def getUdpPort(self):
+        return self.data["udpCredentials"]["port"]
+
+    def setUdpEncryptionKey(self, keys):
+        self.data["udpCredentials"]["encryptionKeys"] = keys
+        self._store()
+
+    def setUdpHost(self, hosts):
+        self.data["udpCredentials"]["hosts"] = hosts
+        self._store()
+
+    def setUdpPort(self, port):
+        self.data["udpCredentials"]["port"] = port
+        self._store()
+
     def _widgetName(self, widget):
         names = []
         obj = widget

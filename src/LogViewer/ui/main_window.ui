@@ -304,6 +304,9 @@
     <addaction name="uiAction_save"/>
     <addaction name="uiAction_export"/>
     <addaction name="separator"/>
+    <addaction name="uiAction_listenUdpStream"/>
+    <addaction name="uiAction_stopUdpStream"/>
+    <addaction name="separator"/>
     <addaction name="uiAction_close"/>
     <addaction name="uiAction_quit"/>
    </widget>
@@ -535,6 +538,16 @@
   <action name="uiAction_importCurrentProfile">
    <property name="text">
     <string>Import New Profile</string>
+   </property>
+  </action>
+  <action name="uiAction_listenUdpStream">
+   <property name="text">
+    <string>Listen for udp-rawlog stream</string>
+   </property>
+  </action>
+  <action name="uiAction_stopUdpStream">
+   <property name="text">
+    <string>Stop udp-rawlog streaming</string>
    </property>
   </action>
  </widget>

@@ -9,6 +9,7 @@ from LogViewer.utils import Search, AbortSearch, QueryStatus, UdpServer
 import LogViewer.utils.helpers as helpers
 from .utils import Completer, MagicLineEdit, Statusbar, RawlogModel, LazyItemModel, FilterModel
 from .preferences_dialog import PreferencesDialog
+from .udp_window import UdpWindow
 from .stack_pop_window import StackPopWindow
 from .stack_push_window import StackPushWindow
 from .new_profile_dialog import NewProfileDialog
@@ -83,6 +84,8 @@ class MainWindow(QtWidgets.QMainWindow):
         self.uiAction_lastRow.triggered.connect(self.goToLastRow)
         self.uiAction_firstRowInViewport.triggered.connect(self.goToFirstRowInViewport)
         self.uiAction_lastRowInViewport.triggered.connect(self.goToLastRowInViewport)
+        self.uiAction_listenUdpStream.triggered.connect(self.createUdpWindow)
+        self.uiAction_stopUdpStream.triggered.connect(self.stopUdpStream)
 
         self.uiWidget_listView.setVerticalScrollMode(QtWidgets.QAbstractItemView.ScrollPerPixel)
         self.uiWidget_listView.doubleClicked.connect(self.inspectLine)
@@ -157,6 +160,7 @@ class MainWindow(QtWidgets.QMainWindow):
         self.uiCombobox_filterInput.setEnabled(self.file != None or self.udpServer != None)
         self.uiAction_lastRowInViewport.setEnabled(self.file != None or self.udpServer != None)
         self.uiAction_firstRowInViewport.setEnabled(self.file != None or self.udpServer != None)
+        self.uiAction_stopUdpStream.setEnabled(self.udpServer != None)
 
     def export(self):
         if self.rawlog:
@@ -841,6 +845,17 @@ class MainWindow(QtWidgets.QMainWindow):
         if self.file != None:
             self.openLogFile(self.file)
         self.update
+
+    def createUdpWindow(self):
+        self.udpWindow = UdpWindow()
+        self.udpWindow.show()
+        result = self.udpWindow.exec_()
+        if result:
+            pass
+            # DO SOMETHING
+
+    def stopUdpStream(self):
+        pass
 
     def _createNewProfileFromFile(self, pathToParentProfile):
         self.newProfileDialog = NewProfileDialog()
