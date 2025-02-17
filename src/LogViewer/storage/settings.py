@@ -276,20 +276,20 @@ class SettingsSingleton():
         self._store()
 
     def getUdpEncryptionKey(self):
-        return self.data["udpCredentials"]["encryptionKeys"]
+        return self.data["udpCredentials"]["encryptionKey"]
 
     def getUdpHost(self):
-        return self.data["udpCredentials"]["hosts"]
+        return self.data["udpCredentials"]["host"]
 
     def getUdpPort(self):
         return self.data["udpCredentials"]["port"]
 
-    def setUdpEncryptionKey(self, keys):
-        self.data["udpCredentials"]["encryptionKeys"] = keys
+    def setUdpEncryptionKey(self, key):
+        self.data["udpCredentials"]["encryptionKey"] = key
         self._store()
 
-    def setUdpHost(self, hosts):
-        self.data["udpCredentials"]["hosts"] = hosts
+    def setUdpHost(self, host):
+        self.data["udpCredentials"]["host"] = host
         self._store()
 
     def setUdpPort(self, port):

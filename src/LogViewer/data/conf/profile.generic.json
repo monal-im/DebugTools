@@ -34,8 +34,8 @@
         "fancy": "import pathlib\nfrom shared.utils.constants import LOGLEVELS\n\ndef formatter(entry, **g):\n\tglobals().update(g)\n\tif entry[\"__virtual\"]:\n\t\treturn entry[\"message\"]\n\tlookup_table = {v: k for k, v in LOGLEVELS.items()}\n\tif lookup_table[entry[\"flag\"]] in (\"STDOUT\", \"STDERR\"):\n\t\treturn \"%s --> %s\" % (entry[\"timestamp\"], entry[\"message\"])\n\tfile = pathlib.PurePath(entry[\"file\"])\n\treturn \"%s [%s] %s [%s (QOS:%s)] %s at %s:%lu: %s\" % (\n\t\tentry[\"timestamp\"],\n\t\tlookup_table[entry[\"flag\"]].rjust(6),\n\t\tentry[\"tag\"][\"processName\"],\n\t\t\"%s:%s\" % (\n\t\t\tentry[\"threadID\"],\n\t\t\tentry[\"tag\"][\"queueThreadLabel\"]\n\t\t) if entry[\"threadID\"] != entry[\"tag\"][\"queueThreadLabel\"] else entry[\"threadID\"],\n\t\tentry[\"tag\"][\"qosName\"],\n\t\tentry[\"function\"],\n\t\t\"%s/%s\" % (file.parent.name, file.name),\n\t\tentry[\"line\"],\n\t\tentry[\"message\"],\n\t)"
     },
     "udpCredentials": {
-        "encryptionKeys": "",
-        "hosts": "",
+        "encryptionKey": "",
+        "host": "",
         "port": 5555
     }
 }

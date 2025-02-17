@@ -6,16 +6,15 @@ from PyQt5 import QtWidgets, uic, QtGui, QtCore
 
 from LogViewer.storage import SettingsSingleton
 from shared.utils import catch_exceptions
+from shared.ui.utils import UiAutoloader
 
 
 logger = logging.getLogger(__name__)
 
+@UiAutoloader
 class UdpWindow(QtWidgets.QDialog):
     @catch_exceptions(logger=logger)
     def __init__(self):
-        super().__init__()
-        logger.debug("Loading Ui...")
-        uic.loadUi(os.path.join(os.path.dirname(__file__), os.path.splitext(__file__)[0]+".ui"), self)
 
         logger.debug("Loading Combobox items...")
         self.uiLineEdit_key.setText(SettingsSingleton().getUdpEncryptionKey())
