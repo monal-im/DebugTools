@@ -167,13 +167,13 @@ class Rawlog(QtCore.QObject):
                                 break
                         continue        # continue reading (eof will be automatically handled by our normal code, too)
                     
-                    
-                    self._append_entry(self.correctProcessId(old_processid, entry["_processID"]))
+                    if "_processID" in entry.keys():
+                        self._append_entry(self.correctProcessId(old_processid, entry["_processID"]))
 
-                    self._append_entry(entry, custom_load_callback)
-                    if "_processID" in entry:
-                        old_processid = entry["_processID"]
-                    self.oldprocessid = old_processid
+                        self._append_entry(entry, custom_load_callback)
+                        if "_processID" in entry:
+                            old_processid = entry["_processID"]
+                        self.oldprocessid = old_processid
 
                     if progress_callback != None:
                         # the callback returns True if it wants to cancel the loading
