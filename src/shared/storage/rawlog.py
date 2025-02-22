@@ -130,11 +130,12 @@ class Rawlog:
                         #logger.debug("Loading %d json bytes at %d..." % (json_read_len, fp.tell()))
                         json_bytes = fp.read(json_read_len)
                         if len(json_bytes) != json_read_len:
-                            raise Exception("Rawlog file corrupt!")
+                            logger.debug("Corruption detected: failed to read data: %d expected, but only %d read..." % (json_read_len, len(json_bytes)))
+                            #raise Exception("Rawlog file corrupt!")
                         try:
                             entry = json.loads(str(json_bytes, "UTF-8"))
                         except:
-                            logger.debug("Corruption detected: failed to load json...", exc_info=True)
+                            logger.debug("Corruption detected: failed to load json: %s" % str(json_bytes, "UTF-8"), exc_info=True)
                         readsize += json_read_len + prefix_length
                     
                     if skip_corrupted_part:
