@@ -84,7 +84,6 @@ class ProxyModel(QtCore.QAbstractProxyModel):
         self.visibilityList = []
 
     def _addToVisibilityList(self, index, visibility):
-        logger.debug(f"{index = }, {visibility = }")
         if self.proxyData.getVisibility(index) != visibility:
             logger.debug(f"visibility is different to before: {self.proxyData.getVisibility(index) = } != {visibility = }...")
             if len(self.visibilityList) == 0 or self.visibilityList[-1]["end"] != None:
@@ -102,7 +101,6 @@ class ProxyModel(QtCore.QAbstractProxyModel):
             if self.visibilityList[-1]["end"] == None:
                 logger.debug(f"ending previous block: {self.visibilityList[-1] = }")
                 self.visibilityList[-1]["end"] = index-1
-        logger.debug(f"RETURN {self.visibilityList = }")
 
     def _sealVisibilityList(self, index):
         if len(self.visibilityList) != 0 and self.visibilityList[-1]["end"] == None:

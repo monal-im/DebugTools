@@ -6,6 +6,7 @@ import datetime
 from LogViewer.storage import SettingsSingleton
 from LogViewer.storage import GlobalSettingsSingleton
 from LogViewer.utils import Search, AbortSearch, QueryStatus, UdpServer
+from LogViewer.utils import loader
 import LogViewer.utils.helpers as helpers
 from .utils import Completer, MagicLineEdit, Statusbar, RawlogModel, LazyItemModel, FilterModel
 from .preferences_dialog import PreferencesDialog
@@ -69,7 +70,7 @@ class MainWindow(QtWidgets.QMainWindow):
         self.uiButton_next.clicked.connect(self.searchNext)
 
         self.uiAction_open.triggered.connect(self.openFileBrowser)
-        self.uiAction_close.triggered.connect(self.closeFile)
+        self.uiAction_close.triggered.connect(self.close)
         self.uiAction_quit.triggered.connect(self.quit)
         self.uiAction_preferences.triggered.connect(self.preferences)
         self.uiAction_search.triggered.connect(self.openSearchWidget)
@@ -138,9 +139,9 @@ class MainWindow(QtWidgets.QMainWindow):
         SettingsSingleton().storeDimension(self)
     
     def toggleUiItems(self):
-        self.uiAction_close.setEnabled(self.file != None or self.udpServer != None)
+        self.uiAction_close.setEnabled(self.file != None)
         self.uiAction_quit.setEnabled(True)
-        self.uiAction_open.setEnabled(True)
+        self.uiAction_open.setEnabled(self.udpServer == None)
         self.uiAction_inspectLine.setEnabled(self.file != None or self.udpServer != None)
         self.uiAction_preferences.setEnabled(True)
         self.uiAction_export.setEnabled(self.file != None or self.udpServer != None)
@@ -161,6 +162,7 @@ class MainWindow(QtWidgets.QMainWindow):
         self.uiAction_lastRowInViewport.setEnabled(self.file != None or self.udpServer != None)
         self.uiAction_firstRowInViewport.setEnabled(self.file != None or self.udpServer != None)
         self.uiAction_stopUdpStream.setEnabled(self.udpServer != None)
+        self.uiAction_listenUdpStream.setEnabled(self.file == None)
 
     def export(self):
         if self.rawlog:
@@ -193,26 +195,18 @@ class MainWindow(QtWidgets.QMainWindow):
             self.openLogFile(file)
 
     def openLogFile(self, file):
-        self.closeFile()
+        self.close()
         self.udpServer = None
         
         self.statusbar.setText("Loading File: '%s'..." % os.path.basename(file))
         self.rawlog = Rawlog()
         self.search = None
         
-        def loader(entry):
-            # directly warn about file corruptions when they happen to allow the user to abort the loading process
-            # using the cancel button in the progressbar window
-            if "__warning" in entry and entry["__warning"] == True:
-                QtWidgets.QMessageBox.warning(self, "File corruption detected", entry["message"])
-            
-            return {"data": entry, "visible": True}
-        
         progressbar, updateProgressbar = self.progressDialog("Opening File...", "Opening File: %s" % os.path.basename(file), True)
         try:
             # don't pretend something was loaded if the loading was aborted
             if self.rawlog.load_file(file, progress_callback=updateProgressbar, custom_load_callback=loader) != True:
-                self.closeFile()        # reset our ui to a sane state
+                self.close()        # reset our ui to a sane state
                 progressbar.hide()
                 self.statusbar.setText("")
                 return
@@ -226,15 +220,7 @@ class MainWindow(QtWidgets.QMainWindow):
             )
             return
         
-        # List reasons why it is stacked like this
-        self.rawlogModel = RawlogModel(self.rawlog, self.uiWidget_listView)
-        # To apply the right formatter the rawlogModel is reloaded
-        self.rawlogModel.reloadSettings()
-        self.filterModel = FilterModel(self.rawlogModel)
-        # Disable functions that use the lazyItemModel until it is fixed
-        #self.lazyItemModel = LazyItemModel(self.filterModel, LOAD_CONTEXT, LAZY_DISTANCE, LAZY_LOADING)
-        #self.uiWidget_listView.setModel(self.lazyItemModel)
-        self.uiWidget_listView.setModel(self.filterModel)
+        self._initModels()
         
         progressbar.hide()
 
@@ -334,7 +320,7 @@ class MainWindow(QtWidgets.QMainWindow):
         self.selectedCombobox.lineEdit().insert(self.uiTable_characteristics.currentItem().text())
             
     @catch_exceptions(logger=logger)
-    def closeFile(self, *args):
+    def close(self, *args):
         self.uiWidget_listView.setModel(None)
         self.rawlog = Rawlog()
         self.hideSearchAndGoToRow()
@@ -745,8 +731,7 @@ class MainWindow(QtWidgets.QMainWindow):
         if len(self.rawlog) > 0 and self.file != None:
             text += "%s:" % os.path.basename(self.file)
         elif self.udpServer != None:
-            text += "%s:" % "UDP Server" #TODO: Insert UDP Server here
-
+            text += "%s:" % SettingsSingleton().getUdpHost()
 
         if self.currentFilterQuery != None:
             text += " %d/%d" % (
@@ -851,11 +836,19 @@ class MainWindow(QtWidgets.QMainWindow):
         self.udpWindow.show()
         result = self.udpWindow.exec_()
         if result:
-            pass
-            # DO SOMETHING
+            self.udpServer = UdpServer(SettingsSingleton().getUdpEncryptionKey(), host=SettingsSingleton().getUdpHost(), port=SettingsSingleton().getUdpPort())
+
+            self._initModels(self.udpServer)
+            self.rawlogModel.updateStatusbar.connect(self._updateStatusbar)
+
+            self.setWindowTitle(f"{SettingsSingleton().getUdpHost()} - Monal Log Viewer")
+            self._updateStatusbar()
+            self.toggleUiItems()
 
     def stopUdpStream(self):
-        pass
+        self.udpServer.stop()
+        self.udpServer = None
+        self.close()
 
     def _createNewProfileFromFile(self, pathToParentProfile):
         self.newProfileDialog = NewProfileDialog()
@@ -905,6 +898,17 @@ class MainWindow(QtWidgets.QMainWindow):
         if check:
             self._createNewProfileFromFile(file)
             self.statusbar.showDynamicText(str("Done ✓ | Profile imported!"))
+        
+    def _initModels(self, udpServer=None):
+        # List reasons why it is stacked like this
+        self.rawlogModel = RawlogModel(self.rawlog, parent=self.uiWidget_listView, udpServer=udpServer)
+        # To apply the right formatter the rawlogModel is reloaded
+        self.rawlogModel.reloadSettings()
+        self.filterModel = FilterModel(self.rawlogModel)
+        # Disable functions that use the lazyItemModel until it is fixed
+        #self.lazyItemModel = LazyItemModel(self.filterModel, LOAD_CONTEXT, LAZY_DISTANCE, LAZY_LOADING)
+        #self.uiWidget_listView.setModel(self.lazyItemModel)
+        self.uiWidget_listView.setModel(self.filterModel)
 
     def _resolveIndex(self, model, index):
         # recursively map index in proxy model chain to get real rawlog index

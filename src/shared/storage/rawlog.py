@@ -54,30 +54,6 @@ class Rawlog(QtCore.QObject):
         self.needs_custom_callbacks = False
         self.server = None
     
-    def stream_rawlog(self, key, /, host="::", port=5555, custom_load_callback=None):
-        if not hasLogserver:
-            raise Exception("UDP logserver not importable!")
-        
-        logger.debug("Listening for streamed rawlog data on %s: %s" % (str(host), str(port)))
-        self.clear()
-        
-        # force custom save/export callbacks later on if data is now loaded with a custom load callback
-        if custom_load_callback != None:
-            self.needs_custom_callbacks = True
-        
-        queue = Queue(128)
-        self.server = UdpServer(queue, key, host=host, port=port)
-        
-        def poll(stop=False):
-            if stop:
-                self.server.stop()
-                return False
-            retval = not queue.empty()
-            while not queue.empty():
-                self._append_entry(queue.get(), custom_load_callback)
-            return retval
-        return poll
-    
     def load_bytes(self, data, /, **kwargs):
         logger.debug("Loading rawlog data from bytearray...")
         with io.BytesIO(data) as fp:

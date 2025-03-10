@@ -3,6 +3,7 @@ import functools
 import inspect
 
 from LogViewer.storage import SettingsSingleton
+from LogViewer.utils import loader
 import LogViewer.utils.helpers as helpers
 from shared.utils import catch_exceptions
 
@@ -12,6 +13,8 @@ logger = logging.getLogger(__name__)
 LRU_MAXSIZE = 1024*1024
 
 class RawlogModel(QtCore.QAbstractListModel):
+    updateStatusbar = QtCore.pyqtSignal()
+
     @catch_exceptions(logger=logger)
     def __init__(self, rawlog, parent=None, udpServer=None):
         super().__init__(parent)
@@ -19,10 +22,12 @@ class RawlogModel(QtCore.QAbstractListModel):
         self.rawlog = rawlog
         self.formatter = self.createFormatter()
         self.lastRowCount = 0
+        self.ignoreError = False
 
         if udpServer != None:
             self.rawlog.finishInsertRows.connect(self.endAppendEntries)
             udpServer.newMessage.connect(self.beginAppendEntries)
+            self.ignoreError = True
     
     @catch_exceptions(logger=logger)
     def reloadSettings(self):
@@ -69,7 +74,7 @@ class RawlogModel(QtCore.QAbstractListModel):
                 entry = self.rawlog[index.row()]
                 if "__formattedMessage" not in entry["data"]:
                     try:
-                        formattedEntry = self.createFormatterText(self.formatter, entry["data"])
+                        formattedEntry = self.createFormatterText(self.formatter, entry["data"], ignoreError=self.ignoreError)
                         entry["data"]["__formattedMessage"] = formattedEntry
                     except:
                         # ignore error and return empty string (already catched and displayed to user by createFormatterText() itself)
@@ -103,6 +108,7 @@ class RawlogModel(QtCore.QAbstractListModel):
         try:
             # this will make sure the log formatter does not change our log entry, but it makes loading slower
             # formattedEntry = formatter({value: entry[value] for value in entry.keys()})
+            
             return formatter(entry)
         except Exception as e:
             logger.exception("Exception while calling log formatter for: %s" % entry)
@@ -121,12 +127,13 @@ class RawlogModel(QtCore.QAbstractListModel):
             return self.compileLogFormatter(SettingsSingleton().getCurrentFormatterCode())
         except Exception as e:
             logger.exception("Exception while compiling log formatter")
-            QtWidgets.QMessageBox.critical(
-                self.parent,
-                "Monal Log Viewer | ERROR",
-                "Exception in formatter code:\n%s: %s" % (str(type(e).__name__), str(e)),
-                QtWidgets.QMessageBox.Ok
-            )
+            if not self.ignoreError:
+                QtWidgets.QMessageBox.critical(
+                    self.parent,
+                    "Monal Log Viewer | ERROR",
+                    "Exception in formatter code:\n%s: %s" % (str(type(e).__name__), str(e)),
+                    QtWidgets.QMessageBox.Ok
+                )
             return
 
     def compileLogFormatter(self, code):
@@ -153,8 +160,9 @@ class RawlogModel(QtCore.QAbstractListModel):
     def beginAppendEntries(self, entries):
         newRowCount = len(self.rawlog)+len(entries)
         self.beginInsertRows(self.createIndex(newRowCount - len(self.rawlog), 0), len(self.rawlog), newRowCount)
-        self.rawlog.appendEntries(entries)
+        self.rawlog.appendEntries(entries, custom_load_callback=loader)
 
     @catch_exceptions(logger=logger)
     def endAppendEntries(self):
         self.endInsertRows()
+        self.updateStatusbar.emit()
