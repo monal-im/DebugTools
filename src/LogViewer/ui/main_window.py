@@ -169,8 +169,8 @@ class MainWindow(QtWidgets.QMainWindow):
             file, check = QtWidgets.QFileDialog.getSaveFileName(None, "Choose where to save this text logfile", SettingsSingleton().getLastPath(), "Compressed logfile (*.log.gz)(*.log.gz);;Logfile (*.log)(*.log);;All files (*)")
             if check:
                 SettingsSingleton().setLastPath(os.path.dirname(os.path.abspath(file)))
-                formatter = self.createFormatter()
-                status = self.rawlog.export_file(file, custom_store_callback = lambda entry: entry["data"] if not self.uiWidget_listView.isRowHidden(self.rawlogModel.indexFromItem(entry["uiItem"]).row()) else None, formatter = lambda entry: self.createFormatterText(formatter, entry))
+                formatter = self.rawlogModel.createFormatter()
+                status = self.rawlog.export_file(file, custom_store_callback = lambda entry: entry["data"], formatter = lambda entry: self.rawlogModel.createFormatterText(formatter, entry))
                 if status:
                     self.statusbar.showDynamicText(str("Done ✓ | Log export was successful"))
                 else:
