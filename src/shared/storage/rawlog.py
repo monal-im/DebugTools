@@ -53,6 +53,7 @@ class Rawlog(QtCore.QObject):
         self.data = []
         self.needs_custom_callbacks = False
         self.server = None
+        self.oldProcessId = None
     
     def load_bytes(self, data, /, **kwargs):
         logger.debug("Loading rawlog data from bytearray...")
@@ -87,7 +88,7 @@ class Rawlog(QtCore.QObject):
         
         # now process our data
         entry = None
-        old_processid = None
+        oldProcessId = None
         with gzip.GzipFile(fileobj=fp, mode="rb") if self._is_gzip_file(fp) else fp as fp:
             try:
                 while True:
@@ -143,13 +144,14 @@ class Rawlog(QtCore.QObject):
                                 break
                         continue        # continue reading (eof will be automatically handled by our normal code, too)
                     
+                    if "_processID" in entry:
+                        oldProcessId = entry["_processID"]
+                    self.oldProcessId = oldProcessId 
+
                     if "_processID" in entry.keys():
-                        self._append_entry(self.correctProcessId(old_processid, entry["_processID"]))
+                        self._append_entry(entry)
 
                     self._append_entry(entry, custom_load_callback)
-                    if "_processID" in entry:
-                        old_processid = entry["_processID"]
-                    self.oldprocessid = old_processid
 
                     if progress_callback != None:
                         # the callback returns True if it wants to cancel the loading
@@ -258,9 +260,11 @@ class Rawlog(QtCore.QObject):
         logger.debug("Extracted completer list: %s" % str(completer_list))
         return completer_list
     
-    
     def _append_entry(self, entry, custom_load_callback=None):
         entry["__logline_index"] = len(self.data)
+        if self.oldProcessId != None and entry["_processID"] != self.oldProcessId:
+            entry["__virtual"] = True,
+            entry["__message"] = "Processid changed from %s to %s..." % (self.oldProcessId, entry["_processID"]),
         if "__virtual" not in entry:
             entry["__virtual"] = False
         custom_entry = entry        # needed if no load_callback is used
@@ -298,12 +302,3 @@ class Rawlog(QtCore.QObject):
                 retval += self._completerList_recursor(parts, entry[key])
             retval.append("".join(parts))
         return retval
-
-    def correctProcessId(self, last_processID, decoded):
-        if last_processID != None and decoded != last_processID:
-            message = "Processid changed from %s to %s..." % (last_processID, decoded)
-            return {
-                #"__warning": True,
-                "__virtual": True,
-                "__message": message,
-            }

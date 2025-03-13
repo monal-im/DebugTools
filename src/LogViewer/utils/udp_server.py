@@ -24,7 +24,6 @@ class UdpServer(QtNetwork.QUdpSocket):
         super(UdpServer, self).__init__()
         # init state
         self.last_counter = None
-        self.last_processID = None
         
         # "derive" 256 bit key
         encryptedKey = hashlib.sha256()
@@ -73,24 +72,18 @@ class UdpServer(QtNetwork.QUdpSocket):
             # decode raw json encoded data
             decoded = json.loads(str(payload, "UTF-8"))
             
-            # emit status entries
-            correctedProcessId = self.correctProcessId(self.last_processID, decoded["tag"]["processID"])
-            if correctedProcessId != None:
-                newEntries.append(correctedProcessId)
-
+            # correct processID
             if self.last_counter != None and decoded["tag"]["counter"] != self.last_counter + 1:
                 message = "Stream counter jumped from %d to %d leaving out %d lines" % (self.last_counter, decoded["tag"]["counter"], decoded["tag"]["counter"] - self.last_counter - 1)
                 newEntries.append({
                     #"__warning": True,
                     "__virtual": True,
                     "__message": message,
-                    "timestamp": "",
                 })
                 
             newEntries.append(decoded)
         
             # update state
-            self.last_processID = decoded["tag"]["processID"]
             self.last_counter = decoded["tag"]["counter"]
         
         logger.debug("udp listener thread stopped")
@@ -116,12 +109,3 @@ class UdpServer(QtNetwork.QUdpSocket):
         except ValueError as e:
             raise Exception("Cipher text is damaged: {}".format(e))
         return plaintext
-
-    def correctProcessId(self, last_processID, decoded):
-        if last_processID != None and decoded != last_processID:
-            message = "Processid changed from %s to %s..." % (last_processID, decoded)
-            return {
-                #"__warning": True,
-                "__virtual": True,
-                "__message": message,
-            }
