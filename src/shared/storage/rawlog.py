@@ -279,6 +279,9 @@ class Rawlog(QtCore.QObject):
             self._append_entry(entry, custom_load_callback)
 
         self.finishInsertRows.emit()
+
+    def getItemIndex(self, item):
+        return self.data.index(item)
     
     # see https://stackoverflow.com/a/47080739
     def _is_gzip_file(self, fp):

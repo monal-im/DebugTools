@@ -170,7 +170,7 @@ class MainWindow(QtWidgets.QMainWindow):
             if check:
                 SettingsSingleton().setLastPath(os.path.dirname(os.path.abspath(file)))
                 formatter = self.rawlogModel.createFormatter()
-                status = self.rawlog.export_file(file, custom_store_callback = lambda entry: entry["data"], formatter = lambda entry: self.rawlogModel.createFormatterText(formatter, entry))
+                status = self.rawlog.export_file(file, custom_store_callback = lambda entry: entry["data"] if self.filterModel.isRowVisible(self.rawlog.getItemIndex(entry)) else None, formatter = lambda entry: self.rawlogModel.createFormatterText(formatter, entry))
                 if status:
                     self.statusbar.showDynamicText(str("Done ✓ | Log export was successful"))
                 else:
@@ -181,7 +181,7 @@ class MainWindow(QtWidgets.QMainWindow):
             file, check = QtWidgets.QFileDialog.getSaveFileName(None, "Choose where to save this rawlog logfile", SettingsSingleton().getLastPath(), "Compressed Monal rawlog (*.rawlog.gz)(*.rawlog.gz);;Monal rawlog (*.rawlog)(*.rawlog);;All files (*)")
             if check:
                 SettingsSingleton().setLastPath(os.path.dirname(os.path.abspath(file)))
-                status = self.rawlog.store_file(file, custom_store_callback = lambda entry: entry["data"])
+                status = self.rawlog.store_file(file, custom_store_callback = lambda entry: entry["data"] if self.filterModel.isRowVisible(self.rawlog.getItemIndex(entry)) else None)
                 if status:
                     self.statusbar.showDynamicText(str("Done ✓ | Rawlog saved successfully"))
                 else:
