@@ -88,7 +88,6 @@ class Rawlog(QtCore.QObject):
         
         # now process our data
         entry = None
-        oldProcessId = None
         with gzip.GzipFile(fileobj=fp, mode="rb") if self._is_gzip_file(fp) else fp as fp:
             try:
                 while True:
@@ -144,9 +143,10 @@ class Rawlog(QtCore.QObject):
                                 break
                         continue        # continue reading (eof will be automatically handled by our normal code, too)
                     
+                    
+                    self.oldProcessId = None
                     if "_processID" in entry:
-                        oldProcessId = entry["_processID"]
-                    self.oldProcessId = oldProcessId 
+                        self.oldProcessId = entry["_processID"]
 
                     if "_processID" in entry.keys():
                         self._append_entry(entry)

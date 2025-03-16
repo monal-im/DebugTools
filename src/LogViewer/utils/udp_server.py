@@ -72,7 +72,6 @@ class UdpServer(QtNetwork.QUdpSocket):
             # decode raw json encoded data
             decoded = json.loads(str(payload, "UTF-8"))
             
-            # correct processID
             if self.last_counter != None and decoded["tag"]["counter"] != self.last_counter + 1:
                 message = "Stream counter jumped from %d to %d leaving out %d lines" % (self.last_counter, decoded["tag"]["counter"], decoded["tag"]["counter"] - self.last_counter - 1)
                 newEntries.append({
