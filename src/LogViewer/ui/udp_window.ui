@@ -37,7 +37,7 @@
    <item row="5" column="0">
     <widget class="QLabel" name="label_2">
      <property name="text">
-      <string>IP to listen on (type &quot;::&quot; for all)</string>
+      <string>IP to listen on (type &quot;::&quot; or &quot;0.0.0.0&quot; for all)</string>
      </property>
     </widget>
    </item>
