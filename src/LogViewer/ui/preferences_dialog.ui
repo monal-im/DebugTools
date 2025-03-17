@@ -17,7 +17,7 @@
    <item>
     <widget class="QTabWidget" name="tabWidget">
      <property name="currentIndex">
-      <number>0</number>
+      <number>2</number>
      </property>
      <widget class="QWidget" name="uiTab_color">
       <attribute name="title">
@@ -36,14 +36,14 @@
           <string>Left click on a color button will open the color picker, right click will delete this color entry.</string>
          </property>
          <property name="alignment">
-          <set>Qt::AlignmentFlag::AlignLeading|Qt::AlignmentFlag::AlignLeft|Qt::AlignmentFlag::AlignTop</set>
+          <set>Qt::AlignLeading|Qt::AlignLeft|Qt::AlignTop</set>
          </property>
         </widget>
        </item>
        <item row="1" column="0">
         <layout class="QGridLayout" name="uiGridLayout_colorTab">
          <property name="sizeConstraint">
-          <enum>QLayout::SizeConstraint::SetNoConstraint</enum>
+          <enum>QLayout::SetNoConstraint</enum>
          </property>
         </layout>
        </item>
@@ -89,7 +89,7 @@
          <item>
           <spacer name="horizontalSpacer">
            <property name="orientation">
-            <enum>Qt::Orientation::Horizontal</enum>
+            <enum>Qt::Horizontal</enum>
            </property>
            <property name="sizeHint" stdset="0">
             <size>
@@ -125,10 +125,10 @@
    <item>
     <widget class="QDialogButtonBox" name="buttonBox">
      <property name="orientation">
-      <enum>Qt::Orientation::Horizontal</enum>
+      <enum>Qt::Horizontal</enum>
      </property>
      <property name="standardButtons">
-      <set>QDialogButtonBox::StandardButton::Apply|QDialogButtonBox::StandardButton::Discard|QDialogButtonBox::StandardButton::RestoreDefaults</set>
+      <set>QDialogButtonBox::Apply|QDialogButtonBox::Discard|QDialogButtonBox::RestoreDefaults</set>
      </property>
     </widget>
    </item>
