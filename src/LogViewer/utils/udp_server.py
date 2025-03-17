@@ -50,9 +50,8 @@ class UdpServer(QtNetwork.QUdpSocket):
     def readPendingDatagrams(self):
         newEntries = []
         while self.udpSocket.hasPendingDatagrams():
-            logger.debug("udp listener thread started")
-
             payload, host, port = self.udpSocket.readDatagram(self.udpSocket.pendingDatagramSize())
+            logger.debug(f"UDP listener received new {len(payload)} bytes datagram from {host.toString()}:{port}")
 
             # decrypt raw data
             try:
@@ -85,7 +84,7 @@ class UdpServer(QtNetwork.QUdpSocket):
             # update state
             self.last_counter = decoded["tag"]["counter"]
         
-        logger.debug("udp listener thread stopped")
+        logger.debug(f"Emitting {len(newEntries)} new rows from UDP listener...")
         self.newMessage.emit(newEntries)
     
     def _decrypt(self, ciphertext):
