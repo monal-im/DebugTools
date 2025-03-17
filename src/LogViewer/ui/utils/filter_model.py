@@ -41,7 +41,7 @@ class FilterModel(ProxyModel):
     def _filterTemplate(self, query, start=0, update_progressbar=None):
         error = None
 
-        for rawlogPosition in range(start, self.sourceModel().rowCount(None)):
+        for rawlogPosition in range(start, self.sourceModel().rowCount(None)-1):
             result = matchQuery(query, self.sourceModel().rawlog, rawlogPosition, usePython=SettingsSingleton()["usePythonFilter"])
             if result["status"] == QueryStatus.QUERY_OK:
                 self._addToVisibilityList(rawlogPosition, result["matching"])
@@ -54,7 +54,7 @@ class FilterModel(ProxyModel):
                 if update_progressbar(rawlogPosition, self.sourceModel().rowCount(None)) == True:
                     self.clearFilter()
                     break
-        visibilityList = self._sealVisibilityList(rawlogPosition)
+        visibilityList = self._sealVisibilityList(self.sourceModel().rowCount(None))
 
         if error != None:
             self.clearFilter()
@@ -80,8 +80,8 @@ class FilterModel(ProxyModel):
     def clearFilter(self):
         # The query must be of string type
         self.query = "True"
+        self._initVisibilityList()
         self.visibleCounter = self.sourceModel().rowCount(None)
         self.beginInsertRows(self.parent(), 0, self.visibleCounter+1)
         self.proxyData.clear(True)
         self.endInsertRows()
-        self._initVisibilityList()
