@@ -50,7 +50,7 @@ class RawlogModel(QtCore.QAbstractListModel):
     def _getQColorTuple(self, index):
         entry = self.rawlog[index]
         try:
-            for fieldName in SettingsSingleton().getFieldNames():
+            for fieldName in SettingsSingleton().getLoglevelNames():
                 if eval(SettingsSingleton().getLoglevel(fieldName), {
                     "true" : True,
                     "false": False,

@@ -48,7 +48,7 @@ class PreferencesDialog(QtWidgets.QDialog):
         loglevels = {}
         for loglevel in self.loglevels:
             loglevels = loglevels | {
-                loglevel["fieldName"].text(): {"query": loglevel["query"].text(), "data": [loglevel["buttons"][button] for button in loglevel["buttons"]]}
+                loglevel["loglevelName"].text(): {"query": loglevel["query"].text(), "data": [loglevel["buttons"][button] for button in loglevel["buttons"]]}
             }
         SettingsSingleton().setLoglevels(loglevels)
         super().accept()
@@ -263,27 +263,27 @@ class PreferencesDialog(QtWidgets.QDialog):
     def _createUiTab_loglevels(self):
         self.uiButton_addLoglevel.clicked.connect(self.addLoglevel)
 
-        fieldNames = SettingsSingleton().getFieldNames()
-        for fieldIndex in range(len(fieldNames)):
-            fieldName = fieldNames[fieldIndex]
-            uiLineEdit_fieldName = QtWidgets.QLineEdit()
-            uiLineEdit_fieldName.setText(fieldName)
-            self.uiGridLayout_loglevelsTab.addWidget(uiLineEdit_fieldName, fieldIndex, 0)
+        loglevelNames = SettingsSingleton().getLoglevelNames()
+        for loglevelIndex in range(len(loglevelNames)):
+            loglevelName = loglevelNames[loglevelIndex]
+            uiLineEdit_loglevelName = QtWidgets.QLineEdit()
+            uiLineEdit_loglevelName.setText(loglevelName)
+            self.uiGridLayout_loglevelsTab.addWidget(uiLineEdit_loglevelName, loglevelIndex, 0)
             uiLineEdit_query = QtWidgets.QLineEdit()
-            uiLineEdit_query.setText(SettingsSingleton().getLoglevel(fieldName))
-            self.uiGridLayout_loglevelsTab.addWidget(uiLineEdit_query, fieldIndex, 1)
+            uiLineEdit_query.setText(SettingsSingleton().getLoglevel(loglevelName))
+            self.uiGridLayout_loglevelsTab.addWidget(uiLineEdit_query, loglevelIndex, 1)
 
             colorNames = SettingsSingleton().getLoglevelColorNames()
-            buttons = self._createLoglevelColorButton(colorNames[fieldIndex])
+            buttons = self._createLoglevelColorButton(colorNames[loglevelIndex])
             for buttonIndex in range(len(buttons)):
-                self.uiGridLayout_loglevelsTab.addWidget(list(buttons.keys())[buttonIndex], fieldIndex, buttonIndex+2)
+                self.uiGridLayout_loglevelsTab.addWidget(list(buttons.keys())[buttonIndex], loglevelIndex, buttonIndex+2)
 
             delButton = QtWidgets.QPushButton()
             delButton.setText("Del")
-            self.uiGridLayout_loglevelsTab.addWidget(delButton, fieldIndex, 5)
+            self.uiGridLayout_loglevelsTab.addWidget(delButton, loglevelIndex, 5)
 
             uiItems = {
-                "fieldName": uiLineEdit_fieldName,
+                "loglevelName": uiLineEdit_loglevelName,
                 "query": uiLineEdit_query, 
                 "buttons": buttons, 
                 "delButton": delButton
@@ -306,8 +306,8 @@ class PreferencesDialog(QtWidgets.QDialog):
     def addLoglevel(self, *args):
         lastRowIndex = self.uiGridLayout_loglevelsTab.rowCount()
 
-        uiLineEdit_fieldName = QtWidgets.QLineEdit()
-        self.uiGridLayout_loglevelsTab.addWidget(uiLineEdit_fieldName, lastRowIndex, 0)
+        uiLineEdit_loglevelName = QtWidgets.QLineEdit()
+        self.uiGridLayout_loglevelsTab.addWidget(uiLineEdit_loglevelName, lastRowIndex, 0)
         uiLineEdit_query = QtWidgets.QLineEdit()
         self.uiGridLayout_loglevelsTab.addWidget(uiLineEdit_query, lastRowIndex, 1)
 
@@ -319,7 +319,7 @@ class PreferencesDialog(QtWidgets.QDialog):
         self.uiGridLayout_loglevelsTab.addWidget(delButton, lastRowIndex, 5)
 
         uiItems = {
-            "fieldName": uiLineEdit_fieldName,
+            "loglevelName": uiLineEdit_loglevelName,
             "query": uiLineEdit_query, 
             "buttons": buttons, 
             "delButton": delButton

@@ -161,14 +161,14 @@ class SettingsSingleton():
     def setColorTuple(self, name, colors):
         self.setGenericColorTuple(name, colors, ColorType.GLOBAL)
 
-    def getFieldNames(self):
+    def getLoglevelNames(self):
         return list(self.data["loglevel"].keys())
 
     def getLoglevels(self):
-        return {k:self.getLoglevel(k) for k in self.getFieldNames()}  
+        return {k:self.getLoglevel(k) for k in self.getLoglevelNames()}  
 
-    def getLoglevel(self, fieldName):
-        return self.data["loglevel"][fieldName]["query"]
+    def getLoglevel(self, loglevelName):
+        return self.data["loglevel"][loglevelName]["query"]
 
     def getLoglevelQColor(self, name):
         return self.getLoglevelQColorTuple(name)[0]

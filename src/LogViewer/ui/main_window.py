@@ -254,7 +254,7 @@ class MainWindow(QtWidgets.QMainWindow):
     
     def setCompleter(self, combobox):
         wordlist = self.rawlog.getCompleterList(lambda entry: entry)
-        wordlist += ["True", "False", "true", "false"] + list(SettingsSingleton().getFieldNames())
+        wordlist += ["True", "False", "true", "false"] + list(SettingsSingleton().getLoglevelNames())
 
         completer = Completer(wordlist, self)
         combobox.setCompleter(completer)
