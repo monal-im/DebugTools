@@ -373,7 +373,7 @@ class PreferencesDialog(QtWidgets.QDialog):
         return buttons
 
     @catch_exceptions(logger=logger)
-    def _openLoglevelColorPicker(self, button):
+    def _openLoglevelColorPicker(self, button, *args):
         loglevelIndex = None
         for index in range(len(self.loglevels)):
             if button in self.loglevels[index]["buttons"]:
