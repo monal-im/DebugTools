@@ -31,6 +31,7 @@ class UdpServer(QtCore.QObject):
         # init state
         self.run = False
         self.last_counter = None
+        self.last_remote = None
         weakref.finalize(self, self.stop)
         
         # "derive" 256 bit key
@@ -64,6 +65,9 @@ class UdpServer(QtCore.QObject):
             self.sock.close()
             self.sock = None
     
+    def getLastRemote(self):
+        return self.last_remote;
+    
     @catch_exceptions(logger=logger)
     def _thread(self):
         logger.debug("UDP listener thread started")
@@ -81,6 +85,7 @@ class UdpServer(QtCore.QObject):
                     logger.debug("Trying to read next udp packet...")
                     if self.sock in readable:
                         payload, client_address = self.sock.recvfrom(65536)
+                        self.last_remote = client_address
                     if self.sock in exceptional:
                         self.stop()
                         break        # leave this loop, self-run == False now

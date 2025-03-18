@@ -731,7 +731,10 @@ class MainWindow(QtWidgets.QMainWindow):
         if len(self.rawlog) > 0 and self.file != None:
             text += "%s:" % os.path.basename(self.file)
         elif self.udpServer != None:
-            text += "%s:" % SettingsSingleton().getUdpHost()
+            if self.udpServer.getLastRemote() == None:
+                text += "<remote unknown>"
+            else:
+                text += "%s:%d:" % self.udpServer.getLastRemote()
 
         if self.currentFilterQuery != None:
             text += " %d/%d" % (
@@ -846,7 +849,7 @@ class MainWindow(QtWidgets.QMainWindow):
             self._initModels(self.udpServer)
             self.rawlogModel.updateStatusbar.connect(self._updateStatusbar)
 
-            self.setWindowTitle(f"{SettingsSingleton().getUdpHost()} - Monal Log Viewer")
+            self.setWindowTitle(f"Listening on {SettingsSingleton().getUdpHost()}:{SettingsSingleton().getUdpPort()} - Monal Log Viewer")
             self._updateStatusbar()
             self.toggleUiItems()
 
