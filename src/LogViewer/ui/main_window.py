@@ -253,7 +253,7 @@ class MainWindow(QtWidgets.QMainWindow):
         self.toggleUiItems()
     
     def setCompleter(self, combobox):
-        wordlist = self.rawlog.getCompleterList()
+        wordlist = self.rawlog.getCompleterList(lambda entry: entry)
         wordlist += ["True", "False", "true", "false"] + list(SettingsSingleton().getFieldNames())
 
         completer = Completer(wordlist, self)
