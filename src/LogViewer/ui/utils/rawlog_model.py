@@ -25,7 +25,7 @@ class RawlogModel(QtCore.QAbstractListModel):
         self.ignoreError = False
 
         if udpServer != None:
-            udpServer.newMessage.connect(self.beginAppendEntries)
+            udpServer.newMessage.connect(self.appendNewEntries)
     
     @catch_exceptions(logger=logger)
     def reloadSettings(self):
@@ -111,7 +111,7 @@ class RawlogModel(QtCore.QAbstractListModel):
         except Exception as e:
             logger.exception("Exception while calling log formatter for: %s" % entry)
             if not ignoreError:
-                QtWidgets.QMessageBox.critical(
+                QtWidgets.QMessageBox.warning(
                     self.parent,
                     "Monal Log Viewer | ERROR", 
                     "Exception in formatter code:\n%s: %s\n%s" % (str(type(e).__name__), str(e), entry),
@@ -126,7 +126,7 @@ class RawlogModel(QtCore.QAbstractListModel):
         except Exception as e:
             logger.exception("Exception while compiling log formatter")
             if not self.ignoreError:
-                QtWidgets.QMessageBox.critical(
+                QtWidgets.QMessageBox.warning(
                     self.parent,
                     "Monal Log Viewer | ERROR",
                     "Exception in formatter code:\n%s: %s" % (str(type(e).__name__), str(e)),
@@ -155,7 +155,7 @@ class RawlogModel(QtCore.QAbstractListModel):
         self.listView().setCurrentIndex(index)
 
     @catch_exceptions(logger=logger)
-    def beginAppendEntries(self, entries):
+    def appendNewEntries(self, entries):
         newRowCount = len(self.rawlog)+len(entries)
         self.beginInsertRows(self.createIndex(len(self.rawlog), 0), len(self.rawlog), len(self.rawlog)+newRowCount)
         self.rawlog.appendEntries(entries, custom_load_callback=loader)

@@ -212,7 +212,7 @@ class MainWindow(QtWidgets.QMainWindow):
                 return
         except Exception as error:
             progressbar.hide()
-            QtWidgets.QMessageBox.critical(
+            QtWidgets.QMessageBox.warning(
                 self,
                 "Monal Log Viewer | ERROR", 
                 "Exception in query:\n%s: %s" % (str(type(error).__name__), str(error)),
@@ -503,7 +503,7 @@ class MainWindow(QtWidgets.QMainWindow):
 
     def checkQueryResult(self, error = None, visibleCounter = 0, combobox=None):
         if error != None:
-            QtWidgets.QMessageBox.critical(
+            QtWidgets.QMessageBox.warning(
                 self,
                 "Monal Log Viewer | ERROR", 
                 "Exception in query:\n%s: %s" % (str(type(error).__name__), str(error)),
