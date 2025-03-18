@@ -854,7 +854,7 @@ class MainWindow(QtWidgets.QMainWindow):
     def stopUdpStream(self, dummy):
         self.udpServer.stop()
         self.udpServer = None
-        self.close()
+        self.toggleUiItems()
 
     def _createNewProfileFromFile(self, pathToParentProfile):
         self.newProfileDialog = NewProfileDialog()
