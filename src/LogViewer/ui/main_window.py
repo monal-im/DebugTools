@@ -16,7 +16,7 @@ from .stack_push_window import StackPushWindow
 from .new_profile_dialog import NewProfileDialog
 from shared.storage import Rawlog
 from shared.ui.utils import UiAutoloader
-from shared.utils import catch_exceptions
+from shared.ui.utils import catch_exceptions
 from shared.utils import Paths
 import shared.ui.utils.helpers as sharedUiHelpers
                 
@@ -793,6 +793,7 @@ class MainWindow(QtWidgets.QMainWindow):
         combobox.insertItem(0, "")
         combobox.setCurrentIndex(1)         # after adding an empty row, the current query is at index 1
 
+    @catch_exceptions(logger=logger)
     def copyToClipboard(self):
         data = None
         if self.uiWidget_listView.hasFocus():
@@ -810,12 +811,15 @@ class MainWindow(QtWidgets.QMainWindow):
     def getRealSelectedIndexes(self):
         return [self._resolveIndex(self.uiWidget_listView.model(), index) for index in self.uiWidget_listView.selectedIndexes()]
 
+    @catch_exceptions(logger=logger)
     def cloneCurrentProfile(self):
         self._createNewProfileFromFile(Paths.get_conf_filepath(GlobalSettingsSingleton().getActiveProfile()))
 
+    @catch_exceptions(logger=logger)
     def addNewProfile(self):
         self._createNewProfileFromFile(Paths.get_default_conf_filepath(GlobalSettingsSingleton().getDefaultProfile()))
 
+    @catch_exceptions(logger=logger)
     def switchToProfile(self, profile):
         # remove all icons
         for profileName in self.profiles:
@@ -831,6 +835,7 @@ class MainWindow(QtWidgets.QMainWindow):
             self.openLogFile(self.file)
         self.update
 
+    @catch_exceptions(logger=logger)
     def createUdpWindow(self):
         self.udpWindow = UdpWindow()
         self.udpWindow.show()
@@ -845,6 +850,7 @@ class MainWindow(QtWidgets.QMainWindow):
             self._updateStatusbar()
             self.toggleUiItems()
 
+    @catch_exceptions(logger=logger)
     def stopUdpStream(self):
         self.udpServer.stop()
         self.udpServer = None
@@ -867,7 +873,8 @@ class MainWindow(QtWidgets.QMainWindow):
             self.profiles[profileName]["displayName"] = displayName
 
             self.switchToProfile(profileName)
-
+    
+    @catch_exceptions(logger=logger)
     def deleteCurrentProfile(self, profile):
         if len(self.profiles) > 1:
             profileName = GlobalSettingsSingleton().getActiveProfile()
@@ -879,6 +886,7 @@ class MainWindow(QtWidgets.QMainWindow):
         else:
             self.statusbar.showDynamicText(str("Error ✗ | You need more than one profile to delete one!"))  
 
+    @catch_exceptions(logger=logger)
     def exportCurrentProfile(self):
         file, check = QtWidgets.QFileDialog.getSaveFileName(None, "Export Profile", SettingsSingleton().getLastPath(), "Json (*.json);;All files (*)")
         if check:
@@ -893,6 +901,7 @@ class MainWindow(QtWidgets.QMainWindow):
         else:
             self.statusbar.showDynamicText(str("Error ✗ | Something went wrong exporting the profile!"))
 
+    @catch_exceptions(logger=logger)
     def importCurrentProfile(self):
         file, check = QtWidgets.QFileDialog.getOpenFileName(None, "Import Profile", SettingsSingleton().getLastPath(), "Json (*.json);;All files (*)")
         if check:

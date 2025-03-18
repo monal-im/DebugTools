@@ -5,8 +5,7 @@ import logging
 from PyQt5 import QtWidgets, uic, QtGui, QtCore
 
 from LogViewer.storage import SettingsSingleton
-from shared.utils import catch_exceptions
-from shared.ui.utils import UiAutoloader
+from shared.ui.utils import UiAutoloader, catch_exceptions
 
 
 logger = logging.getLogger(__name__)

@@ -5,8 +5,8 @@ from PyQt5 import QtWidgets, uic, QtGui, QtCore
 
 from LogViewer.storage import SettingsSingleton
 from .utils import PythonHighlighter, DeletableQListWidget
-from shared.utils import catch_exceptions, Paths
-from shared.ui.utils import UiAutoloader
+from shared.utils import Paths
+from shared.ui.utils import UiAutoloader, catch_exceptions
 import shared.ui.utils.helpers as sharedUiHelpers
 
 import logging
@@ -33,6 +33,7 @@ class PreferencesDialog(QtWidgets.QDialog):
         self.buttonBox.button(QtWidgets.QDialogButtonBox.Discard).clicked.connect(self.reject)
         self.buttonBox.button(QtWidgets.QDialogButtonBox.Apply).clicked.connect(self.accept)
 
+    @catch_exceptions(logger=logger)
     def accept(self, *args):
         for colorName in self.colors:
             SettingsSingleton().setQColorTuple(colorName, self.colors[colorName])
@@ -80,6 +81,7 @@ class PreferencesDialog(QtWidgets.QDialog):
                 self.uiGridLayout_colorTab.addWidget(buttons[buttonIndex], colorIndex, buttonIndex+1)
         self.update()
 
+    @catch_exceptions(logger=logger)
     def _openColorPicker(self, colorName, index, button):
         if self.colors[colorName][index] != None:
             color = QtWidgets.QColorDialog.getColor(self.colors[colorName][index], parent=self)
@@ -94,6 +96,7 @@ class PreferencesDialog(QtWidgets.QDialog):
             button.setText("rgb(%d, %d, %d)" % tuple(rgbColor))
             button.setStyleSheet("background-color: %s; color: %s;" % (colorTuple[index].name(), sharedUiHelpers.getCssContrastColor(*rgbColor)))
 
+    @catch_exceptions(logger=logger)
     def _delColor(self, colorName, index, button, colorType="color"):
         if colorType != "loglevel":
             self.colors[colorName][index] = None
@@ -157,6 +160,7 @@ class PreferencesDialog(QtWidgets.QDialog):
             raise RuntimeError("Misc value type not implemented yet: %s" % str(type(value)))
         return widget
     
+    @catch_exceptions(logger=logger)
     def _changeFont(self, widget):
         fontDialog = QtWidgets.QFontDialog()
         font, valid = fontDialog.getFont(self.font)
@@ -186,6 +190,7 @@ class PreferencesDialog(QtWidgets.QDialog):
             self.uiVLayout_historyTab.addLayout(historySection)
             self.history[combobox] = deletableQListWidget
 
+    @catch_exceptions(logger=logger)
     def _addComboboxItem(self, listWidget, lineEdit, combobox):
         if lineEdit.text() != None and lineEdit.text() not in [self.history[combobox].item(item).text() for item in range(self.history[combobox].count())]:
             listWidget.addItem(QtWidgets.QListWidgetItem(lineEdit.text()))
@@ -206,6 +211,7 @@ class PreferencesDialog(QtWidgets.QDialog):
                 button.disconnect()
                 button.clicked.connect(functools.partial(self._deleteFormat, lineEdit, code, button))
 
+    @catch_exceptions(logger=logger)
     def _deleteFormat(self, lineEdit, code, button):
         if len(self.formatter) >= 2:
             del self.formatter[lineEdit]
@@ -214,6 +220,7 @@ class PreferencesDialog(QtWidgets.QDialog):
             code.hide()
             button.hide()
 
+    @catch_exceptions(logger=logger)
     def _addFormatter(self, lineEdit, code, button):
         if lineEdit.text() != "" and code.toPlainText() != "":
             self.currentFormatter.addItem(lineEdit.text())
@@ -285,6 +292,7 @@ class PreferencesDialog(QtWidgets.QDialog):
             delButton.clicked.connect(functools.partial(self.deleteLoglevel, uiItems))
         self.update()
 
+    @catch_exceptions(logger=logger)
     def deleteLoglevel(self, uiItems):
         for itemName in uiItems:
             if type(uiItems[itemName]) == dict:
@@ -294,6 +302,7 @@ class PreferencesDialog(QtWidgets.QDialog):
                 uiItems[itemName].hide()
         del self.loglevels[self.loglevels.index(uiItems)]
 
+    @catch_exceptions(logger=logger)
     def addLoglevel(self):
         lastRowIndex = self.uiGridLayout_loglevelsTab.rowCount()
 
@@ -363,6 +372,7 @@ class PreferencesDialog(QtWidgets.QDialog):
             buttons.append(button)
         return buttons
 
+    @catch_exceptions(logger=logger)
     def _openLoglevelColorPicker(self, button):
         loglevelIndex = None
         for index in range(len(self.loglevels)):
@@ -380,6 +390,7 @@ class PreferencesDialog(QtWidgets.QDialog):
             button.setText("rgb(%d, %d, %d)" % tuple(rgbColor))
             button.setStyleSheet("background-color: %s; color: %s;" % ("#{:02x}{:02x}{:02x}".format(*rgbColor), sharedUiHelpers.getCssContrastColor(*rgbColor)))
 
+    @catch_exceptions(logger=logger)
     def _delLoglevelColor(self, button):
         for index in range(len(self.loglevels)):
             if button in self.loglevels[index]["buttons"]:
