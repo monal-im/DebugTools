@@ -4,9 +4,6 @@ import json
 import struct
 import gzip
 import io
-from queue import Queue
-from PyQt5 import QtCore
-
 from shared.utils import randread
 try:
     from .udp_server import UdpServer
@@ -24,9 +21,7 @@ LENGTH_BITS_NEEDED = 20
 class AbortRawlogLoading(RuntimeError):
     pass
 
-class Rawlog(QtCore.QObject):
-    finishInsertRows = QtCore.pyqtSignal()
-
+class Rawlog:
     def __init__(self, to_load=None, **kwargs):
         super(Rawlog, self).__init__()
         self.clear()
@@ -277,8 +272,6 @@ class Rawlog(QtCore.QObject):
     def appendEntries(self, entries, custom_load_callback=None):
         for entry in entries:
             self._append_entry(entry, custom_load_callback)
-
-        self.finishInsertRows.emit()
 
     def getItemIndex(self, item):
         return self.data.index(item)
