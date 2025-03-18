@@ -836,7 +836,7 @@ class MainWindow(QtWidgets.QMainWindow):
         self.update
 
     @catch_exceptions(logger=logger)
-    def createUdpWindow(self):
+    def createUdpWindow(self, dummy):
         self.udpWindow = UdpWindow()
         self.udpWindow.show()
         result = self.udpWindow.exec_()
@@ -851,7 +851,7 @@ class MainWindow(QtWidgets.QMainWindow):
             self.toggleUiItems()
 
     @catch_exceptions(logger=logger)
-    def stopUdpStream(self):
+    def stopUdpStream(self, dummy):
         self.udpServer.stop()
         self.udpServer = None
         self.close()
