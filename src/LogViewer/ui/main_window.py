@@ -582,10 +582,12 @@ class MainWindow(QtWidgets.QMainWindow):
     @catch_exceptions(logger=logger)
     def goToLastRow(self, *args):
         # set last row as current row
-        with self.lazyItemModel.triggerScrollChanges():
-            self.uiWidget_listView.model().setCurrentRow(self.filterModel.rowCount(None)-1)
-            self.uiWidget_listView.scrollToBottom()
-            #self.statusbar.showDynamicText(str("Done ✓ | Switched to first row: %d" % index))
+
+        # As the lazyItemModel isn't functional yet, the lazyItemModel can't be used here
+        # with self.lazyItemModel.triggerScrollChanges():
+        self.uiWidget_listView.model().setCurrentRow(self.filterModel.rowCount(None)-1)
+        self.uiWidget_listView.scrollToBottom()
+        #self.statusbar.showDynamicText(str("Done ✓ | Switched to first row: %d" % index))
 
     @catch_exceptions(logger=logger)
     def goToFirstRowInViewport(self, *args):
