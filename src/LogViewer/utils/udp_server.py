@@ -17,7 +17,7 @@ from shared.utils import catch_exceptions
 import logging
 logger = logging.getLogger(__name__)
 
-class UdpServer(QtNetwork.QUdpSocket):
+class UdpServer(QtCore.QObject):
     newMessage = QtCore.pyqtSignal(list)
 
     def __init__(self, key, /, host="::", port=5555):
@@ -34,7 +34,7 @@ class UdpServer(QtNetwork.QUdpSocket):
         hostAddress.setAddress(host)
 
         self.udpSocket = QtNetwork.QUdpSocket(self)
-        self.udpSocket.bind(hostAddress, port)
+        self.udpSocket.bind(hostAddress, port, QtNetwork.QUdpSocket.ShareAddress | QtNetwork.QUdpSocket.ReuseAddressHint)
 
         self.udpSocket.readyRead.connect(self.readPendingDatagrams)
 
@@ -48,6 +48,7 @@ class UdpServer(QtNetwork.QUdpSocket):
     @catch_exceptions(logger=logger)
     @QtCore.pyqtSlot()
     def readPendingDatagrams(self):
+        logger.debug("Handling new UDP readyRead signal...")
         newEntries = []
         while self.udpSocket.hasPendingDatagrams():
             payload, host, port = self.udpSocket.readDatagram(self.udpSocket.pendingDatagramSize())
@@ -86,6 +87,7 @@ class UdpServer(QtNetwork.QUdpSocket):
         
         logger.debug(f"Emitting {len(newEntries)} new rows from UDP listener...")
         self.newMessage.emit(newEntries)
+        logger.debug(f"Returning to QT event handler...")
     
     def _decrypt(self, ciphertext):
         iv = ciphertext[:12]
