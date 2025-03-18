@@ -82,7 +82,7 @@ class PreferencesDialog(QtWidgets.QDialog):
         self.update()
 
     @catch_exceptions(logger=logger)
-    def _openColorPicker(self, colorName, index, button):
+    def _openColorPicker(self, colorName, index, button, *args):
         if self.colors[colorName][index] != None:
             color = QtWidgets.QColorDialog.getColor(self.colors[colorName][index], parent=self)
         else:
@@ -97,7 +97,7 @@ class PreferencesDialog(QtWidgets.QDialog):
             button.setStyleSheet("background-color: %s; color: %s;" % (colorTuple[index].name(), sharedUiHelpers.getCssContrastColor(*rgbColor)))
 
     @catch_exceptions(logger=logger)
-    def _delColor(self, colorName, index, button, colorType="color"):
+    def _delColor(self, colorName, index, button, colorType="color", *args):
         if colorType != "loglevel":
             self.colors[colorName][index] = None
 
@@ -161,7 +161,7 @@ class PreferencesDialog(QtWidgets.QDialog):
         return widget
     
     @catch_exceptions(logger=logger)
-    def _changeFont(self, widget):
+    def _changeFont(self, widget, *args):
         fontDialog = QtWidgets.QFontDialog()
         font, valid = fontDialog.getFont(self.font)
         if valid:
@@ -191,7 +191,7 @@ class PreferencesDialog(QtWidgets.QDialog):
             self.history[combobox] = deletableQListWidget
 
     @catch_exceptions(logger=logger)
-    def _addComboboxItem(self, listWidget, lineEdit, combobox):
+    def _addComboboxItem(self, listWidget, lineEdit, combobox, *args):
         if lineEdit.text() != None and lineEdit.text() not in [self.history[combobox].item(item).text() for item in range(self.history[combobox].count())]:
             listWidget.addItem(QtWidgets.QListWidgetItem(lineEdit.text()))
 
@@ -212,7 +212,7 @@ class PreferencesDialog(QtWidgets.QDialog):
                 button.clicked.connect(functools.partial(self._deleteFormat, lineEdit, code, button))
 
     @catch_exceptions(logger=logger)
-    def _deleteFormat(self, lineEdit, code, button):
+    def _deleteFormat(self, lineEdit, code, button, *args):
         if len(self.formatter) >= 2:
             del self.formatter[lineEdit]
             self.currentFormatter.removeItem(self.currentFormatter.findText(lineEdit.text()))
@@ -221,7 +221,7 @@ class PreferencesDialog(QtWidgets.QDialog):
             button.hide()
 
     @catch_exceptions(logger=logger)
-    def _addFormatter(self, lineEdit, code, button):
+    def _addFormatter(self, lineEdit, code, button, *args):
         if lineEdit.text() != "" and code.toPlainText() != "":
             self.currentFormatter.addItem(lineEdit.text())
             self.formatter[lineEdit] = code
@@ -293,7 +293,7 @@ class PreferencesDialog(QtWidgets.QDialog):
         self.update()
 
     @catch_exceptions(logger=logger)
-    def deleteLoglevel(self, uiItems):
+    def deleteLoglevel(self, uiItems, *args):
         for itemName in uiItems:
             if type(uiItems[itemName]) == dict:
                 for button in list(uiItems[itemName].keys()):
@@ -303,7 +303,7 @@ class PreferencesDialog(QtWidgets.QDialog):
         del self.loglevels[self.loglevels.index(uiItems)]
 
     @catch_exceptions(logger=logger)
-    def addLoglevel(self):
+    def addLoglevel(self, *args):
         lastRowIndex = self.uiGridLayout_loglevelsTab.rowCount()
 
         uiLineEdit_fieldName = QtWidgets.QLineEdit()
@@ -391,7 +391,7 @@ class PreferencesDialog(QtWidgets.QDialog):
             button.setStyleSheet("background-color: %s; color: %s;" % ("#{:02x}{:02x}{:02x}".format(*rgbColor), sharedUiHelpers.getCssContrastColor(*rgbColor)))
 
     @catch_exceptions(logger=logger)
-    def _delLoglevelColor(self, button):
+    def _delLoglevelColor(self, button, *args):
         for index in range(len(self.loglevels)):
             if button in self.loglevels[index]["buttons"]:
                 self.loglevels[index]["buttons"][button] = None
