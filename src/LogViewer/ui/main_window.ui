@@ -366,6 +366,9 @@
    <property name="text">
     <string>Quit</string>
    </property>
+   <property name="shortcut">
+    <string>Ctrl+Q</string>
+   </property>
    <property name="statusTip">
     <string>Quit Whole LogViewer</string>
    </property>
@@ -544,10 +547,16 @@
    <property name="text">
     <string>Listen for udp-rawlog stream</string>
    </property>
+   <property name="shortcut">
+    <string>Ctrl+L</string>
+   </property>
   </action>
   <action name="uiAction_stopUdpStream">
    <property name="text">
     <string>Stop udp-rawlog streaming</string>
+   </property>
+   <property name="shortcut">
+    <string>Ctrl+K</string>
    </property>
   </action>
  </widget>
