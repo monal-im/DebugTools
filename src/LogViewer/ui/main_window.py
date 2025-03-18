@@ -126,7 +126,7 @@ class MainWindow(QtWidgets.QMainWindow):
         self.uiAction_importCurrentProfile.triggered.connect(self.importCurrentProfile)
 
     @catch_exceptions(logger=logger)
-    def quit(self):
+    def quit(self, dummy):
         sys.exit()
 
     @catch_exceptions(logger=logger)
@@ -161,8 +161,8 @@ class MainWindow(QtWidgets.QMainWindow):
         self.uiCombobox_filterInput.setEnabled(self.file != None or self.udpServer != None)
         self.uiAction_lastRowInViewport.setEnabled(self.file != None or self.udpServer != None)
         self.uiAction_firstRowInViewport.setEnabled(self.file != None or self.udpServer != None)
+        self.uiAction_listenUdpStream.setEnabled(self.file == None and self.udpServer == None)
         self.uiAction_stopUdpStream.setEnabled(self.udpServer != None)
-        self.uiAction_listenUdpStream.setEnabled(self.file == None)
 
     def export(self):
         if self.rawlog:
