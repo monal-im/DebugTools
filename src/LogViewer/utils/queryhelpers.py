@@ -19,7 +19,7 @@ def matchQuery(query, rawlog, index, entry=None, usePython=True):
 
     try:
         if entry == None:
-            entry = rawlog[index]["data"]
+            entry = rawlog[index]
         if usePython:
             if eval(query, {
                 **SettingsSingleton().getLoglevels(),
@@ -47,4 +47,4 @@ def loader(entry):
     if "__warning" in entry and entry["__warning"] == True:
         QtWidgets.QMessageBox.warning("File corruption detected", entry["message"])
     
-    return {"data": entry, "visible": True}
+    return entry

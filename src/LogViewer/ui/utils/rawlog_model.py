@@ -32,8 +32,8 @@ class RawlogModel(QtCore.QAbstractListModel):
         self.layoutAboutToBeChanged.emit()
         self.formatter = self.createFormatter()
         for entry in self.rawlog:
-            if "__formattedMessage" in entry["data"]:
-                del entry["data"]["__formattedMessage"]
+            if "__formattedMessage" in entry:
+                del entry["__formattedMessage"]
         for name, member in inspect.getmembers(self, predicate=inspect.ismethod):
             if hasattr(member, "cache_parameters"):
                 #logger.debug(f"Cache effects for {member.__name__}: {member.cache_info()}")
@@ -48,7 +48,7 @@ class RawlogModel(QtCore.QAbstractListModel):
     @functools.lru_cache(maxsize=LRU_MAXSIZE, typed=True)
     @catch_exceptions(logger=logger)
     def _getQColorTuple(self, index):
-        entry = self.rawlog[index]["data"]
+        entry = self.rawlog[index]
         try:
             for fieldName in SettingsSingleton().getFieldNames():
                 if eval(SettingsSingleton().getLoglevel(fieldName), {
@@ -70,15 +70,15 @@ class RawlogModel(QtCore.QAbstractListModel):
         if index.isValid() or (0 <= index.row() < len(self.rawlog)):
             if role == QtCore.Qt.DisplayRole:
                 entry = self.rawlog[index.row()]
-                if "__formattedMessage" not in entry["data"]:
+                if "__formattedMessage" not in entry:
                     try:
-                        formattedEntry = self.createFormatterText(self.formatter, entry["data"], ignoreError=self.ignoreError)
-                        entry["data"]["__formattedMessage"] = formattedEntry
+                        formattedEntry = self.createFormatterText(self.formatter, entry, ignoreError=self.ignoreError)
+                        entry["__formattedMessage"] = formattedEntry
                     except:
                         # ignore error and return empty string (already catched and displayed to user by createFormatterText() itself)
                         return ""
                 else:
-                    formattedEntry = entry["data"]["__formattedMessage"]
+                    formattedEntry = entry["__formattedMessage"]
                 return helpers.wordWrapLogline(formattedEntry, SettingsSingleton()["staticLineWrap"])
             elif role == QtCore.Qt.FontRole:
                 return self._getQFont()

@@ -170,7 +170,7 @@ class MainWindow(QtWidgets.QMainWindow):
             if check:
                 SettingsSingleton().setLastPath(os.path.dirname(os.path.abspath(file)))
                 formatter = self.rawlogModel.createFormatter()
-                status = self.rawlog.export_file(file, custom_store_callback = lambda entry: entry["data"] if self.filterModel.isRowVisible(self.rawlog.getItemIndex(entry)) else None, formatter = lambda entry: self.rawlogModel.createFormatterText(formatter, entry))
+                status = self.rawlog.export_file(file, custom_store_callback = lambda entry: entry if self.filterModel.isRowVisible(self.rawlog.getItemIndex(entry)) else None, formatter = lambda entry: self.rawlogModel.createFormatterText(formatter, entry))
                 if status:
                     self.statusbar.showDynamicText(str("Done ✓ | Log export was successful"))
                 else:
@@ -181,7 +181,7 @@ class MainWindow(QtWidgets.QMainWindow):
             file, check = QtWidgets.QFileDialog.getSaveFileName(None, "Choose where to save this rawlog logfile", SettingsSingleton().getLastPath(), "Compressed Monal rawlog (*.rawlog.gz)(*.rawlog.gz);;Monal rawlog (*.rawlog)(*.rawlog);;All files (*)")
             if check:
                 SettingsSingleton().setLastPath(os.path.dirname(os.path.abspath(file)))
-                status = self.rawlog.store_file(file, custom_store_callback = lambda entry: entry["data"] if self.filterModel.isRowVisible(self.rawlog.getItemIndex(entry)) else None)
+                status = self.rawlog.store_file(file, custom_store_callback = lambda entry: entry if self.filterModel.isRowVisible(self.rawlog.getItemIndex(entry)) else None)
                 if status:
                     self.statusbar.showDynamicText(str("Done ✓ | Rawlog saved successfully"))
                 else:
@@ -253,7 +253,7 @@ class MainWindow(QtWidgets.QMainWindow):
         self.toggleUiItems()
     
     def setCompleter(self, combobox):
-        wordlist = self.rawlog.getCompleterList(lambda entry: entry["data"])
+        wordlist = self.rawlog.getCompleterList()
         wordlist += ["True", "False", "true", "false"] + list(SettingsSingleton().getFieldNames())
 
         completer = Completer(wordlist, self)
@@ -277,7 +277,7 @@ class MainWindow(QtWidgets.QMainWindow):
                         path.pop(-1)
                     return retval
                 
-                selectedEntry = self.rawlog[self.getRealSelectedIndexes()[0].row()].get("data")
+                selectedEntry = self.rawlog[self.getRealSelectedIndexes()[0].row()]
                 details_table_data = splitter(selectedEntry)
                 logger.debug("details table data: %s" % details_table_data)
                 
@@ -800,7 +800,7 @@ class MainWindow(QtWidgets.QMainWindow):
     def copyToClipboard(self):
         data = None
         if self.uiWidget_listView.hasFocus():
-            data = self.rawlog[self.getRealSelectedIndexes()[0].row()]["data"]["__formattedMessage"]
+            data = self.rawlog[self.getRealSelectedIndexes()[0].row()]["__formattedMessage"]
         if self.uiTable_characteristics.hasFocus():
             data = self.uiTable_characteristics.currentItem().text()
         
