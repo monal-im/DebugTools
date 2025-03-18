@@ -11,6 +11,7 @@ class ProxyData():
     def __init__(self, proxyModel, standardValue=False):
         super().__init__()
         self.proxyModel = proxyModel
+        logger.info(f"Using {standardValue = }...")
         self.clear(standardValue)
 
     @functools.lru_cache(maxsize=LRU_MAXSIZE, typed=True)

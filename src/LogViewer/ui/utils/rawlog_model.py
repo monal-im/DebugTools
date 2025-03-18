@@ -156,8 +156,8 @@ class RawlogModel(QtCore.QAbstractListModel):
 
     @catch_exceptions(logger=logger)
     def appendNewEntries(self, entries):
-        newRowCount = len(self.rawlog)+len(entries)
-        self.beginInsertRows(self.createIndex(len(self.rawlog), 0), len(self.rawlog), len(self.rawlog)+newRowCount)
+        # the end value of beginInsertRows is inclusive, see https://doc.qt.io/qt-6/qabstractitemmodel.html#beginInsertRows
+        self.beginInsertRows(self.createIndex(len(self.rawlog), 0), len(self.rawlog), len(self.rawlog)+len(entries)-1)
         self.rawlog.appendEntries(entries, custom_load_callback=loader)
         self.endInsertRows()
         self.updateStatusbar.emit()        

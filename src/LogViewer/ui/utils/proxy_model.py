@@ -10,10 +10,10 @@ logger = logging.getLogger(__name__)
 # this class only caches methods that return static values
 class ProxyModel(QtCore.QAbstractProxyModel):
     @catch_exceptions(logger=logger)
-    def __init__(self, sourceModel, parent=None, handledSignals=None):
+    def __init__(self, sourceModel, parent=None, handledSignals=None, standardValue=False):
         super().__init__(parent)
         self.setSourceModel(sourceModel)
-        self.proxyData = ProxyData(self)
+        self.proxyData = ProxyData(self, standardValue)
         # proxy signals, too
         signals = [
             "columnsAboutToBeInserted", "columnsAboutToBeMoved", "columnsAboutToBeRemoved",
@@ -104,6 +104,6 @@ class ProxyModel(QtCore.QAbstractProxyModel):
 
     def _sealVisibilityList(self, index):
         if len(self.visibilityList) != 0 and self.visibilityList[-1]["end"] == None:
-            logger.debug(f"ended last block: {self.visibilityList[-1] = }")
+            logger.debug(f"sealing ended last block: {self.visibilityList[-1] = }")
             self.visibilityList[-1]["end"] = index
         return self.visibilityList
