@@ -394,7 +394,7 @@ class MainWindow(QtWidgets.QMainWindow):
             self.setComboboxStatusColor(self.uiCombobox_searchInput, self.search.getStatus())
 
         # if current line is hidden switch to next line
-        if not self.filterModel.isRowVisible(result):
+        if self.currentFilterQuery != None and not self.filterModel.isRowVisible(result):
             result = None
             if func == Search.next:
                 self.searchNext()
@@ -420,6 +420,8 @@ class MainWindow(QtWidgets.QMainWindow):
             self.search = Search(self.rawlog, query, startIndex, update_progressbar)
             if self.search.getStatus() == QueryStatus.QUERY_ERROR:
                 self.checkQueryResult(self.search.getError(), 0, self.uiCombobox_searchInput)
+            if self.udpServer != None:
+                self.filterModel.newEntryRange.connect(self.search.searchMatchingEntries)
         except AbortSearch:
             self.search = None
 

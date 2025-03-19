@@ -1,3 +1,5 @@
+from PyQt5 import QtCore
+
 from LogViewer.storage import SettingsSingleton
 from LogViewer.utils import QueryStatus, matchQuery
 
@@ -7,6 +9,8 @@ logger = logging.getLogger(__name__)
 from .proxy_model import ProxyModel
 
 class FilterModel(ProxyModel):
+    newEntryRange = QtCore.pyqtSignal(int, int)
+
     def __init__(self, sourceModel, parent=None):
         logger.debug(f"Creating new filter model for source: {sourceModel.__class__.__name__}")
         super().__init__(sourceModel, parent, handledSignals=[
@@ -36,6 +40,7 @@ class FilterModel(ProxyModel):
         # end values are inclusive (see https://doc.qt.io/qt-6/qabstractitemmodel.html#rowsAboutToBeInserted), but range() is exclusive
         # --> fix this by adding 1
         self._filterTemplate(self.query, start=self.last_insert_event["start"], end=self.last_insert_event["end"]+1)
+        self.newEntryRange.emit(self.last_insert_event["start"], self.last_insert_event["end"]+1)
 
     def rowCount(self, index):
         return self.visibleCounter

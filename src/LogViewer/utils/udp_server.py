@@ -133,6 +133,7 @@ class UdpServer(QtCore.QObject):
                             "__virtual": True,
                             "__message": message,
                         })
+
                     # update state
                     self.last_counter = decoded["tag"]["counter"]
                 

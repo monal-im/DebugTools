@@ -14,6 +14,7 @@ class Search:
 
     def __init__(self, rawlog, query, startIndex, update_progressbar=None):
         super().__init__()
+        self.rawlog = rawlog
         self.query = query
         self.resultList = []
         # the first search result should set our eof index (we want our status to be EOF_REACHED once we reach exactly this result again)
@@ -22,22 +23,25 @@ class Search:
         self.status = QueryStatus.QUERY_OK
         self.error = None
 
-        for index in range(len(rawlog)):
+        self.searchMatchingEntries(0, len(self.rawlog), update_progressbar=update_progressbar)
+
+        self.resultIndex = -1           # don't jump over the first result on start
+        self.eofIndex = 0               # the initial EOF point is the first result (e.g. result index 0)
+
+    def searchMatchingEntries(self, start, end, update_progressbar=None):
+        for index in range(start, end):
             # Presearch filter is expecting a finished rawlog loading
-            result = matchQuery(query, rawlog, index, usePython=SettingsSingleton()["usePythonSearch"])
+            result = matchQuery(self.query, self.rawlog, index, usePython=SettingsSingleton()["usePythonSearch"])
             if result["matching"]:
                 self.resultList.append(index)
             if result["status"] == QueryStatus.QUERY_ERROR:
                 self.status = result["status"]
                 self.error = result["error"]
             if update_progressbar != None:
-                if update_progressbar(index, len(rawlog)) == True:
+                if update_progressbar(index, len(self.rawlog)) == True:
                     raise AbortSearch()
         if len(self.resultList) == 0 and self.status != QueryStatus.QUERY_ERROR:
             self.status = QueryStatus.QUERY_EMPTY
-
-        self.resultIndex = -1           # don't jump over the first result on start
-        self.eofIndex = 0               # the initial EOF point is the first result (e.g. result index 0)
 
     def calculateStartIndex(self, startIndex, direction):
         if direction == Search.NEXT:
