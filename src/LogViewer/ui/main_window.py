@@ -852,7 +852,18 @@ class MainWindow(QtWidgets.QMainWindow):
         self.udpWindow.show()
         result = self.udpWindow.exec_()
         if result:
-            self.udpServer = UdpServer(SettingsSingleton().getUdpEncryptionKey(), host=SettingsSingleton().getUdpHost(), port=SettingsSingleton().getUdpPort())
+            self.close()
+            try:
+                self.udpServer = UdpServer(SettingsSingleton().getUdpEncryptionKey(), host=SettingsSingleton().getUdpHost(), port=SettingsSingleton().getUdpPort())
+            except Exception as error:
+                QtWidgets.QMessageBox.warning(
+                    self,
+                    "Monal Log Viewer | ERROR", 
+                    "Exception while starting UDP receiver:\n%s: %s" % (str(type(error).__name__), str(error)),
+                    QtWidgets.QMessageBox.Ok
+                )
+                self.udpServer = None
+                return
 
             self._initModels(self.udpServer)
             self.rawlogModel.updateStatusbar.connect(self._updateStatusbar)
