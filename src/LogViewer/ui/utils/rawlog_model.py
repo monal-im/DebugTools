@@ -102,11 +102,7 @@ class RawlogModel(QtCore.QAbstractListModel):
     def columnCount(self, index):
         return 1
 
-    def createFormatterText(self, formatter, entry, ignoreError=False):    
-        # if a message was injected by the udp_server it will be returned here 
-        if "__message" in entry:
-            return entry["__message"]   
-        
+    def createFormatterText(self, formatter, entry, ignoreError=False):        
         try:
             # this will make sure the log formatter does not change our log entry, but it makes loading slower
             # formattedEntry = formatter({value: entry[value] for value in entry.keys()})
