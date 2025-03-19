@@ -25,7 +25,10 @@ class RawlogModel(QtCore.QAbstractListModel):
         self.ignoreError = False
 
         if udpServer != None:
-            udpServer.newMessage.connect(self.appendNewEntries)
+            # use sync mode, async mode will somehow trigger a qt bug resulting in "too much recursion" errors
+            # sync mode has the advantage to group udp updates together rather than emitting lots of signals being only 1 or 2 entires long
+            # piling up in the event queue (because the ui thread is slower in consuming than the udp server thread emitting these events)
+            udpServer.newMessage.connect(self.appendNewEntries, QtCore.Qt.BlockingQueuedConnection)
     
     @catch_exceptions(logger=logger)
     def reloadSettings(self):

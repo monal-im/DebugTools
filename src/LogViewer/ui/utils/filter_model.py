@@ -66,7 +66,9 @@ class FilterModel(ProxyModel):
             if result["status"] == QueryStatus.QUERY_OK:
                 self._addToVisibilityList(rawlogPosition, result["matching"])
             else:
-                error = result["error"]
+                # ignore errors for virtual messages
+                if not self.sourceModel().rawlog[rawlogPosition]["__virtual"]:
+                    error = result["error"]
                 self._addToVisibilityList(rawlogPosition, False)
 
             self.visibleCounter += 1 if result["matching"] else 0

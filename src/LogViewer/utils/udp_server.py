@@ -128,10 +128,15 @@ class UdpServer(QtCore.QObject):
                 
                 # emit logentry itself
                 newEntries.append(decoded)
+                
+                # emit at max 25 entries in one signal to make our ui more responsive
+                if len(newEntries) >= 25:
+                    break
             
             if len(newEntries) > 0:
                 logger.debug(f"Emitting {len(newEntries)} new rows from UDP listener...")
                 self.newMessage.emit(newEntries)
+                logger.debug(f"Done emitting entries")
                 
         logger.debug("UDP listener thread stopped")
     
