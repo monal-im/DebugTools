@@ -853,17 +853,6 @@ class MainWindow(QtWidgets.QMainWindow):
         result = self.udpWindow.exec_()
         if result:
             self.udpServer = UdpServer(SettingsSingleton().getUdpEncryptionKey(), host=SettingsSingleton().getUdpHost(), port=SettingsSingleton().getUdpPort())
-            
-            status = self.udpServer.getStatus()
-            if status != True:
-                self.udpServer = None
-                msgBox = QtWidgets.QMessageBox.critical(
-                            self,
-                            "Monal Log Viewer | ERROR", 
-                            str(status),
-                            QtWidgets.QMessageBox.Ok
-                        )
-                return
 
             self._initModels(self.udpServer)
             self.rawlogModel.updateStatusbar.connect(self._updateStatusbar)
