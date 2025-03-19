@@ -323,6 +323,7 @@ class MainWindow(QtWidgets.QMainWindow):
     def close(self, *args):
         self.uiWidget_listView.setModel(None)
         self.rawlog = Rawlog()
+        self.udpServer = None
         self.hideSearchAndGoToRow()
         self.selectedCombobox = self.uiCombobox_filterInput
         self.file = None
@@ -869,8 +870,7 @@ class MainWindow(QtWidgets.QMainWindow):
     @catch_exceptions(logger=logger)
     def stopUdpStream(self, dummy):
         self.udpServer.stop()
-        self.udpServer = None
-        self.toggleUiItems()
+        self.close()
 
     def _createNewProfileFromFile(self, pathToParentProfile):
         self.newProfileDialog = NewProfileDialog()
