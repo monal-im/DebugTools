@@ -87,15 +87,11 @@ class FilterModel(ProxyModel):
         for item in visibilityList:
             if item["visibility"]:
                 self.beginInsertRows(self.parent(), item["start"], item["end"])
-                for index in range(item["start"], item["end"]+1):
-                    if self.proxyData.getVisibility(index) != item["visibility"]:
-                        self.proxyData.setVisibilityAtIndex(index, item["visibility"])
+                self.proxyData.setVisible(item["start"], item["end"]+1)
                 self.endInsertRows()                    
             else:
                 self.beginRemoveRows(self.parent(), item["start"], item["end"])
-                for index in range(item["start"], item["end"]+1):
-                    if self.proxyData.getVisibility(index) != item["visibility"]:
-                        self.proxyData.setVisibilityAtIndex(index, item["visibility"])
+                self.proxyData.setInvisible(item["start"], item["end"]+1)
                 self.endRemoveRows()
 
         return (error, self.visibleCounter) 
