@@ -13,8 +13,6 @@ logger = logging.getLogger(__name__)
 LRU_MAXSIZE = 1024*1024
 
 class RawlogModel(QtCore.QAbstractListModel):
-    updateStatusbar = QtCore.pyqtSignal()
-
     @catch_exceptions(logger=logger)
     def __init__(self, rawlog, parent=None, udpServer=None):
         super().__init__(parent)
@@ -161,6 +159,5 @@ class RawlogModel(QtCore.QAbstractListModel):
     def appendNewEntries(self, entries):
         # the end value of beginInsertRows is inclusive, see https://doc.qt.io/qt-6/qabstractitemmodel.html#beginInsertRows
         self.beginInsertRows(self.createIndex(len(self.rawlog), 0), len(self.rawlog), len(self.rawlog)+len(entries)-1)
-        self.rawlog.appendEntries(entries, custom_load_callback=loader)
+        self.rawlog.appendEntries(entries)
         self.endInsertRows()
-        self.updateStatusbar.emit()        

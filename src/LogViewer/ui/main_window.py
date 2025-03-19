@@ -423,8 +423,6 @@ class MainWindow(QtWidgets.QMainWindow):
             self.search = Search(self.rawlog, query, startIndex, update_progressbar)
             if self.search.getStatus() == QueryStatus.QUERY_ERROR:
                 self.checkQueryResult(self.search.getError(), 0, self.uiCombobox_searchInput)
-            if self.udpServer != None:
-                self.filterModel.newEntryRange.connect(self.search.searchMatchingEntries)
         except AbortSearch:
             self.search = None
 
@@ -866,7 +864,6 @@ class MainWindow(QtWidgets.QMainWindow):
                 return
 
             self._initModels(self.udpServer)
-            self.rawlogModel.updateStatusbar.connect(self._updateStatusbar)
 
             self.setWindowTitle(f"Listening on {SettingsSingleton().getUdpHost()}:{SettingsSingleton().getUdpPort()} - Monal Log Viewer")
             self._updateStatusbar()
@@ -935,12 +932,27 @@ class MainWindow(QtWidgets.QMainWindow):
         self.rawlogModel = RawlogModel(self.rawlog, parent=self.uiWidget_listView, udpServer=udpServer)
         # To apply the right formatter the rawlogModel is reloaded
         self.rawlogModel.reloadSettings()
+        # connect all needed signals to our rawlog model
+        self.rawlogModel.rowsInserted.connect(self._processRowsAboutToBeInserted)
+        self.rawlogModel.rowsInserted.connect(self._processRowsInserted)
+        # create filter model
         self.filterModel = FilterModel(self.rawlogModel)
         # Disable functions that use the lazyItemModel until it is fixed
         #self.lazyItemModel = LazyItemModel(self.filterModel, LOAD_CONTEXT, LAZY_DISTANCE, LAZY_LOADING)
         #self.uiWidget_listView.setModel(self.lazyItemModel)
         self.uiWidget_listView.setModel(self.filterModel)
 
+    @catch_exceptions(logger=logger)
+    def _processRowsAboutToBeInserted(self, parent, start, end, *args):
+        self.last_insert_event = {"start": start, "end": end}
+    
+    @catch_exceptions(logger=logger)
+    def _processRowsInserted(self, *args):
+        self._updateStatusbar()
+        if self.search != None:
+            # our search is using an exclusive end value, but Qt's rowsAboutToBeInserted uses an inclusive end value
+            self.search.searchMatchingEntries(self.last_insert_event["start"], self.last_insert_event["end"]+1)
+    
     def _resolveIndex(self, model, index):
         # recursively map index in proxy model chain to get real rawlog index
         if not hasattr(model, "sourceModel") or not hasattr(model, "mapToSource"):
