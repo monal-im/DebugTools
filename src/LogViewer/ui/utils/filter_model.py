@@ -15,7 +15,8 @@ class FilterModel(ProxyModel):
         logger.debug(f"Creating new filter model for source: {sourceModel.__class__.__name__}")
         super().__init__(sourceModel, parent, handledSignals=[
             "rowsAboutToBeInserted",
-            "rowsInserted"
+            "rowsInserted",
+            # TODO: filter/change rows removed events, too, if our underlying (rawlog) model can remove rows
         ])
         self.last_insert_event = None
         self.clearFilter()
