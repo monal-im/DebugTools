@@ -29,6 +29,7 @@ class UdpServer(QtCore.QObject):
         super(UdpServer, self).__init__()
         
         # init state
+        self.status = True
         self.run = False
         self.last_counter = None
         self.last_remote = None
@@ -40,16 +41,23 @@ class UdpServer(QtCore.QObject):
         self.key = m.digest()
         
         # create listening udp socket and process all incoming packets
-        self.sock = socket.socket(socket.AF_INET6 if ipaddress.ip_address(host).version==6 else socket.AF_INET, socket.SOCK_DGRAM)
-        self.sock.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
-        self.sock.bind((host, port))
-        self.sock.setblocking(0)
+        try:
+            self.sock = socket.socket(socket.AF_INET6 if ipaddress.ip_address(host).version==6 else socket.AF_INET, socket.SOCK_DGRAM)
+            self.sock.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
+            self.sock.bind((host, port))
+            self.sock.setblocking(0)
+        except Exception as error:
+            self.run = False
+            self.sock = None
+            # As a signal can't be emited here, thats why it has to be solved like this
+            self.status = error
+            return
         
         # start receiver thread
         self.run = True
         self.listener_thread = Thread(name="rawlog_stream_listener", target=self._thread, daemon=True)
         self.listener_thread.start()
-    
+
     def __del__(self):
         self.stop()
     
@@ -67,6 +75,9 @@ class UdpServer(QtCore.QObject):
     
     def getLastRemote(self):
         return self.last_remote;
+
+    def getStatus(self):
+        return self.status
     
     @catch_exceptions(logger=logger)
     def _thread(self):
