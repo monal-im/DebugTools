@@ -393,8 +393,11 @@ class MainWindow(QtWidgets.QMainWindow):
             logger.info("Current search result in line (%s): %s" % (str(self.search.getStatus()), str(result)))
             self.setComboboxStatusColor(self.uiCombobox_searchInput, self.search.getStatus())
 
+        if result == None:
+            return
+        
         # if current line is hidden switch to next line
-        if self.currentFilterQuery != None and not self.filterModel.isRowVisible(result):
+        if not self.filterModel.isRowVisible(result):
             result = None
             if func == Search.next:
                 self.searchNext()
