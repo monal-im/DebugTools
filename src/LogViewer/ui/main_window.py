@@ -98,6 +98,7 @@ class MainWindow(QtWidgets.QMainWindow):
         self.uiButton_goToRow.setIcon(self.style().standardIcon(getattr(QStyle, "SP_CommandLink")))
         self.uiButton_goToRow.clicked.connect(self.goToRow)
         #self.uiSpinBox_goToRow.valueChanged.connect(self.goToRow)
+        self.uiSpinBox_goToRow.editingFinished.connect(self.goToRow)
         self.uiSpinBox_goToRow.setMinimum(1)
         self.uiFrame_goToRow.hide()
 
