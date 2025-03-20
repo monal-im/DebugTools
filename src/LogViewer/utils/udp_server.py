@@ -129,8 +129,8 @@ class UdpServer(QtCore.QObject):
                 # emit logentry itself
                 newEntries.append(decoded)
                 
-                # emit at max 25 entries in one signal to make our ui more responsive
-                if len(newEntries) >= 25:
+                # emit at max 50 entries in one signal to make our ui more responsive
+                if len(newEntries) >= 50:
                     break
             
             if len(newEntries) > 0:

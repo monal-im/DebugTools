@@ -38,7 +38,8 @@ class MainWindow(QtWidgets.QMainWindow):
         self.currentFilterQuery = None
         self.stack = {}
         self.selectedCombobox = self.uiCombobox_filterInput
-
+        self.was_at_bottom = True
+        self.scrollTobottomTimer = None
         self.rawlogModel = None
         
         SettingsSingleton().loadDimensions(self)
@@ -89,6 +90,7 @@ class MainWindow(QtWidgets.QMainWindow):
         self.uiAction_stopUdpStream.triggered.connect(self.stopUdpStream)
 
         self.uiWidget_listView.setVerticalScrollMode(QtWidgets.QAbstractItemView.ScrollPerPixel)
+        self.uiWidget_listView.verticalScrollBar().valueChanged.connect(self._processVerticalScrollBarValueChanged)
         self.uiWidget_listView.doubleClicked.connect(self.inspectLine)
         self.uiWidget_listView.clicked.connect(self.listViewClicked)
         self.uiFrame_search.hide()
@@ -331,6 +333,7 @@ class MainWindow(QtWidgets.QMainWindow):
         self.toggleUiItems()
         self.hideInspectLine()
         self.setWindowTitle(f"Monal Log Viewer")
+        self.was_at_bottom = True
 
     @catch_exceptions(logger=logger)
     def preferences(self, *args):
@@ -952,6 +955,20 @@ class MainWindow(QtWidgets.QMainWindow):
         if self.search != None:
             # our search is using an exclusive end value, but Qt's rowsAboutToBeInserted uses an inclusive end value
             self.search.searchMatchingEntries(self.last_insert_event["start"], self.last_insert_event["end"]+1)
+        if self.was_at_bottom:
+            def scroller():
+                self.scrollTobottomTimer = None
+                self.uiWidget_listView.scrollToBottom()
+            # only scroll to bottom once every 25ms
+            if self.scrollTobottomTimer == None:
+                self.scrollTobottomTimer = QtCore.QTimer()
+                self.scrollTobottomTimer.setSingleShot(True)
+                self.scrollTobottomTimer.timeout.connect(scroller)
+                self.scrollTobottomTimer.start(25)
+    
+    @catch_exceptions(logger=logger)
+    def _processVerticalScrollBarValueChanged(self, *args):
+        self.was_at_bottom = self.uiWidget_listView.verticalScrollBar().value() == self.uiWidget_listView.verticalScrollBar().maximum()
     
     def _resolveIndex(self, model, index):
         # recursively map index in proxy model chain to get real rawlog index
