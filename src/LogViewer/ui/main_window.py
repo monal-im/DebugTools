@@ -98,6 +98,7 @@ class MainWindow(QtWidgets.QMainWindow):
         self.uiButton_goToRow.setIcon(self.style().standardIcon(getattr(QStyle, "SP_CommandLink")))
         self.uiButton_goToRow.clicked.connect(self.goToRow)
         #self.uiSpinBox_goToRow.valueChanged.connect(self.goToRow)
+        self.uiSpinBox_goToRow.setMinimum(1)
         self.uiFrame_goToRow.hide()
 
         self.uiTable_characteristics.doubleClicked.connect(self.pasteDetailItem)
@@ -247,7 +248,7 @@ class MainWindow(QtWidgets.QMainWindow):
         self.setCompleter(self.uiCombobox_filterInput)
         self.setCompleter(self.uiCombobox_searchInput)
 
-        self.uiSpinBox_goToRow.setMaximum(len(self.rawlog) - 1)
+        self.uiSpinBox_goToRow.setMaximum(len(self.rawlog))
 
         self.setWindowTitle(f"{file} - Monal Log Viewer")
 
@@ -441,7 +442,7 @@ class MainWindow(QtWidgets.QMainWindow):
         self._updateStatusbar()
 
     def cancelFilter(self):
-        self.uiSpinBox_goToRow.setMaximum(len(self.rawlog) - 1)
+        self.uiSpinBox_goToRow.setMaximum(len(self.rawlog))
         self.currentFilterQuery = None
         self.filterModel.clearFilter()
     
@@ -569,7 +570,8 @@ class MainWindow(QtWidgets.QMainWindow):
             return
         
         # prevent switching to row if that row is already selected
-        rowIndex = self.filterModel.mapFromSource(self.filterModel.createIndex(self.uiSpinBox_goToRow.value(), 0)).row()
+        # uiSpinBox_goToRow value is calculated -1 to get from human index (1, 2, 3...) to real index (0, 1, 2...)
+        rowIndex = self.filterModel.mapFromSource(self.filterModel.createIndex(self.uiSpinBox_goToRow.value()-1, 0)).row()
         if self.filterModel.isRowVisible(rowIndex):
             self.uiWidget_listView.model().setCurrentRow(rowIndex)
         else:
@@ -948,6 +950,7 @@ class MainWindow(QtWidgets.QMainWindow):
     @catch_exceptions(logger=logger)
     def _processRowsAboutToBeInserted(self, parent, start, end, *args):
         self.last_insert_event = {"start": start, "end": end}
+        self.uiSpinBox_goToRow.setMaximum(len(self.rawlog))
     
     @catch_exceptions(logger=logger)
     def _processRowsInserted(self, *args):
