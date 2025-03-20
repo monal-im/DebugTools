@@ -69,6 +69,10 @@ class RawlogModel(QtCore.QAbstractListModel):
     @catch_exceptions(logger=logger)
     def data(self, index, role):
         if index.isValid() or (0 <= index.row() < len(self.rawlog)):
+            # This might has to be fixed later when the lazyItemModel is done
+            # Set current row as 0 to enable go to first/last row in viewport later
+            if index.row() == 0:
+                self.setCurrentRow(0)
             if role == QtCore.Qt.DisplayRole:
                 entry = self.rawlog[index.row()]
                 if "__formattedMessage" not in entry:
