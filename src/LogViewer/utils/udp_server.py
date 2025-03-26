@@ -67,6 +67,9 @@ class UdpServer(QtCore.QObject):
     
     def getLastRemote(self):
         return self.last_remote;
+
+    def isRunning(self):
+        return self.run
     
     @catch_exceptions(logger=logger)
     def _thread(self):
