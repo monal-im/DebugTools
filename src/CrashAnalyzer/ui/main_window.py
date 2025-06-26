@@ -113,6 +113,8 @@ class MainWindow(QtWidgets.QMainWindow):
             self.switch_part(first_text_index, None)
         
         self.update_statusbar()
+        if not self.report.resymbolicated:
+            QtWidgets.QMessageBox.warning(self, "Could not resymbolicate crash report", "Either the symbols.db.gz file is missing, or we don't have symbols for this iOS version (see 'system/os_version' in json).")
     
     @catch_exceptions(logger=logger)
     def reset_ui(self):

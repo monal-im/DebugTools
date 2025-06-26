@@ -30,6 +30,10 @@ class Paths:
     @staticmethod
     def get_default_conf_filepath(filename):
         return os.path.abspath(os.path.join(Paths.get_basedir_path(), "data", "conf", filename))
+    
+    @staticmethod
+    def get_default_data_filepath(filename):
+        return os.path.abspath(os.path.join(Paths.get_basedir_path(), "data", filename))
 
     @staticmethod
     def get_user_documents_dir():
