@@ -125,7 +125,7 @@ class CrashReport:
     
     def _convert_raw_data(self, data, parttype="*.txt"):
         if parttype in ("*.json"):
-            symbols_db = pathlib.Path(Paths.get_default_data_filepath("symbols.db"))
+            symbols_db = pathlib.Path(Paths.get_data_filepath("symbols.db"))
             if symbols_db.is_file():
                 return self._resolve_redacted_symbols(json.loads(data), symbols_db)
             else:

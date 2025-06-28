@@ -12,3 +12,7 @@ def is_gzip_file(fp):
 def gzip_file_size(fp):
     with randread(fp, offset=-4, whence=io.SEEK_END) as data:
         return struct.unpack('<I', data)[0]
+
+def is_lzma_file(fp):
+    with randread(fp, 6, offset=0, whence=io.SEEK_SET) as data:
+        return data == b'\xFD\x37\x7A\x58\x5A\x00'

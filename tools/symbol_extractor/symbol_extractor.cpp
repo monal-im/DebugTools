@@ -504,7 +504,7 @@ int main(int argc, char* argv[]) {
     }
 
     // Regex to parse directory names like: iPhone14,3 18.5 (22F76)
-    std::regex dirRegex(R"(^.*? ([0-9]+(?:\.[0-9]+)*) \(([^)]+)\)$)");
+    std::regex dirRegex(R"(^(?:|.* )([0-9]+(?:\.[0-9]+)*) \(([^)]+)\)(?: arm64e?)?$)");
     
     if (swiftDemanglePath != "") {
         int master_fd = 0;

@@ -21,7 +21,4 @@ To do so, it needs a sqlite database containing symbols for the system libs of t
 The `tools/symbol_extractor` directory contains a C++ tool capable of generating such a sqlite database.
 See [the readme](tools/symbol_extractor/README.md) in [that directory](tools/symbol_extractor/) for all the details.
 
-I tried to add a sample database to this repository, but unfortunately the compressed sqlite database containing symbols
-for 2 iOS versions is about 300MiB in size and github only allows 100MiB of git LFS files.
-
-**So: Just contact me, if you need such a "precompiled" sqlite database.**
+I've added a precompiled symbols database using git lfs. It contains symbols of iOS 18.5 (22F76), 18.1.1 (22B91) and 16.7.11 (20H360).

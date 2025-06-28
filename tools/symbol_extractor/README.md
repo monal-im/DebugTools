@@ -22,9 +22,13 @@ The optional `path-to-swift-demangle-binary` is probably something like `sdk/usr
 The symbol extractor will extract all symbols of all builds into a neat sqlite3 database where they can be
 picked up later on by the CrashAnalyzer.
 
+If you don't have the right files/versions in `iOS DeviceSupport` (or if you are on Linux without Xcode), you can download
+these files from [https://github.com/CXTretar/iOS-System-Symbols-Supplement?tab=readme-ov-file]
+and extract them into your `directory-with-symbols`.
+
 ### Crash Analyzer
-For the Crash Analyzer being able to find the symbols.db, you'll have to copy it to `src/CrashAnalyzer/data`.
-Either as `symbols.db` or as `symbols.db.gz` (the Crash Analyzer will automatically extract it on first use).
+For the Crash Analyzer being able to find the symbols.db, you'll have to import it using the corresponding menu entry.
+Either as `symbols.db` or as `symbols.db.xz` (the Crash Analyzer will automatically extract it, if needed).
 
 If the symbols database is present and symbols for the iOS version of the crash report can be found,
 the Crash Analyzer will automatically resymbolicate all `<redacted>` symbols.

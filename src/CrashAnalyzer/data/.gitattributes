@@ -1,0 +1,2 @@
+*.db.gz filter=lfs diff=lfs merge=lfs -text
+*.db.xz filter=lfs diff=lfs merge=lfs -text

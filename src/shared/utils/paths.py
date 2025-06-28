@@ -40,6 +40,10 @@ class Paths:
         return os.path.abspath(platformdirs.user_documents_dir())
 
     @staticmethod
+    def get_data_filepath(filename):
+        return os.path.abspath(os.path.join(Paths.user_data_dir(), filename))
+    
+    @staticmethod
     def get_conf_filepath(filename):
         return os.path.abspath(os.path.join(Paths.user_data_dir(), filename))
 

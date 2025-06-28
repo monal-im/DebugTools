@@ -4,6 +4,9 @@ import sys
 import os
 import signal
 import argparse
+import lzma
+import shutil
+import pathlib
 from PyQt5 import QtWidgets
 from CrashAnalyzer.ui import MainWindow
 from shared.utils import Paths
@@ -37,6 +40,20 @@ logging.config.dictConfig(logger_config)
 logger = logging.getLogger(__name__)
 logger.info("Logger configured (%s)..." % Paths.get_conf_filepath("logger.json"))
 
+# unzip compressed symbols db if present and delete the compressed version afterwards
+symbols_db = pathlib.Path(Paths.get_data_filepath("symbols.db"))
+symbols_db_compressed = pathlib.Path(Paths.get_default_data_filepath("symbols.db.xz"))
+try:
+    if symbols_db_compressed.is_file() and not symbols_db.is_file():
+        logger.info("Initializing symbols.db from symbols.db.xz...")
+        with lzma.open(symbols_db_compressed, 'rb') as f_in:
+            with open(symbols_db, 'wb') as f_out:
+                shutil.copyfileobj(f_in, f_out)
+    #if symbols_db.is_file():
+    #    symbols_db_compressed.unlink(missing_ok=True)
+except:
+    logger.exception("Failed to prepare symbols.db file, not resymbolicating!")
+        
 signal.signal(signal.SIGINT, sigint_handler)
 try:
     app = QtWidgets.QApplication(sys.argv)
