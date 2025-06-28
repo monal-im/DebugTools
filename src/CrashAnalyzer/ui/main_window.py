@@ -1,7 +1,10 @@
+import os
 import functools
+import gzip
+import shutil
 from PyQt5 import QtWidgets
 
-from shared.utils import catch_exceptions
+from shared.utils import Paths, catch_exceptions, is_gzip_file
 from shared.ui.utils import UiAutoloader
 import shared.ui.utils.helpers as sharedUiHelpers
 from shared.storage import CrashReport
@@ -19,6 +22,7 @@ class MainWindow(QtWidgets.QMainWindow):
         self.uiAction_openCrashreport.triggered.connect(self.open_crashreport)
         self.uiAction_exportPartAs.triggered.connect(self.export_part)
         self.uiAction_exportAllParts.triggered.connect(self.export_all_parts)
+        self.uiAction_symbolsdb.triggered.connect(self.open_symbolsdb)
         self.uiList_parts.itemDoubleClicked.connect(self.export_part)
         self.uiList_parts.currentItemChanged.connect(self.switch_part)
         self.uiAction_close.triggered.connect(self.close)
@@ -84,6 +88,22 @@ class MainWindow(QtWidgets.QMainWindow):
                 logger.warn("Exception exporting part: %s" % str(ex))
                 QtWidgets.QMessageBox.critical(self, "Error exporting part", "%s: %s" % (str(type(ex).__name__), str(ex)))
             self.update_statusbar()     # restore normal statusbar
+    
+    @catch_exceptions(logger=logger)
+    def open_symbolsdb(self, _):
+        file, check = QtWidgets.QFileDialog.getOpenFileName(None, "Open symbols.db", "", "Symbols database (*.db.gz *.db)(*.db.gz *.db);;All files (*)")
+        if check:
+            file = os.path.abspath(file)
+            fp = open(file, 'rb')
+            try:
+                with gzip.GzipFile(fileobj=fp, mode="rb") if is_gzip_file(fp) else fp as f_in:
+                    with open(Paths.get_default_data_filepath("symbols.db"), 'wb') as f_out:
+                        shutil.copyfileobj(f_in, f_out)
+            except:
+                logger.warn("Failed to prepare symbols.db file, not resymbolicating: %s" % str(ex))
+                QtWidgets.QMessageBox.critical(self, "Error importing symbols.db", "%s: %s" % (str(type(ex).__name__), str(ex)))
+            finally:
+                fp.close()
     
     @catch_exceptions(logger=logger)
     def load_file(self, filename):

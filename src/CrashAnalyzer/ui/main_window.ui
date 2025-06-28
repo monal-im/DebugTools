@@ -66,6 +66,8 @@
     <addaction name="uiAction_exportPartAs"/>
     <addaction name="uiAction_exportAllParts"/>
     <addaction name="separator"/>
+    <addaction name="uiAction_symbolsdb"/>
+    <addaction name="separator"/>
     <addaction name="uiAction_close"/>
    </widget>
    <widget class="QMenu" name="menuHelp">
@@ -117,12 +119,12 @@
     <string>Ctrl+E</string>
    </property>
   </action>
-  <action name="uiAction_removeFilterEntry">
+  <action name="uiAction_symbolsdb">
    <property name="text">
-    <string>Remove currently selected filter from list</string>
+    <string>Import symbols.db</string>
    </property>
    <property name="shortcut">
-    <string>Ctrl+Backspace</string>
+    <string>Ctrl+I</string>
    </property>
   </action>
   <action name="uiAction_about">

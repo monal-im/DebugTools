@@ -7,7 +7,7 @@ import io
 from queue import Queue
 import logging
 
-from shared.utils import randread
+from shared.utils import randread, is_gzip_file, gzip_file_size
 from shared.utils.constants import LOGLEVELS
 try:
     from .udp_server import UdpServer
@@ -94,9 +94,9 @@ class Rawlog:
         
         # readsize and filesize are needed for progress calculation
         readsize = 0
-        if self._is_gzip_file(fp):
+        if is_gzip_file(fp):
             logger.debug("Data is gzip compressed...")
-            filesize = self._gzip_file_size(fp)
+            filesize = gzip_file_size(fp)
         else:
             logger.debug("Data is uncompressed...")
             # calculate file size by seeking to the end
@@ -107,7 +107,7 @@ class Rawlog:
         # now process our data
         entry = None
         old_processid = None
-        with gzip.GzipFile(fileobj=fp, mode="rb") if self._is_gzip_file(fp) else fp as fp:
+        with gzip.GzipFile(fileobj=fp, mode="rb") if is_gzip_file(fp) else fp as fp:
             try:
                 while True:
                     # Unwraps the rawlog file and strips down the values
@@ -293,16 +293,6 @@ class Rawlog:
         if not custom_entry:
             return
         self.data.append(custom_entry)
-    
-    # see https://stackoverflow.com/a/47080739
-    def _is_gzip_file(self, fp):
-        with randread(fp, 2, offset=0, whence=io.SEEK_SET) as data:
-            return data == b'\x1f\x8b'
-    
-    # see https://code.activestate.com/lists/python-list/245777
-    def _gzip_file_size(self, fp):
-        with randread(fp, offset=-4, whence=io.SEEK_END) as data:
-            return struct.unpack('<I', data)[0]
     
     def _completerList_recursor(self, initial_parts, entry):
         retval = []

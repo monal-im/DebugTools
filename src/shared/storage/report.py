@@ -5,11 +5,10 @@ import json
 import sqlite3
 import base64
 import pathlib
-import shutil
 import logging
 
 from shared.storage.rawlog import Rawlog
-from shared.utils import Paths, randread
+from shared.utils import Paths, randread, is_gzip_file
 
 logger = logging.getLogger(__name__)
 PART_SEPARATOR_REGEX = "-------- d049d576-9bf0-47dd-839f-dee6b07c1df9 -------- (.*) -------- d049d576-9bf0-47dd-839f-dee6b07c1df9 --------"
@@ -43,32 +42,33 @@ class CrashReport:
         self.clear()
         # catch exceptions to clear half read data and then rethrow them to be handled by the caller
         try:
-            if self._is_gzip_file(filename):
-                logger.debug("Crash report is gzip compressed")
-            else:
-                logger.debug("Crash report is uncompressed")
-            with gzip.open(filename, "rb") if self._is_gzip_file(filename) else open(filename, "rb") as fp:
-                parts = re.split(PART_SEPARATOR_REGEX, fp.read().decode("utf-8"))
-                first = True
-                for entry in parts:
-                    entry = entry.strip()
-                    # skip empty lines at the beginning of our file
-                    if first and entry == "":
-                        continue
-                    if first:
-                        name = entry
-                    else:
-                        parttype = re.search(PART_FILETYPE_REGEX, name)
-                        if parttype != None:
-                            parttype = parttype.group(1)
-                        if len(entry) > 0:
-                            self.parts.append({
-                                "name": name,
-                                "type": parttype,
-                                "data": self._convert_raw_data(entry, parttype),
-                            })
-                        name = None
-                    first = not first
+            with open(filename, "rb") as fp:
+                if is_gzip_file(fp):
+                    logger.debug("Crash report is gzip compressed")
+                else:
+                    logger.debug("Crash report is uncompressed")
+                with gzip.GzipFile(fileobj=fp, mode="rb") if is_gzip_file(fp) else fp as fp:
+                    parts = re.split(PART_SEPARATOR_REGEX, fp.read().decode("utf-8"))
+                    first = True
+                    for entry in parts:
+                        entry = entry.strip()
+                        # skip empty lines at the beginning of our file
+                        if first and entry == "":
+                            continue
+                        if first:
+                            name = entry
+                        else:
+                            parttype = re.search(PART_FILETYPE_REGEX, name)
+                            if parttype != None:
+                                parttype = parttype.group(1)
+                            if len(entry) > 0:
+                                self.parts.append({
+                                    "name": name,
+                                    "type": parttype,
+                                    "data": self._convert_raw_data(entry, parttype),
+                                })
+                            name = None
+                        first = not first
             
             #resymbolicate apple crashlog (must be done *after* self._convert_raw_data(), which resymbolicates the json report)
             json_data = None
@@ -126,14 +126,6 @@ class CrashReport:
     def _convert_raw_data(self, data, parttype="*.txt"):
         if parttype in ("*.json"):
             symbols_db = pathlib.Path(Paths.get_default_data_filepath("symbols.db"))
-            symbols_db_gz = pathlib.Path(Paths.get_default_data_filepath("symbols.db.gz"))
-            try:
-                if not symbols_db.is_file() and symbols_db_gz.is_file():
-                    with gzip.open(symbols_db_gz, 'rb') as f_in:
-                        with open(symbols_db, 'wb') as f_out:
-                            shutil.copyfileobj(f_in, f_out)
-            except:
-                logger.exception("Failed to prepare symbols.db file, not resymbolicating!")
             if symbols_db.is_file():
                 return self._resolve_redacted_symbols(json.loads(data), symbols_db)
             else:
@@ -154,12 +146,6 @@ class CrashReport:
             return retval
         raise Exception("Unknown parttype: '%s'!" % str(parttype))
     
-    # see https://stackoverflow.com/a/47080739
-    def _is_gzip_file(self, filename):
-        with open(filename, 'rb') as fp:
-            with randread(fp, 2, offset=0, whence=io.SEEK_SET) as data:
-                return data == b'\x1f\x8b'
-
     def _replace_redacted_in_crash_log(self, apple_report, crash_json) -> str:
         addr_to_symbol = {}
 
