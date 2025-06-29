@@ -15,8 +15,8 @@ Just compile it with g++ using the `Makefile`in this directory or any other C++2
 You'll need an install of libsqlite3 to link against.
 
 ## Usage
-Usage: `symbol_extractor <directory-with-symbols> [path-to-swift-demangle-binary]`.
-The `directory-with-symbols` is usually `$HOME/Library/Developer/Xcode/iOS DeviceSupport/`.
+Usage: `symbol_extractor <directory-with-symbols> [path-to-swift-demangle-binary]`.  
+The `directory-with-symbols` is usually `$HOME/Library/Developer/Xcode/iOS DeviceSupport/`.  
 The optional `path-to-swift-demangle-binary` is probably something like `sdk/usr/bin/swift-demangle` or just `./swift-demangle`.
 
 The symbol extractor will extract all symbols of all builds into a neat sqlite3 database where they can be

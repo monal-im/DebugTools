@@ -17,6 +17,8 @@ jobs:
     steps:
     - name: Checkout
       uses: actions/checkout@v4
+      with:
+        lfs: false
     
     - name: Install dependencies
       run: sudo apt -y install apksigner
@@ -95,6 +97,8 @@ jobs:
     steps:
     - name: Checkout
       uses: actions/checkout@v4
+      with:
+        lfs: false
     
     - name: Install dependencies
       run: sudo apt -y install apksigner
@@ -238,6 +242,8 @@ jobs:
   
     steps:
       - uses: actions/checkout@v4
+        with:
+          lfs: true
       - name: Set up Python 3.11
         uses: actions/setup-python@v5
         with:
