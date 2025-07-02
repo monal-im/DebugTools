@@ -101,7 +101,8 @@ class MainWindow(QtWidgets.QMainWindow):
                 with lzma.LZMAFile(filename=fp, mode="rb") if is_lzma_file(fp) else fp as f_in:
                     with open(symbols_db_path, 'wb') as f_out:
                         shutil.copyfileobj(f_in, f_out)
-                logger.info("Done, symbols.db is now ready to use when opening the next crash report")
+                logger.info("Done, symbols.db is now ready to use, reloading crash report..")
+                self.load_file(self.filename)
             except ex:
                 logger.warn("Failed to prepare symbols.db file, not resymbolicating: %s" % str(ex))
                 QtWidgets.QMessageBox.critical(self, "Error importing symbols.db", "%s: %s" % (str(type(ex).__name__), str(ex)))
@@ -137,7 +138,7 @@ class MainWindow(QtWidgets.QMainWindow):
         
         self.update_statusbar()
         if not self.report.resymbolicated:
-            QtWidgets.QMessageBox.warning(self, "Could not resymbolicate crash report", "Either the symbols.db file is missing, or we don't have symbols for this iOS version (see 'system/os_version' in json).")
+            QtWidgets.QMessageBox.warning(self, "Could not resymbolicate crash report", "Either the symbols.db file is missing, or we don't have symbols for this iOS version (see 'system/os_version' and 'system/cpu_arch' in json).")
     
     @catch_exceptions(logger=logger)
     def reset_ui(self):
