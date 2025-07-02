@@ -37,3 +37,8 @@ It will inform you with a dialog box, if resymbolication wasn't possible for all
 ## Symbolicator
 The `symbolicator.py` is a small script essentially doing the same as the Crash Analyzer.
 It can be used to do a stand-alone resymbolication of a `*.crash` file, if it is also presented with a `*.json` and `symbols.db` file.
+
+## Merger
+The `merger.py` is a small python script to merge two symbols databases into a single one while making sure all internal ids remain
+consistent and every build+architcture tuple is stored only once.
+
