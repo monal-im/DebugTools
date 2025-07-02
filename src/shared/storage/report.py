@@ -125,10 +125,18 @@ class CrashReport:
     
     def _convert_raw_data(self, data, parttype="*.txt"):
         if parttype in ("*.json"):
+            logger.info("Trying to resymbolicate report...")
             symbols_db = pathlib.Path(Paths.get_data_filepath("symbols.db"))
             if symbols_db.is_file():
-                return self._resolve_redacted_symbols(json.loads(data), symbols_db)
+                try:
+                    data = self._resolve_redacted_symbols(json.loads(data), symbols_db)
+                    if not self.resymbolicated:
+                        logger.warn("Could load symbols, but nothing to resymbolicate...")
+                except:
+                    logger.exception("Exception while resymbolicating!")
+                    return json.loads(data)
             else:
+                logger.warn("Could not find symbols.db for resymbolication, not resymbolicating!")
                 return json.loads(data)
         if parttype in ("*.txt", "*.crash", "*.json"):
             return data
@@ -146,7 +154,7 @@ class CrashReport:
             return retval
         raise Exception("Unknown parttype: '%s'!" % str(parttype))
     
-    def _replace_redacted_in_crash_log(self, apple_report, crash_json) -> str:
+    def _replace_redacted_in_crash_log(self, apple_report, crash_json):
         addr_to_symbol = {}
 
         threads = crash_json.get("crash", {}).get("threads", [])
@@ -192,6 +200,8 @@ class CrashReport:
             return data
 
         os_version = data["system"]["os_version"]
+        cpu_arch = data["system"]["cpu_arch"]
+        logger.info(f"Trying to resymbolicate using {os_version=} and {cpu_arch=}")
 
         for thread in data["crash"]["threads"]:
             if "backtrace" not in thread:
@@ -204,7 +214,7 @@ class CrashReport:
 
                     offset = symbol_addr - object_addr
 
-                    query = """
+                    query = re.sub(r"\s+", " ", """
                         SELECT symbols.name
                         FROM symbols
                         JOIN files ON symbols.file_id = files.id
@@ -212,17 +222,20 @@ class CrashReport:
                         WHERE symbols.address = ?
                         AND files.name = ?
                         AND builds.build = ?
+                        AND builds.arch = ?
                         LIMIT 1;
-                    """
+                    """).strip()
 
-                    cursor.execute(query, (offset, object_name, os_version))
+                    logger.debug(f"{query=}, {offset=}, {object_name=}, {os_version=}, {cpu_arch=}")
+                    cursor.execute(query, (offset, object_name, os_version, cpu_arch))
                     result = cursor.fetchone()
 
                     if result:
                         self.resymbolicated = True
                         frame["symbol_name"] = result[0]
-                    else:
-                        frame["symbol_name"] = "<redacted>"
+                        logger.debug(f"Managed to symbolicate: {object_name} - {result[0]}")
+                    # else:
+                    #     frame["symbol_name"] = "<redacted>"
 
         conn.close()
         return data

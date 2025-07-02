@@ -283,12 +283,18 @@ bool extract_symbols(const std::string& filepath, std::vector<SymbolEntry>& symb
 }
 
 // Parse dirname with regex to extract version and build
-bool parse_dirname(const std::string& dirname, std::string& version, std::string& build, const std::regex& re) {
+bool parse_dirname(const std::string& dirname, std::string& version, std::string& build, std::string& arch, const std::regex& re) {
     std::smatch match;
     if (std::regex_match(dirname, match, re)) {
         if (match.size() >= 3) {
             version = match[1];
             build = match[2];
+            if (match.size() >= 4) {
+                arch = match[3];
+            }
+            if (arch.size() == 0) {
+                arch = "arm64e";
+            }
             return true;
         }
     }
@@ -343,7 +349,7 @@ void scan_dir_recursive(const std::string& basePath, const std::string& currentR
     closedir(dir);
 }
 
-void write_sqlite_all(const std::string& db_path, const std::vector<std::tuple<std::string, std::string, std::vector<FileEntry>>>& all_data) {
+void write_sqlite_all(const std::string& db_path, const std::vector<std::tuple<std::string, std::string, std::string, std::vector<FileEntry>>>& all_data) {
     std::cout << "Writing data to '" << db_path << "'..." << std::endl;
     
     sqlite3* db;
@@ -376,7 +382,9 @@ void write_sqlite_all(const std::string& db_path, const std::vector<std::tuple<s
         CREATE TABLE IF NOT EXISTS builds (
             id INTEGER PRIMARY KEY AUTOINCREMENT,
             version TEXT,
-            build TEXT
+            build TEXT,
+            arch TEXT,
+            UNIQUE(build, arch)
         );
 
         CREATE TABLE IF NOT EXISTS files (
@@ -397,7 +405,7 @@ void write_sqlite_all(const std::string& db_path, const std::vector<std::tuple<s
             UNIQUE(file_id, address)
         );
 
-        --CREATE INDEX IF NOT EXISTS idx_builds_build ON builds(build);
+        --CREATE INDEX IF NOT EXISTS idx_builds_build ON builds(build, arch);
         --CREATE INDEX IF NOT EXISTS idx_files_name ON files(name);
         --CREATE INDEX IF NOT EXISTS idx_files_build_id ON files(build_id);
         --CREATE INDEX IF NOT EXISTS idx_symbols_file_id ON symbols(file_id);
@@ -409,9 +417,9 @@ void write_sqlite_all(const std::string& db_path, const std::vector<std::tuple<s
     }
 
     sqlite3_stmt* stmt_insert_build = nullptr;
-    sqlite3_prepare_v2(db, "INSERT OR IGNORE INTO builds(version, build) VALUES (?, ?);", -1, &stmt_insert_build, nullptr);
+    sqlite3_prepare_v2(db, "INSERT OR IGNORE INTO builds(version, build, arch) VALUES (?, ?, ?);", -1, &stmt_insert_build, nullptr);
     sqlite3_stmt* stmt_get_build_id = nullptr;
-    sqlite3_prepare_v2(db, "SELECT id FROM builds WHERE build = ?;", -1, &stmt_get_build_id, nullptr);
+    sqlite3_prepare_v2(db, "SELECT id FROM builds WHERE build = ? AND arch = ?;", -1, &stmt_get_build_id, nullptr);
     sqlite3_stmt* stmt_insert_file = nullptr;
     sqlite3_prepare_v2(db, "INSERT OR IGNORE INTO files(name, path, build_id) VALUES (?, ?, ?);", -1, &stmt_insert_file, nullptr);
     sqlite3_stmt* stmt_get_file_id = nullptr;
@@ -419,16 +427,18 @@ void write_sqlite_all(const std::string& db_path, const std::vector<std::tuple<s
     sqlite3_stmt* stmt_insert_symbol = nullptr;
     sqlite3_prepare_v2(db, "INSERT OR IGNORE INTO symbols(name, address, file_id) VALUES (?, ?, ?);", -1, &stmt_insert_symbol, nullptr);
 
-    for (const auto& [version, build, files] : all_data) {
-        std::cout << "\tWriting data for version " << version << " (" << build << ")..." << std::endl;
+    for (const auto& [version, build, arch, files] : all_data) {
+        std::cout << "\tWriting data for version " << version << " (" << build << ", " << arch << ")..." << std::endl;
         
         // Insert build
         sqlite3_bind_text(stmt_insert_build, 1, version.c_str(), -1, SQLITE_TRANSIENT);
         sqlite3_bind_text(stmt_insert_build, 2, build.c_str(), -1, SQLITE_TRANSIENT);
+        sqlite3_bind_text(stmt_insert_build, 3, arch.c_str(), -1, SQLITE_TRANSIENT);
         sqlite3_step(stmt_insert_build);
         sqlite3_reset(stmt_insert_build);
 
         sqlite3_bind_text(stmt_get_build_id, 1, build.c_str(), -1, SQLITE_TRANSIENT);
+        sqlite3_bind_text(stmt_get_build_id, 2, arch.c_str(), -1, SQLITE_TRANSIENT);
         int build_id = -1;
         if (sqlite3_step(stmt_get_build_id) == SQLITE_ROW) {
             build_id = sqlite3_column_int(stmt_get_build_id, 0);
@@ -504,7 +514,7 @@ int main(int argc, char* argv[]) {
     }
 
     // Regex to parse directory names like: iPhone14,3 18.5 (22F76)
-    std::regex dirRegex(R"(^(?:|.* )([0-9]+(?:\.[0-9]+)*) \(([^)]+)\)(?: arm64e?)?$)");
+    std::regex dirRegex(R"(^(?:|.* )([0-9]+(?:\.[0-9]+)*) \(([^)]+)\)(?: (arm64e?))?$)");
     
     if (swiftDemanglePath != "") {
         int master_fd = 0;
@@ -531,7 +541,7 @@ int main(int argc, char* argv[]) {
             perror("Error forking");
     }
 
-    std::vector<std::tuple<std::string, std::string, std::vector<FileEntry>>> all_data;
+    std::vector<std::tuple<std::string, std::string, std::string, std::vector<FileEntry>>> all_data;
     struct dirent* entry;
     while ((entry = readdir(dir)) != nullptr) {
         std::string name = entry->d_name;
@@ -550,13 +560,13 @@ int main(int argc, char* argv[]) {
             continue;
 
         // Parse version and build
-        std::string version, build;
-        if (!parse_dirname(name, version, build, dirRegex)) {
+        std::string version, build, arch;
+        if (!parse_dirname(name, version, build, arch, dirRegex)) {
             std::cerr << "Skipping directory (no version/build match): " << name << std::endl;
             continue;
         }
 
-        std::cout << "Scanning directory: " << name << " (version: " << version << ", build: " << build << ")" << std::endl;
+        std::cout << "Scanning directory: " << name << " (version: " << version << ", build: " << build << ", architecture: " << arch << ")" << std::endl;
 
         // Symbols subdirectory path
         std::string symbolsDir = fullPath + "/Symbols";
@@ -571,7 +581,7 @@ int main(int argc, char* argv[]) {
         // Collect files with symbols
         std::vector<FileEntry> files;
         scan_dir_recursive(fullPath, "Symbols", files);
-        all_data.emplace_back(version, build, std::move(files));
+        all_data.emplace_back(version, build, arch, std::move(files));
     }
     closedir(dir);
     
