@@ -7,7 +7,7 @@ The symbol_extractor will automatically demangle C++ symbols, for demangling of 
 from [www.swift.org] is needed. It can be downloaded as tarball (the Debian tarball can be found over here, for example:
 [https://www.swift.org/install/linux/debian/12/]). Just extract it to some directory.
 
-Note: Since only two files of the DSK are needed, you can copy `/usr/bin/swift-demangle` and `/usr/lib/swift/linux/libswiftCore.so`
+Note: Since only two files of the SDK are needed, you can copy `/usr/bin/swift-demangle` and `/usr/lib/swift/linux/libswiftCore.so`
 into the directory, your `symbol_extractor` binary resides in and delete the rest of the SDK to save disk space.
 
 ## Compilation
@@ -33,6 +33,9 @@ Either as `symbols.db` or as `symbols.db.xz` (the Crash Analyzer will automatica
 If the symbols database is present and symbols for the iOS version of the crash report can be found,
 the Crash Analyzer will automatically resymbolicate all `<redacted>` symbols.
 It will inform you with a dialog box, if resymbolication wasn't possible for all `<redacted>` symbols.
+
+The release of the Crash Analyzer downloadable on the GitHub releases page comes with a prepackaged `symbols.db`
+containing symbols for some iOS versions.
 
 ## Symbolicator
 The `symbolicator.py` is a small script essentially doing the same as the Crash Analyzer.
