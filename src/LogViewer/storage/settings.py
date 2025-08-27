@@ -323,7 +323,7 @@ class SettingsSingleton():
                             self.data[section] = defaults[section]
                         elif key not in self.data[section]:
                             logger.debug("Adding settings key '%s' in section '%s'..." % (key, section))
-                            self.data[section][key] = defaults[section][key]
+                            #self.data[section][key] = defaults[section][key]
             
             # remove settings not specified in defaults
             for section in list(self.data.keys()):
