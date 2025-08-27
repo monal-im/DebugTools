@@ -130,15 +130,15 @@ class MainWindow(QtWidgets.QMainWindow):
         self.uiAction_importCurrentProfile.triggered.connect(self.importCurrentProfile)
 
     @catch_exceptions(logger=logger)
-    def quit(self, dummy):
+    def quit(self, dummy, *args):
         sys.exit()
 
     @catch_exceptions(logger=logger)
-    def closeEvent(self, event):
+    def closeEvent(self, event, *args):
         sys.exit()
 
     @catch_exceptions(logger=logger)
-    def resizeEvent(self, e: QtGui.QResizeEvent):
+    def resizeEvent(self, e: QtGui.QResizeEvent, *args):
         super().resizeEvent(e)
         SettingsSingleton().storeDimension(self)
     
@@ -314,7 +314,7 @@ class MainWindow(QtWidgets.QMainWindow):
         self.uiAction_inspectLine.setChecked(False)
 
     @catch_exceptions(logger=logger)
-    def focusChangedEvent(self, oldWidget, newWidget):
+    def focusChangedEvent(self, oldWidget, newWidget, *args):
         if type(oldWidget) == QtWidgets.QComboBox:
             self.selectedCombobox = oldWidget
     
@@ -435,7 +435,7 @@ class MainWindow(QtWidgets.QMainWindow):
         self.updateComboboxHistory(query, self.uiCombobox_searchInput)
     
     @catch_exceptions(logger=logger)
-    def hideSearchAndGoToRow(self):
+    def hideSearchAndGoToRow(self, *args):
         self.uiFrame_search.hide()
         self.uiFrame_goToRow.hide()
         self.search = None
@@ -529,7 +529,7 @@ class MainWindow(QtWidgets.QMainWindow):
         self.toggleUiItems()
 
     @catch_exceptions(logger=logger)
-    def progressDialog(self, title, label, hasCancelButton=False):
+    def progressDialog(self, title, label, hasCancelButton=False, *args):
         progressbar = QtWidgets.QProgressDialog(label, "Cancel", 0, 100, self)
         progressbar.setWindowTitle(title)
         progressbar.setGeometry(200, 200, 650, 100)
@@ -768,7 +768,7 @@ class MainWindow(QtWidgets.QMainWindow):
         self.statusbar.setText(text)
 
     @catch_exceptions(logger=logger)
-    def rebuildUi(self, preInstance):
+    def rebuildUi(self, preInstance, *args):
         def rebuildCombobox(combobox):
             if len(SettingsSingleton().getComboboxHistory(combobox)) != len([combobox.itemText(i) for i in range(combobox.count())]):
                 currentText = combobox.lineEdit().text()
@@ -809,7 +809,7 @@ class MainWindow(QtWidgets.QMainWindow):
         combobox.setCurrentIndex(1)         # after adding an empty row, the current query is at index 1
 
     @catch_exceptions(logger=logger)
-    def copyToClipboard(self):
+    def copyToClipboard(self, *args):
         data = None
         if self.uiWidget_listView.hasFocus():
             data = self.rawlog[self.getRealSelectedIndexes()[0].row()]["__formattedMessage"]
@@ -827,15 +827,15 @@ class MainWindow(QtWidgets.QMainWindow):
         return [self._resolveIndex(self.uiWidget_listView.model(), index) for index in self.uiWidget_listView.selectedIndexes()]
 
     @catch_exceptions(logger=logger)
-    def cloneCurrentProfile(self):
+    def cloneCurrentProfile(self, *args):
         self._createNewProfileFromFile(Paths.get_conf_filepath(GlobalSettingsSingleton().getActiveProfile()))
 
     @catch_exceptions(logger=logger)
-    def addNewProfile(self):
+    def addNewProfile(self, *args):
         self._createNewProfileFromFile(Paths.get_default_conf_filepath(GlobalSettingsSingleton().getDefaultProfile()))
 
     @catch_exceptions(logger=logger)
-    def switchToProfile(self, profile):
+    def switchToProfile(self, profile, *args):
         # remove all icons
         for profileName in self.profiles:
             self.profiles[profileName]["profileAction"].setIcon(QtGui.QIcon(""))
@@ -851,7 +851,7 @@ class MainWindow(QtWidgets.QMainWindow):
         self.update
 
     @catch_exceptions(logger=logger)
-    def createUdpWindow(self, dummy):
+    def createUdpWindow(self, dummy, *args):
         self.udpWindow = UdpWindow()
         self.udpWindow.show()
         result = self.udpWindow.exec_()
@@ -876,7 +876,7 @@ class MainWindow(QtWidgets.QMainWindow):
             self.toggleUiItems()
 
     @catch_exceptions(logger=logger)
-    def stopUdpStream(self, dummy):
+    def stopUdpStream(self, dummy, *args):
         self.udpServer.stop()
         self.toggleUiItems()
 
@@ -899,7 +899,7 @@ class MainWindow(QtWidgets.QMainWindow):
             self.switchToProfile(profileName)
     
     @catch_exceptions(logger=logger)
-    def deleteCurrentProfile(self, profile):
+    def deleteCurrentProfile(self, profile, *args):
         if len(self.profiles) > 1:
             profileName = GlobalSettingsSingleton().getActiveProfile()
             self.profiles[profileName]["profileAction"].setVisible(False)
@@ -911,7 +911,7 @@ class MainWindow(QtWidgets.QMainWindow):
             self.statusbar.showDynamicText(str("Error ✗ | You need more than one profile to delete one!"))  
 
     @catch_exceptions(logger=logger)
-    def exportCurrentProfile(self):
+    def exportCurrentProfile(self, *args):
         file, check = QtWidgets.QFileDialog.getSaveFileName(None, "Export Profile", SettingsSingleton().getLastPath(), "Json (*.json);;All files (*)")
         if check:
             fileName = file.split("/")[-1]
@@ -926,7 +926,7 @@ class MainWindow(QtWidgets.QMainWindow):
             self.statusbar.showDynamicText(str("Error ✗ | Something went wrong exporting the profile!"))
 
     @catch_exceptions(logger=logger)
-    def importCurrentProfile(self):
+    def importCurrentProfile(self, *args):
         file, check = QtWidgets.QFileDialog.getOpenFileName(None, "Import Profile", SettingsSingleton().getLastPath(), "Json (*.json);;All files (*)")
         if check:
             self._createNewProfileFromFile(file)

@@ -39,14 +39,14 @@ class GlobalSettingsSingleton():
         return "profile.generic.json"
 
     def getFileNameFromDisplayName(self, displayName):
-        return f'profile.{"".join(character if (character.isalnum() or character in "_- ") else "_" for character in self.name)}.json'
+        return f'profile.{"".join(character if (character.isalnum() or character in "_- ") else "_" for character in displayName)}.json'
 
     def isNameExisting(self, displayName):
         if self.getFileNameFromDisplayName(displayName) in self.getProfiles():
             return True
         return False
 
-    def createFileFromParentProfile(pathToParentProfile, displayName):
+    def createFileFromParentProfile(self, pathToParentProfile, displayName):
         with open(pathToParentProfile, 'rb') as fp:
             data = json.load(fp)
             data["displayName"] = displayName
