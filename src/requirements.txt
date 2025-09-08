@@ -1,4 +1,4 @@
-platformdirs==4.3.8
+platformdirs==4.4.0
 PyQt5==5.15.11
 PyQt5_sip>=12.13
 QDarkStyle==3.2.3
