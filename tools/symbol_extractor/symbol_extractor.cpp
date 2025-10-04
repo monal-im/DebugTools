@@ -402,7 +402,7 @@ void write_sqlite_all(const std::string& db_path, const std::vector<std::tuple<s
             build_id INTEGER,
             name TEXT,
             path TEXT,
-            FOREIGN KEY(build_id) REFERENCES builds(id),
+            FOREIGN KEY(build_id) REFERENCES builds(id) ON DELETE CASCADE,
             UNIQUE(build_id, name)
         );
 
@@ -411,7 +411,7 @@ void write_sqlite_all(const std::string& db_path, const std::vector<std::tuple<s
             file_id INTEGER,
             address INTEGER,
             name TEXT,
-            FOREIGN KEY(file_id) REFERENCES files(id),
+            FOREIGN KEY(file_id) REFERENCES files(id) ON DELETE CASCADE,
             UNIQUE(file_id, address)
         );
 

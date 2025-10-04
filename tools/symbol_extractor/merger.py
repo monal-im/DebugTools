@@ -16,16 +16,16 @@ def merge_databases(main_db_path, source_db_path):
     main_conn = sqlite3.connect(main_db_path)
     main_cursor = main_conn.cursor()
     main_cursor.execute(f"ATTACH DATABASE ? AS other;", (source_db_path,))
-
     main_cursor.execute("PRAGMA foreign_keys = ON;")
     main_cursor.execute("PRAGMA other.foreign_keys = ON;")
+    read_cursor = main_conn.cursor()
 
     build_id_map = {}
     file_id_map = {}
 
     print("Merging builds...")
-    rows = [row for row in main_cursor.execute("SELECT id, build, arch, version FROM other.builds")]
-    for row in rows:
+    read_cursor.execute("SELECT id, build, arch, version FROM other.builds")
+    for row in read_cursor:
         other_id, build, arch, version = row
         
         main_cursor.execute("""
@@ -33,7 +33,7 @@ def merge_databases(main_db_path, source_db_path):
         """, (build, arch))
         pre_existing = main_cursor.fetchone()
         if not pre_existing:
-            print(f"Adding new: {build=}, {arch=}")
+            print(f"Adding new: {build=}, {arch=}, {version=}")
         
         main_cursor.execute("""
             INSERT OR IGNORE INTO builds (build, arch, version)
@@ -46,8 +46,8 @@ def merge_databases(main_db_path, source_db_path):
         build_id_map[other_id] = new_id
 
     print("Merging files...")
-    rows = [row for row in main_cursor.execute("SELECT id, build_id, name, path FROM other.files")]
-    for row in rows:
+    read_cursor.execute("SELECT id, build_id, name, path FROM other.files")
+    for row in read_cursor:
         other_id, old_build_id, name, path = row
         new_build_id = build_id_map[old_build_id]
         main_cursor.execute("""
@@ -61,8 +61,8 @@ def merge_databases(main_db_path, source_db_path):
         file_id_map[other_id] = new_id
 
     print("Merging symbols...")
-    rows = [row for row in main_cursor.execute("SELECT file_id, address, name FROM other.symbols")]
-    for row in rows:
+    read_cursor.execute("SELECT file_id, address, name FROM other.symbols")
+    for row in read_cursor:
         old_file_id, address, name = row
         new_file_id = file_id_map.get(old_file_id)
         if new_file_id:
