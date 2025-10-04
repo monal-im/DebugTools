@@ -5,7 +5,7 @@ all: $(BINS)
 
 %: %.cpp
 	echo "[G++]	$@"
-	g++ -std=c++20 -o $@ $< -lc++abi -lsqlite3
+	g++ -std=c++20 -ggdb -o $@ $< -lc++abi -lsqlite3
 
 clean:
 	echo "[CLEAN]	$(BINS)"

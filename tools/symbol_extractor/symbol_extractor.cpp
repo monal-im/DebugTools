@@ -146,6 +146,7 @@ std::string read_string(FILE* fp) {
     return result;
 }
 std::string demangle_swift_symbol(const std::string& mangled) {
+    // std::cout << "\t\tTrying to demangle: '" << mangled << "'" << std::endl;
     static int status = 0;
     if (status == 0) {
         waitpid(swift_demangler_pid, &status, WNOHANG);
@@ -156,20 +157,27 @@ std::string demangle_swift_symbol(const std::string& mangled) {
             }
             if (swift_demangler_stdin) {
                 fclose(swift_demangler_stdin);
+                swift_demangler_stdin = nullptr;
             }
             if (swift_demangler_stdout) {
                 fclose(swift_demangler_stdout);
+                swift_demangler_stdout = nullptr;
             }
             if (WIFEXITED(status)) {
                 if (WEXITSTATUS(status) != 0) {
                     std::cerr << "swift-demangle exited with code " << WEXITSTATUS(status) << std::endl;
+                    exit(2);
                 }
             } else {
                 std::cerr << "swift-demangle terminated abnormally" << std::endl;
+                exit(2);
             }
         }
     }
-    if (status != 0 || !swift_demangler_stdin || !swift_demangler_stdout) return mangled;
+    if (status != 0 || !swift_demangler_stdin || !swift_demangler_stdout) {
+        // std::cout << "\t\t\t--> Error while demangling..." << std::endl;
+        return mangled;
+    }
     
     fputs(mangled.c_str(), swift_demangler_stdin);
     fputs("\n", swift_demangler_stdin);
@@ -184,7 +192,9 @@ std::string demangle_swift_symbol(const std::string& mangled) {
     
     //read and return result
     std::string result = read_string(swift_demangler_stdout);
-    return result.empty() ? mangled : result;
+    std::string retval = result.empty() ? mangled : result;
+    // std::cout << "\t\t\t--> Got: '" << result << "'" << std::endl;
+    return retval;
 }
 
 // Extract symbols from a Mach-O file
@@ -263,7 +273,7 @@ bool extract_symbols(const std::string& filepath, std::vector<SymbolEntry>& symb
             int status = 0;
             char* demangled = abi::__cxa_demangle(symNameRaw, nullptr, nullptr, &status);
             std::string symName = (status == 0 && demangled) ? demangled : symNameRaw;
-            //don't try swift demangle, if c++ could already demangle it and only try to demangle stuff that'S marked as swift
+            //don't try swift demangle, if c++ could already demangle it and only try to demangle stuff that's marked as swift
             if ((status != 0 || !demangled) && symName.starts_with("_$s"))
             {
                 std::string newSymName = demangle_swift_symbol(symName);
@@ -514,11 +524,11 @@ int main(int argc, char* argv[]) {
     }
 
     // Regex to parse directory names like: iPhone14,3 18.5 (22F76)
-    std::regex dirRegex(R"(^(?:|.* )([0-9]+(?:\.[0-9]+)*) \(([^)]+)\)(?: (arm64e?))?$)");
+    std::regex dirRegex(R"(^(?:|.* )([0-9]+(?:\.[0-9]+)*) \(([^)]+)\)(?: (arm64|arm64e|x86|x86_64))?$)");
     
     if (swiftDemanglePath != "") {
         int master_fd = 0;
-        swift_demangler_pid = forkpty(&master_fd, NULL, NULL, NULL);;
+        swift_demangler_pid = forkpty(&master_fd, NULL, NULL, NULL);
         if (swift_demangler_pid != -1) {
             if (swift_demangler_pid == 0) {
                 char* const envp[] = {
@@ -526,7 +536,7 @@ int main(int argc, char* argv[]) {
                     nullptr
                 };
                 execle(swiftDemanglePath.c_str(), "swift-demangle", (char*)nullptr, envp);
-                perror("execl");
+                perror("execle failed");
                 exit(1);
             }
             else
@@ -538,7 +548,7 @@ int main(int argc, char* argv[]) {
             }
         }
         else
-            perror("Error forking");
+            perror("Error forking to swift-demangle");
     }
 
     std::vector<std::tuple<std::string, std::string, std::string, std::vector<FileEntry>>> all_data;
@@ -547,37 +557,37 @@ int main(int argc, char* argv[]) {
         std::string name = entry->d_name;
         if (name == "." || name == ".." || name[0] == '.')
             continue;
-
+    
         std::string fullPath = parentDir + "/" + name;
-
+    
         struct stat st;
         if (stat(fullPath.c_str(), &st) != 0) {
             std::perror(("stat " + fullPath).c_str());
             continue;
         }
-
+    
         if (!S_ISDIR(st.st_mode))
             continue;
-
+    
         // Parse version and build
         std::string version, build, arch;
         if (!parse_dirname(name, version, build, arch, dirRegex)) {
             std::cerr << "Skipping directory (no version/build match): " << name << std::endl;
             continue;
         }
-
+    
         std::cout << "Scanning directory: " << name << " (version: " << version << ", build: " << build << ", architecture: " << arch << ")" << std::endl;
-
+    
         // Symbols subdirectory path
         std::string symbolsDir = fullPath + "/Symbols";
-
+    
         // Check if Symbols directory exists
         struct stat stSymbols;
         if (stat(symbolsDir.c_str(), &stSymbols) != 0 || !S_ISDIR(stSymbols.st_mode)) {
             std::cerr << "Symbols directory missing or invalid: " << symbolsDir << std::endl;
             continue;
         }
-
+    
         // Collect files with symbols
         std::vector<FileEntry> files;
         scan_dir_recursive(fullPath, "Symbols", files);
@@ -589,9 +599,11 @@ int main(int argc, char* argv[]) {
         if (swift_demangler_stdin) {
             fwrite("\n", 1, 1, swift_demangler_stdin);      //unblock waiting child
             fclose(swift_demangler_stdin);
+            swift_demangler_stdin = nullptr;
         }
         if (swift_demangler_stdout) {
             fclose(swift_demangler_stdout);
+            swift_demangler_stdout = nullptr;
         }
         int status = 0;
         waitpid(swift_demangler_pid, &status, 0);
