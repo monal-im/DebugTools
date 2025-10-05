@@ -283,7 +283,8 @@ bool extract_symbols(const std::string& filepath, std::vector<SymbolEntry>& symb
                 }
             }
             free(demangled);
-            symbols.push_back(SymbolEntry{ symName, sym.n_value - preferred_load_address });
+            if(!symName.empty())
+                symbols.push_back(SymbolEntry{ symName, sym.n_value - preferred_load_address });
         }
     }
 
@@ -347,13 +348,15 @@ void scan_dir_recursive(const std::string& basePath, const std::string& currentR
                 return a.address < b.address;
             });
 
-            FileEntry fe;
-            fe.name = name;
-            // Remove "Symbols" prefix (assumes currentRelPath starts with "Symbols")
-            fe.path = newRelPath.substr(7);
-            fe.symbols = std::move(symbols);
+            if(!symbols.empty()) {
+                FileEntry fe;
+                fe.name = name;
+                // Remove "Symbols" prefix (assumes currentRelPath starts with "Symbols")
+                fe.path = newRelPath.substr(7);
+                fe.symbols = std::move(symbols);
 
-            entries.push_back(std::move(fe));
+                entries.push_back(std::move(fe));
+            }
         }
     }
     closedir(dir);
