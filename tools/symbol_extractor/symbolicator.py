@@ -11,8 +11,13 @@ def extract_crash_metadata(crash: str) -> dict:
     for line in crash.splitlines():
         line = line.strip()
 
+        # Example: "Version:             1046 (6.4.13)"
+        if line.startswith("Version:"):
+            match = re.match(r"Version:\s+(\d+)\s+\(([\d\.]+)\)", line)
+            if match:
+                app_build_number, app_version = match.groups()
         # Example: "OS Version:          iOS 18.6.2 (22G100)"
-        if line.startswith("OS Version:"):
+        elif line.startswith("OS Version:"):
             match = re.match(r"OS Version:\s+(\w+)\s+([\d\.]+)\s+\(([^)]+)\)", line)
             if match:
                 os_type, os_version, build_number = match.groups()
@@ -34,6 +39,8 @@ def extract_crash_metadata(crash: str) -> dict:
         "osVersion": os_version,
         "buildNumber": build_number,
         "cpuArch": cpu_arch,
+        "appBuildNumber": app_build_number,
+        "appVersion": app_version,
     }
 
 def replace_redacted_in_crash_log(crash: str, sqlite_db_path: str) -> str:
@@ -48,7 +55,7 @@ def replace_redacted_in_crash_log(crash: str, sqlite_db_path: str) -> str:
             (?P<lib>\S+)\s+                                         # library name
             0x(?P<absaddr>[0-9a-fA-F]+)\s+                          # absolute address
             0x(?P<baseaddr>[0-9a-fA-F]+)\s+\+\s+(?P<offset>\d+)\s+  # base + offset
-            \(<redacted>\s+\+\s+(?P<delta>\d+)\)                    # (<redacted> + N)
+            \((?P<symbol>.+)\s+\+\s+(?P<delta>\d+)\)$               # (symbol + N)
         """,
         re.VERBOSE | re.MULTILINE
     )
@@ -68,10 +75,15 @@ def replace_redacted_in_crash_log(crash: str, sqlite_db_path: str) -> str:
             LIMIT 1;
         """
         # print("Searching for %s, %s, %s, %s" % (offset, lib, metadata["buildNumber"], metadata["cpuArch"]))
-        cursor.execute(query, (offset, lib, metadata["buildNumber"], metadata["cpuArch"]))
+        cursor.execute(query, (offset, lib, metadata["appBuildNumber"], metadata["cpuArch"]))
         result = cursor.fetchone()
         if result:
-            return match.group(0).replace("<redacted>", result[0])
+            return match.group(0).replace(match.group("symbol"), result[0])
+        else:
+            cursor.execute(query, (offset, lib, metadata["buildNumber"], metadata["cpuArch"]))
+            result = cursor.fetchone()
+            if result:
+                return match.group(0).replace(match.group("symbol"), result[0])
         return match.group(0)
 
     retval = frame_regex.sub(replacer, crash)

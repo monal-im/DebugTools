@@ -104,32 +104,6 @@ static pid_t swift_demangler_pid = 0;
 static FILE* swift_demangler_stdin = nullptr;
 static FILE* swift_demangler_stdout = nullptr;
 
-// Escape JSON strings (minimal escaping)
-std::string escape_json_string(const std::string& input) {
-    std::string output;
-    output.reserve(input.size() * 2);
-    for (char c : input) {
-        switch (c) {
-            case '\"': output += "\\\""; break;
-            case '\\': output += "\\\\"; break;
-            case '\b': output += "\\b";  break;
-            case '\f': output += "\\f";  break;
-            case '\n': output += "\\n";  break;
-            case '\r': output += "\\r";  break;
-            case '\t': output += "\\t";  break;
-            default:
-                if (static_cast<unsigned char>(c) < 0x20) {
-                    char buf[7];
-                    snprintf(buf, sizeof(buf), "\\u%04x", c);
-                    output += buf;
-                } else {
-                    output += c;
-                }
-        }
-    }
-    return output;
-}
-
 std::string read_string(FILE* fp) {
     char buffer[65536];
     std::string result;
@@ -165,11 +139,11 @@ std::string demangle_swift_symbol(const std::string& mangled) {
             }
             if (WIFEXITED(status)) {
                 if (WEXITSTATUS(status) != 0) {
-                    std::cerr << "swift-demangle exited with code " << WEXITSTATUS(status) << std::endl;
+                    std::cerr << "swift-demangle exited with code " << WEXITSTATUS(status) << " while demangling" << std::endl;
                     exit(2);
                 }
             } else {
-                std::cerr << "swift-demangle terminated abnormally" << std::endl;
+                std::cerr << "swift-demangle terminated abnormally while demangling" << std::endl;
                 exit(2);
             }
         }
@@ -274,13 +248,15 @@ bool extract_symbols(const std::string& filepath, std::vector<SymbolEntry>& symb
             char* demangled = abi::__cxa_demangle(symNameRaw, nullptr, nullptr, &status);
             std::string symName = (status == 0 && demangled) ? demangled : symNameRaw;
             //don't try swift demangle, if c++ could already demangle it and only try to demangle stuff that's marked as swift
-            if ((status != 0 || !demangled) && symName.starts_with("_$s"))
+            if ((status != 0 || !demangled) && (symName.starts_with("$s") || symName.starts_with("_$s")))
             {
                 std::string newSymName = demangle_swift_symbol(symName);
                 if (newSymName != symName) {
-                    // std::cout << "'" << symName << "' => '" << newSymName << "'" << std::endl;
+                    //std::cout << "\t'" << symName << "' => '" << newSymName << "'" << std::endl;
                     symName = newSymName;
                 }
+            } else if (symName.starts_with("_R")) {
+                std::cout << "\tRUST NAME: '" << symName << "'" << std::endl;
             }
             free(demangled);
             if(!symName.empty())
@@ -612,10 +588,10 @@ int main(int argc, char* argv[]) {
         waitpid(swift_demangler_pid, &status, 0);
         if (WIFEXITED(status)) {
             if (WEXITSTATUS(status) != 0) {
-                std::cerr << "swift-demangle exited with code " << WEXITSTATUS(status) << std::endl;
+                std::cerr << "swift-demangle exited with code " << WEXITSTATUS(status) << " while shutting down" << std::endl;
             }
         } else {
-            std::cerr << "swift-demangle terminated abnormally" << std::endl;
+            std::cerr << "swift-demangle terminated abnormally while shutting down" << std::endl;
         }
     }
     
