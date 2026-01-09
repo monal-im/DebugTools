@@ -107,6 +107,8 @@ class Rawlog:
         # now process our data
         entry = None
         old_processid = None
+        corruption_counter = 0
+        corruption_skipped = 0
         with gzip.GzipFile(fileobj=fp, mode="rb") if is_gzip_file(fp) else fp as fp:
             try:
                 while True:
@@ -131,12 +133,15 @@ class Rawlog:
                         json_bytes = fp.read(json_read_len)
                         if len(json_bytes) != json_read_len:
                             logger.debug("Corruption detected: failed to read data: %d expected, but only %d read..." % (json_read_len, len(json_bytes)))
+                            skip_corrupted_part = True
                             #raise Exception("Rawlog file corrupt!")
-                        try:
-                            entry = json.loads(str(json_bytes, "UTF-8"))
-                        except:
-                            logger.debug("Corruption detected: failed to load json: %s" % str(json_bytes, "UTF-8"), exc_info=True)
-                        readsize += json_read_len + prefix_length
+                        else:
+                            try:
+                                entry = json.loads(str(json_bytes, "UTF-8"))
+                                readsize += json_read_len + prefix_length
+                            except:
+                                logger.debug("Corruption detected: failed to load json: %s" % json_bytes, exc_info=True)
+                                skip_corrupted_part = True
                     
                     if skip_corrupted_part:
                         # seek through the file byte by byte and search for a (prefix_length*8)-LENGTH_BITS_NEEDED bit zero sequence beginning on a byte boundary
@@ -155,11 +160,13 @@ class Rawlog:
                                 logger.error("Found next undamaged block at %d, skipping %d bytes!" % (fp.tell(), fp.tell()-readsize))
                                 message = "Corruption at %d, skipping %d bytes!" % (readsize, fp.tell()-readsize)
                                 self._append_entry({
-                                    "__warning": True,
+                                    "__warning": False,
                                     "__virtual": True,
                                     "flag": LOGLEVELS["STATUS"],    # this is status logline (a fake loglevel only used by the logviewer itself)
                                     "message": message,
                                 }, custom_load_callback)
+                                corruption_counter += 1
+                                corruption_skipped += fp.tell()-readsize
                                 readsize = fp.tell()        # fix readsize value
                                 break
                         continue        # continue reading (eof will be automatically handled by our normal code, too)
@@ -182,6 +189,14 @@ class Rawlog:
                             return None     # always return None on abort
             except AbortRawlogLoading:
                 return None     # always return None on abort
+        if corruption_counter > 0:
+            message = "%d corruptions detected, skipped %d bytes total!" % (corruption_counter, corruption_skipped)
+            self._append_entry({
+                "__warning": True,
+                "__virtual": True,
+                "flag": LOGLEVELS["STATUS"],    # this is status logline (a fake loglevel only used by the logviewer itself)
+                "message": message,
+            }, custom_load_callback)
         return True     # return True on success
     
     def store_file(self, filename, **kwargs):
