@@ -124,7 +124,7 @@ class CrashReport:
             return "This part contains raw bytes (%s) and cannot be displayed!" % self.parts[index]["type"]
     
     def _convert_raw_data(self, data, parttype="*.txt"):
-        if parttype in ("*.json"):
+        if parttype in ("*.json",):
             logger.info("Trying to resymbolicate report...")
             symbols_db = pathlib.Path(Paths.get_data_filepath("symbols.db"))
             if symbols_db.is_file():

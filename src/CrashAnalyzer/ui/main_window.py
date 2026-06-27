@@ -102,8 +102,9 @@ class MainWindow(QtWidgets.QMainWindow):
                     with open(symbols_db_path, 'wb') as f_out:
                         shutil.copyfileobj(f_in, f_out)
                 logger.info("Done, symbols.db is now ready to use, reloading crash report..")
-                self.load_file(self.filename)
-            except ex:
+                if self.filename:
+                    self.load_file(self.filename)
+            except Exception as ex:
                 logger.warn("Failed to prepare symbols.db file, not resymbolicating: %s" % str(ex))
                 QtWidgets.QMessageBox.critical(self, "Error importing symbols.db", "%s: %s" % (str(type(ex).__name__), str(ex)))
             finally:

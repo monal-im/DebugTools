@@ -49,7 +49,10 @@ def merge_databases(main_db_path, source_db_path):
     read_cursor.execute("SELECT id, build_id, name, path FROM other.files")
     for row in read_cursor:
         other_id, old_build_id, name, path = row
-        new_build_id = build_id_map[old_build_id]
+        new_build_id = build_id_map.get(old_build_id)
+        if new_build_id is None:
+            print(f"Warning: skipping file '{name}' (path '{path}') — references unknown build_id {old_build_id} in source db!")
+            continue
         main_cursor.execute("""
             INSERT OR IGNORE INTO files (build_id, name, path)
             VALUES (?, ?, ?)

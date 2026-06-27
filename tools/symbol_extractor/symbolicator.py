@@ -1,12 +1,13 @@
 #!/usr/bin/env python3
 
+import sys
 import sqlite3
 import re
 import argparse
 from pathlib import Path
 
 def extract_crash_metadata(crash: str) -> dict:
-    os_type, os_version, build_number, cpu_arch = None, None, None, None
+    os_type, os_version, build_number, cpu_arch, app_build_number, app_version = None, None, None, None, None, None
 
     for line in crash.splitlines():
         line = line.strip()
@@ -16,6 +17,10 @@ def extract_crash_metadata(crash: str) -> dict:
             match = re.match(r"Version:\s+(\d+)\s+\(([\d\.]+)\)", line)
             if match:
                 app_build_number, app_version = match.groups()
+            else:
+                match = re.match(r"Version:\s+([\d\.]+)\s+\((\d+)\)", line)
+                if match:
+                    app_version, app_build_number = match.groups()
         # Example: "OS Version:          iOS 18.6.2 (22G100)"
         elif line.startswith("OS Version:"):
             match = re.match(r"OS Version:\s+(\w+)\s+([\d\.]+)\s+\(([^)]+)\)", line)
@@ -91,7 +96,7 @@ def replace_redacted_in_crash_log(crash: str, sqlite_db_path: str) -> str:
     return retval
 
 
-parser = argparse.ArgumentParser(description="Replace '<redacted>' symbols in Apple crash logs using symbols.db")
+parser = argparse.ArgumentParser(description="Replace '<redacted>' symbols in Apple crash logs using symbols.db.")
 parser.add_argument("crash_log", help="Path to Apple crash log (*.crash)")
 parser.add_argument("symbols_db", help="Path to symbols.db")
 args = parser.parse_args()
